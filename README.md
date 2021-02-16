@@ -23,7 +23,7 @@ Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and t
 
 <p align="center">
   <a href="https://www.ainfosec.com/">
-    <img src="https://github.com/IntroVirt/IntroVirt/raw/master/.github/images/ais.png" alt="cross-platform" height="100" />
+    <img src="https://github.com/IntroVirt/IntroVirt/raw/master/.github/images/ais.png" alt="ais" height="100" />
   </a>
 </p>
 
