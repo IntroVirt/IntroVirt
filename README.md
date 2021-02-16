@@ -59,6 +59,7 @@ If you would like to help:
 
 ## **Testing**
 [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2FIntroVirt%2FIntroVirt%2Fbadge&style=flat)](https://actions-badge.atrox.dev/IntroVirt/IntroVirt/goto)
+
 IntroVirt leverages the following tools to ensure the highest possible code quality. Each pull request undergoes the following rigorous testing and review:
 -   **Static Analysis:** TBD
 -   **Dynamic Analysis:** TBD
