@@ -23,7 +23,7 @@ Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and t
 
 <p align="center">
   <a href="https://www.ainfosec.com/">
-    <img src="https://github.com/Bareflank/MicroV/raw/master/docs/ais.png" alt="cross-platform" height="100" />
+    <img src="https://github.com/IntroVirt/IntroVirt/raw/master/.github/images/ais.png" alt="cross-platform" height="100" />
   </a>
 </p>
 
@@ -44,30 +44,22 @@ TBD
 TBD
 
 ## **Resources**
-
-[![Join the chat](https://img.shields.io/badge/chat-on%20Slack-brightgreen.svg)](https://bareflank.herokuapp.com/)
-
-The Bareflank Support Library provides a ton of useful resources to learn how to use the library including:
-
+IntroVirt provides some useful resources to learn how to use it including:
 -   **Documentation**: TBD
 -   **Examples**: TBD
 -   **Unit Tests**: TBD
 
 If you have any questions, bugs, or feature requests, please feel free to ask on any of the following:
-
 -   **Chat**: TBD
 -   **Issue Tracker**: <https://github.com/IntroVirt/IntroVirt/issues>
 
-And as always, we are always looking for more help:
-
+If you would like to help:
 -   **Pull Requests**: <https://github.com/IntroVirt/IntroVirt/pulls>
 -   **Contributing Guidelines**: <https://github.com/IntroVirt/IntroVirt/blob/master/contributing.md>
 
 ## **Testing**
 [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2FIntroVirt%2FIntroVirt%2Fbadge&style=flat)](https://actions-badge.atrox.dev/IntroVirt/IntroVirt/goto)
-
 IntroVirt leverages the following tools to ensure the highest possible code quality. Each pull request undergoes the following rigorous testing and review:
-
 -   **Static Analysis:** TBD
 -   **Dynamic Analysis:** TBD
 -   **Code Coverage:** TBD
@@ -76,13 +68,11 @@ IntroVirt leverages the following tools to ensure the highest possible code qual
 -   **Documentation**: TBD
 
 ## License
-
 IntroVirt is licensed under the Apache v2.0 License.
 
 ## Related
-
-If you’re interested in Bareflank, you might also be interested in the
-following hypervisor projects:
+If you’re interested in IntroVirt, you might also be interested in the
+following projects:
 
 **LibVMI:** <br>
 https://github.com/libvmi/libvmi
