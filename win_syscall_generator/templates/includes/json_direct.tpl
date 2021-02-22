@@ -1,0 +1,1 @@
+    {{arg['name']}}Json["value"] = {{arg['functionName']}}();

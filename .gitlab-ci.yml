@@ -1,0 +1,168 @@
+stages:
+- build
+- deploy
+- update-repository
+
+##
+## Debug build
+##
+
+# Debug build template
+.build:debian.debug:
+  stage: build
+  script:
+    - ./scripts/build_ci.sh
+  artifacts:
+    name: libintrovirt
+    expire_in: 7d
+    paths:
+    - build/*.deb
+  tags:
+    - docker
+  except:
+    - master
+    - tags
+
+build:debian:buster:debug:
+  extends: .build:debian.debug
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/buster:latest"
+
+build:ubuntu:bionic:debug:
+  extends: .build:debian.debug
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/bionic:latest"
+
+build:ubuntu:focal:debug:
+  extends: .build:debian.debug
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/focal:latest"
+
+##
+## Debug deloy
+###
+
+# Debug deploy template
+.deploy:debian:debug:
+  stage: deploy
+  script:
+    - ./scripts/deploy_ci.sh
+  only:
+    - development
+  tags:
+    - docker
+  except:
+    - tags
+
+deploy:debian:buster:debug:
+  extends: .deploy:debian:debug
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/buster:latest"
+  dependencies:
+    - build:debian:buster:debug
+
+deploy:ubuntu:bionic:debug:
+  extends: .deploy:debian:debug
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/bionic:latest"
+  dependencies:
+    - build:ubuntu:bionic:debug
+
+deploy:ubuntu:focal:debug:
+  extends: .deploy:debian:debug
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/focal:latest"
+  dependencies:
+    - build:ubuntu:focal:debug
+
+##
+## Update debug repository
+##
+repo:debian:debug:
+   stage: update-repository
+   image: "registry.gitlab.ainfosec.com/introvirt/docker-images/focal:latest"
+   script:
+    - ./scripts/update_ci_repo.sh
+   tags:
+    - docker
+   only:
+    - development
+   except:
+    - tags
+
+##
+## Release build
+##
+
+# Release build template
+.build:debian:release:
+  stage: build
+  script:
+    - ./scripts/build_release.sh
+  artifacts:
+    name: libintrovirt
+    expire_in: 7d
+    paths:
+    - build/*.deb
+  tags:
+    - docker
+  only:
+    - master
+  except:
+    - tags
+
+build:debian:buster:release:
+  extends: .build:debian:release
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/buster:latest"
+
+build:ubuntu:bionic:release:
+  extends: .build:debian:release
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/bionic:latest"
+
+build:ubuntu:focal:release:
+  extends: .build:debian:release
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/focal:latest"
+
+##
+## Release deploy
+##
+
+# Release deployment template
+.deploy:debian:release:
+  stage: deploy
+  script:
+    - ./scripts/deploy_release.sh
+  only:
+    - master
+  tags:
+    - docker
+  except:
+    - tags
+
+deploy:debian:buster:release:
+  extends: .deploy:debian:release
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/buster:latest"
+  dependencies:
+    - build:debian:buster:release
+
+deploy:ubuntu:bionic:release:
+  extends: .deploy:debian:release
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/bionic:latest"
+  dependencies:
+    - build:ubuntu:bionic:release
+
+deploy:ubuntu:focal:release:
+  extends: .deploy:debian:release
+  image: "registry.gitlab.ainfosec.com/introvirt/docker-images/focal:latest"
+  dependencies:
+    - build:ubuntu:focal:release
+
+##
+## Update release repository
+##
+repo:debian:release:
+   stage: update-repository
+   image: "registry.gitlab.ainfosec.com/introvirt/docker-images/focal:latest"
+   script:
+    - ./scripts/update_release_repo.sh
+   tags:
+    - docker
+   only:
+    - master
+   except:
+    - tags
+

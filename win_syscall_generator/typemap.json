@@ -1,0 +1,786 @@
+{
+    "APPHELPCACHESERVICECLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/APPHELPCACHESERVICECLASS.hh>"
+        ],
+        "rawType": "uint64_t",
+        "writeMethod": "to_string"
+    },
+    "CLIENT_ID": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/CLIENT_ID.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/types/CLIENT_ID_IMPL.hh\""
+        ],
+        "impl_type": "CLIENT_ID_IMPL<PtrType>",
+        "helper": {
+            "mode": "complex",
+            "arguments": [
+                "pointer"
+            ]
+        }
+    },
+    "CreateFileDisposition": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/CreateFileDisposition.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "CreateKeyDisposition": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/CreateKeyDisposition.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "DuplicateObjectOptions": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/DuplicateObjectOptions.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "EVENT_TYPE": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/EVENT_TYPE.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "FILE_ATTRIBUTES": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/FILE_ATTRIBUTES.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "FILE_BASIC_INFORMATION": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/file_information/FILE_BASIC_INFORMATION.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/file_information/FILE_BASIC_INFORMATION_IMPL.hh\""
+        ],
+        "impl_type": "FILE_BASIC_INFORMATION_IMPL",
+        "helper": {
+            "mode": "complex",
+            "arguments": [
+                "pointer"
+            ]
+        }
+    },
+    "FILE_IO_COMPLETION_INFORMATION": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/io_completion_information/FILE_IO_COMPLETION_INFORMATION.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/io_completion_information/FILE_IO_COMPLETION_INFORMATION_IMPL.hh\""
+        ],
+        "impl_type": "FILE_IO_COMPLETION_INFORMATION_IMPL<PtrType>",
+        "helper": {
+            "mode": "complex",
+            "arguments": [
+                "pointer"
+            ]
+        }
+    },
+    "FILE_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/file_information/FILE_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "FILE_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "FILE_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/file_information/FILE_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "FILE_NETWORK_OPEN_INFORMATION": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/file_information/FILE_NETWORK_OPEN_INFORMATION.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/file_information/FILE_NETWORK_OPEN_INFORMATION_IMPL.hh\""
+        ],
+        "impl_type": "FILE_NETWORK_OPEN_INFORMATION_IMPL",
+        "helper": {
+            "mode": "complex",
+            "arguments": [
+                "pointer"
+            ]
+        }
+    },
+    "FileCreateOptions": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/FileCreateOptions.hh>"
+        ],
+        "writeMethod": "to_string"
+    },
+    "FileOpenOptions": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/FileCreateOptions.hh>"
+        ],
+        "writeMethod": "to_string"
+    },
+    "FS_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/fs_information/FS_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "FS_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "FS_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/fs_information/FS_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "HANDLE": {
+        "type": "uint64_t",
+        "rawType": "size_t",
+        "writeBase": "hex",
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "HANDLE_ATTRIBUTES": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/HANDLE_ATTRIBUTES.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "HWND": {
+        "type": "uint64_t",
+        "rawType": "size_t",
+        "writeBase": "hex",
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "INITIAL_TEB": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/INITIAL_TEB.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/INITIAL_TEB_IMPL.hh\""
+        ],
+        "impl_type": "INITIAL_TEB_IMPL<PtrType>",
+        "helper": {
+            "arguments": [
+                "pointer"
+            ],
+            "mode": "complex"
+        }
+    },
+    "IO_STATUS_BLOCK": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/IO_STATUS_BLOCK.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/IO_STATUS_BLOCK_IMPL.hh\""
+        ],
+        "impl_type": "IO_STATUS_BLOCK_IMPL<PtrType>",
+        "helper": {
+            "arguments": [
+                "pointer"
+            ],
+            "mode": "complex"
+        }
+    },
+    "KEY_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/key_information/KEY_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "KEY_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "KEY_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/key_information/KEY_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "KEY_VALUE": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/registry/KEY_VALUE.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "KEY_VALUE::make_unique"
+            },
+            "arguments": [
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "KEY_VALUE_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/key_value_information/KEY_VALUE_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "KEY_VALUE_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "KEY_VALUE_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/key_value_information/KEY_VALUE_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "MapType": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/MapType.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "MEMORY_ALLOCATION_TYPE": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/MEMORY_ALLOCATION_TYPE.hh>"
+        ]
+    },
+    "MEMORY_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/memory_information/MEMORY_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "MEMORY_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "MEMORY_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/memory_information/MEMORY_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "NTSTATUS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/NTSTATUS.hh>"
+        ],
+        "rawType": "uint32_t"
+    },
+    "OBJECT_ATTRIBUTES": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/OBJECT_ATTRIBUTES.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/OBJECT_ATTRIBUTES_IMPL.hh\""
+        ],
+        "impl_type": "OBJECT_ATTRIBUTES_IMPL<PtrType>",
+        "helper": {
+            "arguments": [
+                "pointer"
+            ],
+            "mode": "complex"
+        }
+    },
+    "OBJECT_WAIT_TYPE": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/OBJECT_WAIT_TYPE.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "PAGE_PROTECTION": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/PAGE_PROTECTION.hh>"
+        ],
+        "writeMethod": "to_string",
+        "rawType": "uint32_t",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "PORT_MESSAGE": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/PORT_MESSAGE.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/PORT_MESSAGE_IMPL.hh\""
+        ],
+        "impl_type": "PORT_MESSAGE_IMPL<PtrType>",
+        "helper": {
+            "arguments": [
+                "kernel",
+                "pointer"
+            ],
+            "mode": "complex"
+        }
+    },
+    "PROCESS_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/process_information/PROCESS_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "PROCESS_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "PROCESS_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/process_information/PROCESS_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "ProcessCreateFlags": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/ProcessCreateFlags.hh>"
+        ],
+        "writeMethod": "to_string"
+    },
+    "PS_ATTRIBUTE_LIST": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/PS_ATTRIBUTE_LIST.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/PS_ATTRIBUTE_LIST_IMPL.hh\""
+        ],
+        "impl_type": "PS_ATTRIBUTE_LIST_IMPL<PtrType>",
+        "helper": {
+            "arguments": [
+                "pointer"
+            ],
+            "mode": "complex"
+        }
+    },
+    "PS_CREATE_INFO": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/PS_CREATE_INFO.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/PS_CREATE_INFO_IMPL.hh\""
+        ],
+        "impl_type": "PS_CREATE_INFO_IMPL<PtrType>",
+        "helper": {
+            "arguments": [
+                "pointer"
+            ],
+            "mode": "complex"
+        }
+    },
+    "REG_TYPE": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/REG_TYPE.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "RegistryCreateOptions": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/RegistryCreateOptions.hh>"
+        ]
+    },
+    "RegistryOpenOptions": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/RegistryCreateOptions.hh>"
+        ]
+    },
+    "RTL_ATOM": {
+        "type": "uint16_t",
+        "writeBase": "hex",
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "RTL_USER_PROCESS_PARAMETERS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/RTL_USER_PROCESS_PARAMETERS.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/types/RTL_USER_PROCESS_PARAMETERS_IMPL.hh\""
+        ],
+        "impl_type": "RTL_USER_PROCESS_PARAMETERS_IMPL<PtrType>",
+        "helper": {
+            "arguments": [
+                "pointer"
+            ],
+            "mode": "complex"
+        }
+    },
+    "SECTION_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/section_information/SECTION_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "SECTION_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "SECTION_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/section_information/SECTION_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "SECTION_INHERIT": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/SECTION_INHERIT.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "FILE_SHARE_ACCESS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/FILE_SHARE_ACCESS.hh>"
+        ],
+        "writeMethod": "to_string"
+    },
+    "SHUTDOWN_ACTION": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/SHUTDOWN_ACTION.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "SYSTEM_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/system_information/SYSTEM_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "SYSTEM_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "SYSTEM_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/system_information/SYSTEM_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "THREAD_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/thread_information/THREAD_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "THREAD_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "THREAD_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/thread_information/THREAD_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "ThreadCreateFlags": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/ThreadCreateFlags.hh>"
+        ],
+        "writeMethod": "to_string"
+    },
+    "TOKEN_INFORMATION": {
+        "use_address_for_injection": true,
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/token_information/TOKEN_INFORMATION.hh>"
+        ],
+        "helper": {
+            "creator": {
+                "name": "TOKEN_INFORMATION::make_unique"
+            },
+            "arguments": [
+                "kernel",
+                "type_arg",
+                "pointer",
+                "size_arg"
+            ],
+            "mode": "complex"
+        }
+    },
+    "TOKEN_INFORMATION_CLASS": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/token_information/TOKEN_INFORMATION_CLASS.hh>"
+        ],
+        "rawType": "uint32_t",
+        "writeMethod": "to_string"
+    },
+    "TOKEN_PRIVILEGES": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/syscall/types/token_information/TOKEN_PRIVILEGES.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/syscall/types/token_information/TOKEN_PRIVILEGES_IMPL.hh\""
+        ],
+        "impl_type": "TOKEN_PRIVILEGES_IMPL",
+        "helper": {
+            "mode": "complex",
+            "arguments": [
+                "pointer",
+                "size_arg"
+            ]
+        }
+    },
+    "TOKEN_TYPE": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/const/TOKEN_TYPE.hh>"
+        ],
+        "writeMethod": "to_string",
+        "rawType": "uint32_t"
+    },
+    "UNICODE_STRING": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/UNICODE_STRING.hh>"
+        ],
+        "impl_includes": [
+            "\"windows/kernel/nt/types/UNICODE_STRING_IMPL.hh\""
+        ],
+        "impl_type": "UNICODE_STRING_IMPL<PtrType>",
+        "helper": {
+            "mode": "complex",
+            "arguments": [
+                "pointer"
+            ]
+        }
+    },
+    "WindowsTime": {
+        "includes": [
+            "<introvirt/windows/util/WindowsTime.hh>"
+        ],
+        "rawType": "int64_t",
+        "writeMethod": "to_string",
+        "helper": {
+            "mode": "direct",
+            "creator": {
+                "name": "WindowsTime::from_windows_time"
+            },
+            "arguments": [
+                "value"
+            ]
+        }
+    },
+    "WStr": {
+        "includes": [
+            "<introvirt/windows/common/WStr.hh>"
+        ],
+        "helper": {
+            "mode": "complex",
+            "arguments": [
+                "pointer",
+                "size_arg"
+            ]
+        }
+    },
+    "DIR_ACCESS_MASK": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/access_mask/DIR_ACCESS_MASK.hh>"
+        ]
+    },
+    "EVENT_ACCESS_MASK": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/access_mask/EVENT_ACCESS_MASK.hh>"
+        ]
+    },
+    "FILE_ACCESS_MASK": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/access_mask/FILE_ACCESS_MASK.hh>"
+        ]
+    },
+    "KEY_ACCESS_MASK": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/access_mask/KEY_ACCESS_MASK.hh>"
+        ]
+    },
+    "MUTANT_ACCESS_MASK": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/access_mask/MUTANT_ACCESS_MASK.hh>"
+        ]
+    },
+    "PROCESS_ACCESS_MASK": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/access_mask/PROCESS_ACCESS_MASK.hh>"
+        ]
+    },
+    "SECTION_ACCESS_MASK": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/access_mask/SECTION_ACCESS_MASK.hh>"
+        ]
+    },
+    "THREAD_ACCESS_MASK": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/access_mask/THREAD_ACCESS_MASK.hh>"
+        ]
+    },
+    "TOKEN_ACCESS_MASK": {
+        "includes": [
+            "<introvirt/windows/kernel/nt/types/access_mask/TOKEN_ACCESS_MASK.hh>"
+        ]
+    },
+    "bool": {
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "int32_t": {
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "uint32_t": {
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "int64_t": {
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "uint64_t": {
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "size_t": {
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        }
+    },
+    "WindowMessage": {
+        "includes": [
+            "<introvirt/windows/kernel/win32k/syscall/types/WindowMessage.hh>"
+        ],
+        "helper": {
+            "mode": "direct"
+        },
+        "writeMethod": "direct",
+        "rawType": "size_t"
+    },
+    "LPARAM": {
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        },
+        "type": "uint64_t",
+        "rawType": "size_t"
+    },
+    "WPARAM": {
+        "writeMethod": "direct",
+        "helper": {
+            "mode": "direct"
+        },
+        "type": "uint64_t",
+        "rawType": "size_t"
+    }
+}

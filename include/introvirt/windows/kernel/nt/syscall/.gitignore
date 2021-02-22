@@ -1,0 +1,6 @@
+Nt*.hh
+fwd.hh
+syscall.hh
+
+!NtSystemCall.hh
+

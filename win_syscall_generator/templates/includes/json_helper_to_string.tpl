@@ -1,0 +1,1 @@
+    {{arg['name']}}Json["value"] = to_string({{arg['name']}}());

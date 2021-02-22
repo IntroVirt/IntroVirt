@@ -1,0 +1,80 @@
+/*
+ * Copyright 2021 Assured Information Security, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#pragma once
+
+#include <introvirt/core/arch/fwd.hh>
+
+/**
+ * @brief Core IntroVirt classes
+ *
+ * The top-level introvirt namespace is for low-level operations,
+ * like controlling domains and vcpus, mapping memory, etc.
+ *
+ */
+namespace introvirt {
+
+class Breakpoint;
+class SingleStep;
+class Watchpoint;
+
+class Domain;
+class Guest;
+class Hypervisor;
+class Vcpu;
+
+class ControlRegisterEvent;
+class Event;
+class EventCallback;
+class EventFilter;
+class EventTaskInformation;
+class ExceptionEvent;
+class MemAccessEvent;
+class MsrAccessEvent;
+class SystemCallEvent;
+enum class EventType : int;
+
+class AllocationFailedException;
+class BadPhysicalAddressException;
+class BufferTooSmallException;
+class CommandFailedException;
+class DomainBusyException;
+class EventPollException;
+class GuestDetectionException;
+class InterruptedException;
+class InvalidMethodException;
+class InvalidVcpuException;
+class MemoryException;
+class NoSuchDomainException;
+class NotImplementedException;
+class NullAddressException;
+class SystemCallInjectionException;
+class TraceableException;
+class UnsupportedHypervisorException;
+class VirtualAddressNotPresentException;
+
+class TaskFilter;
+
+class FunctionCall;
+
+class GuestAddress;
+class GuestMemoryMapping;
+class GuestPhysicalAddress;
+class GuestVirtualAddress;
+
+class SystemCall;
+class SystemCallFilter;
+
+} // namespace introvirt

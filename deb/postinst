@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if grep -q "^introvirt:" /etc/group
+then
+    echo "Found existing introvirt group"
+else
+    addgroup --system introvirt
+fi
+
+#
+# We need to setuid some commands so introvirt group members can run them
+# TODO: Can we populate this array automatically?
+#
+declare -a arr=(
+    "/usr/bin/ivcr3mon"
+    "/usr/bin/ivexec"
+    "/usr/bin/ivguestinfo"
+    "/usr/bin/ivprocinfo"
+    "/usr/bin/ivreadfile"
+    "/usr/bin/ivsessions"
+    "/usr/bin/ivservicetable"
+    "/usr/bin/ivsyscallmon"
+    "/usr/bin/ivversion"
+    "/usr/bin/ivwritefile"
+    )
+for i in "${arr[@]}"
+do
+   # Put it in the introvirt group
+   chgrp introvirt "$i"
+   # Make it executable by only root/introvirt users
+   chmod 750 "$i"
+   # Make it setuid so users can launch it
+   chmod +s "$i"
+done
+

@@ -1,0 +1,66 @@
+{
+    "NtUserGetMessage": {
+        "category": "win32k",
+        "return_type": "bool",
+        "success_check": "result() == true",
+        "arguments": [
+            {
+                "type": "WindowMessage",
+                "index": 0,
+                "name": "Msg",
+                "pointer": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "HWND",
+                "index": 1,
+                "name": "hWnd",
+                "in": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "MsgFilterMin",
+                "in": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "MsgFilterMax",
+                "in": true
+            }
+        ]
+    },
+    "NtUserPostMessage": {
+        "category": "win32k",
+        "return_type": "bool",
+        "success_check": "result() == true",
+        "arguments": [
+            {
+                "type": "HWND",
+                "index": 0,
+                "name": "hWnd",
+                "in": true
+            },
+            {
+                "type": "WindowMessage",
+                "index": 1,
+                "name": "Msg",
+                "in": true
+            },
+            {
+                "type": "WPARAM",
+                "index": 2,
+                "name": "wParam",
+                "in": true
+            },
+            {
+                "type": "LPARAM",
+                "index": 3,
+                "name": "lParam",
+                "in": true
+            }
+        ]
+    }
+}

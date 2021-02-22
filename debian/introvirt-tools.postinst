@@ -1,0 +1,26 @@
+#!/bin/bash
+
+TOOLS=(
+    ivcallmon
+    ivcr3mon
+    ivexec
+    ivguestinfo
+    ivmemwatch
+    ivprocinfo
+    ivprocmemdump
+    ivreadfile
+    ivservicetable
+    ivsessions
+    ivsyscallmon
+    ivversion
+    ivwritefile
+)
+
+if [ "$1" = "configure" ]; then
+    for i in "${TOOLS[@]}"
+    do
+        chmod 750 /usr/bin/$i
+        chgrp introvirt /usr/bin/$i
+        chmod u+s /usr/bin/$i
+    done
+fi

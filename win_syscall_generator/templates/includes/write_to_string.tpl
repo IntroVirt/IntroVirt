@@ -1,0 +1,1 @@
+    os << to_string({{arg['functionName']}}()) << '\n';

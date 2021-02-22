@@ -30,3 +30,24 @@
 *.exe
 *.out
 *.app
+
+# VS Code
+.vscode
+
+# Generated version file
+gitversion.h
+
+# Debian package build
+debian/*.debhelper.log
+debian/*.substvars
+debian/libintrovirt1-dbg
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/introvirt-tools/
+debian/libintrovirt-dev/
+debian/libintrovirt-doc/
+debian/libintrovirt1/
+debian/tmp/
+obj-x86_64-linux-gnu
+

@@ -1,0 +1,50 @@
+/*
+ * Copyright 2021 Assured Information Security, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include "SYSTEM_PROCESSOR_INFORMATION_IMPL.hh"
+
+#include <boost/io/ios_state.hpp>
+
+namespace introvirt {
+namespace windows {
+namespace nt {
+
+void SYSTEM_PROCESSOR_INFORMATION_IMPL::write(std::ostream& os,
+                                              const std::string& linePrefix) const {
+    SYSTEM_PROCESSOR_INFORMATION_IMPL_BASE::write(os, linePrefix);
+
+    boost::io::ios_flags_saver ifs(os);
+    os << std::dec;
+    os << linePrefix << "ProcessorArchitecture: " << ProcessorArchitecture() << '\n';
+    os << linePrefix << "ProcessorLevel: " << ProcessorLevel() << '\n';
+    os << linePrefix << "ProcessorRevision: " << ProcessorRevision() << '\n';
+    os << linePrefix << "MaximumProcessors: " << MaximumProcessors() << '\n';
+    os << linePrefix << "ProcessorFeatureBits: 0x" << std::hex << ProcessorFeatureBits() << std::dec
+       << '\n';
+}
+
+Json::Value SYSTEM_PROCESSOR_INFORMATION_IMPL::json() const {
+    Json::Value result = SYSTEM_PROCESSOR_INFORMATION_IMPL_BASE::json();
+    result["ProcessorArchitecture"] = ProcessorArchitecture();
+    result["ProcessorLevel"] = ProcessorLevel();
+    result["ProcessorRevision"] = ProcessorRevision();
+    result["MaximumProcessors"] = MaximumProcessors();
+    result["ProcessorFeatureBits"] = ProcessorFeatureBits();
+    return result;
+}
+
+} // namespace nt
+} // namespace windows
+} // namespace introvirt

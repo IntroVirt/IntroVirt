@@ -1,0 +1,3544 @@
+{
+    "NtAddAtom": {
+        "category": "atom",
+        "parent": "NtFindAtom"
+    },
+    "NtAdjustPrivilegesToken": {
+        "category": "token",
+        "skip_injector": true,
+        "NOTE": "Injection is skipped because we need a way to construct a TOKEN_PRIVILEGES",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "TokenHandle"
+            },
+            {
+                "type": "bool",
+                "index": 1,
+                "name": "DisableAllPrivileges"
+            },
+            {
+                "type": "TOKEN_PRIVILEGES",
+                "index": 2,
+                "name": "TokenPrivileges",
+                "pointer": true,
+                "size_arg": ""
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "PreviousPrivilegesLength"
+            },
+            {
+                "type": "TOKEN_PRIVILEGES",
+                "index": 4,
+                "name": "PreviousPrivileges",
+                "pointer": true,
+                "optional": true,
+                "out": true,
+                "size_arg": "PreviousPrivilegesLength"
+            },
+            {
+                "type": "uint32_t",
+                "index": 5,
+                "name": "RequiredLength",
+                "pointer": true,
+                "optional": true,
+                "out": true
+            }
+        ]
+    },
+    "NtAllocateVirtualMemory": {
+        "category": "memory",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "size_t",
+                "index": 1,
+                "name": "BaseAddress",
+                "pointer": true,
+                "writeBase": "hex",
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "size_t",
+                "index": 2,
+                "name": "ZeroBits",
+                "writeBase": "hex"
+            },
+            {
+                "type": "size_t",
+                "index": 3,
+                "name": "RegionSize",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "MEMORY_ALLOCATION_TYPE",
+                "index": 4,
+                "name": "AllocationType"
+            },
+            {
+                "type": "PAGE_PROTECTION",
+                "index": 5,
+                "name": "Protect"
+            }
+        ]
+    },
+    "NtAllocateVirtualMemoryEx": {
+        "category": "memory",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "size_t",
+                "index": 1,
+                "name": "BaseAddress",
+                "pointer": true,
+                "writeBase": "hex",
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "size_t",
+                "index": 2,
+                "name": "RegionSize",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "MEMORY_ALLOCATION_TYPE",
+                "index": 3,
+                "name": "AllocationType"
+            },
+            {
+                "type": "PAGE_PROTECTION",
+                "index": 4,
+                "name": "Protect"
+            },
+            {
+                "type": "VOID",
+                "index": 5,
+                "name": "Parameters",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 6,
+                "name": "ParameterCount"
+            }
+        ]
+    },
+    "NtApphelpCacheControl": {
+        "category": "misc",
+        "arguments": [
+            {
+                "type": "APPHELPCACHESERVICECLASS",
+                "index": 0,
+                "name": "Service"
+            },
+            {
+                "type": "VOID",
+                "index": 1,
+                "name": "ServiceData",
+                "pointer": true
+            }
+        ]
+    },
+    "NtClearEvent": {
+        "category": "event",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "EventHandle"
+            }
+        ]
+    },
+    "NtClose": {
+        "category": "handle",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "Handle"
+            }
+        ]
+    },
+    "NtCompareTokens": {
+        "category": "token",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "FirstTokenHandle"
+            },
+            {
+                "type": "HANDLE",
+                "index": 1,
+                "name": "SecondTokenHandle"
+            },
+            {
+                "type": "bool",
+                "index": 2,
+                "name": "Equal",
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtConnectPort": {
+        "category": "port",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ClientPortHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "UNICODE_STRING",
+                "index": 1,
+                "name": "ServerPortName",
+                "pointer": true
+            },
+            {
+                "type": "SECURITY_QUALITY_OF_SERVICE",
+                "index": 2,
+                "name": "SecurityQos",
+                "pointer": true
+            },
+            {
+                "type": "LPC_SECTION_OWNER_MEMORY",
+                "index": 3,
+                "name": "ClientSharedMemory",
+                "pointer": true,
+                "in": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "LPC_SECTION_MEMORY",
+                "index": 4,
+                "name": "ServerSharedMemory",
+                "pointer": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 5,
+                "name": "MaximumMessageLength",
+                "pointer": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "VOID",
+                "index": 6,
+                "name": "ConnectionInfo",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 7,
+                "name": "ConnectionInfoLength",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtContinue": {
+        "category": "misc",
+        "arguments": [
+            {
+                "type": "CONTEXT",
+                "name": "ThreadContext",
+                "index": 0,
+                "pointer": true
+            },
+            {
+                "type": "bool",
+                "name": "RaiseAlert",
+                "index": 1
+            }
+        ]
+    },
+    "NtCreateDirectoryObject": {
+        "category": "object",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "DirectoryHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "DIR_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            }
+        ]
+    },
+    "NtCreateEvent": {
+        "category": "event",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "EventHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "EVENT_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "EVENT_TYPE",
+                "index": 3,
+                "name": "EventType"
+            },
+            {
+                "type": "bool",
+                "index": 4,
+                "name": "InitialState"
+            }
+        ]
+    },
+    "NtCreateFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "FileHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "FILE_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "index": 3,
+                "name": "IoStatusBlock",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "int64_t",
+                "index": 4,
+                "name": "AllocationSize",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "FILE_ATTRIBUTES",
+                "index": 5,
+                "name": "FileAttributes"
+            },
+            {
+                "type": "FILE_SHARE_ACCESS",
+                "index": 6,
+                "name": "ShareAccess"
+            },
+            {
+                "type": "CreateFileDisposition",
+                "index": 7,
+                "name": "CreateDisposition"
+            },
+            {
+                "type": "FileCreateOptions",
+                "index": 8,
+                "name": "CreateOptions"
+            },
+            {
+                "type": "VOID",
+                "index": 9,
+                "name": "EaBuffer",
+                "pointer": true,
+                "optional": true,
+                "size_args": [
+                    "EaLength"
+                ]
+            },
+            {
+                "type": "uint32_t",
+                "index": 10,
+                "name": "EaLength"
+            }
+        ]
+    },
+    "NtCreateKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "KeyHandle",
+                "index": 0,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "KEY_ACCESS_MASK",
+                "name": "DesiredAccess",
+                "index": 1
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ObjectAttributes",
+                "index": 2,
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "TitleIndex",
+                "index": 3
+            },
+            {
+                "type": "UNICODE_STRING",
+                "name": "Class",
+                "index": 4,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "RegistryCreateOptions",
+                "name": "CreateOptions",
+                "index": 5
+            },
+            {
+                "type": "CreateKeyDisposition",
+                "name": "Disposition",
+                "pointer": true,
+                "out": true,
+                "optional": true,
+                "conditional_indexes": [
+                    {
+                        "name": "NtCreateKey",
+                        "index": 6
+                    },
+                    {
+                        "name": "NtCreateKeyTransacted",
+                        "index": 7
+                    }
+                ]
+            }
+        ]
+    },
+    "NtCreateKeyTransacted": {
+        "category": "registry",
+        "parent": "NtCreateKey",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "TransactionHandle",
+                "index": 7
+            }
+        ]
+    },
+    "NtCreateMutant": {
+        "category": "mutant",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "MutantHandle",
+                "index": 0,
+                "out": true
+            },
+            {
+                "type": "MUTANT_ACCESS_MASK",
+                "name": "DesiredAccess",
+                "index": 1
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ObjectAttributes",
+                "index": 2,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "bool",
+                "name": "InitialOwner",
+                "index": 3
+            }
+        ]
+    },
+    "NtCreateNamedPipeFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "NamedPipeFileHandle",
+                "index": 0,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "FILE_ACCESS_MASK",
+                "name": "DesiredAccess",
+                "index": 1
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ObjectAttributes",
+                "index": 2,
+                "pointer": true
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "name": "IoStatusBlock",
+                "index": 3,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "FILE_SHARE_ACCESS",
+                "name": "ShareAccess",
+                "index": 4
+            },
+            {
+                "type": "CreateFileDisposition",
+                "name": "CreateDisposition",
+                "index": 5
+            },
+            {
+                "type": "FileCreateOptions",
+                "name": "CreateOptions",
+                "index": 6
+            },
+            {
+                "type": "bool",
+                "name": "WriteModeMessage",
+                "index": 7
+            },
+            {
+                "type": "bool",
+                "name": "ReadModeMessage",
+                "index": 8
+            },
+            {
+                "type": "bool",
+                "name": "NonBlocking",
+                "index": 9
+            },
+            {
+                "type": "uint32_t",
+                "name": "MaxInstances",
+                "index": 10
+            },
+            {
+                "type": "uint32_t",
+                "name": "InBufferSize",
+                "index": 11
+            },
+            {
+                "type": "uint32_t",
+                "name": "OutBufferSize",
+                "index": 12
+            },
+            {
+                "type": "int64_t",
+                "name": "DefaultTimeOut",
+                "index": 13,
+                "pointer": true
+            }
+        ]
+    },
+    "NtCreatePort": {
+        "category": "port",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "PortHandle",
+                "index": 0,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ObjectAttributes",
+                "index": 1,
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "MaxConnectionInfoLength",
+                "index": 2
+            },
+            {
+                "type": "uint32_t",
+                "name": "MaxMessageLength",
+                "index": 3
+            },
+            {
+                "type": "uint32_t",
+                "name": "MaxPoolUsage",
+                "index": 4,
+                "in": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtCreateProcessBase": {
+        "helper_base": true,
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ProcessHandle",
+                "index": 0,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "PROCESS_ACCESS_MASK",
+                "name": "DesiredAccess",
+                "index": 1
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ObjectAttributes",
+                "index": 2,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "HANDLE",
+                "name": "ParentProcess",
+                "index": 3
+            },
+            {
+                "type": "HANDLE",
+                "name": "SectionHandle",
+                "index": 5,
+                "optional": true
+            },
+            {
+                "type": "HANDLE",
+                "name": "DebugPort",
+                "index": 6,
+                "optional": true
+            },
+            {
+                "type": "HANDLE",
+                "name": "ExceptionPort",
+                "index": 7,
+                "optional": true
+            }
+        ]
+    },
+    "NtCreateProcess": {
+        "category": "process",
+        "parent": "NtCreateProcessBase",
+        "arguments": [
+            {
+                "type": "bool",
+                "name": "InheritObjectTable",
+                "index": 4
+            }
+        ]
+    },
+    "NtCreateProcessEx": {
+        "category": "process",
+        "parent": "NtCreateProcessBase",
+        "arguments": [
+            {
+                "type": "ProcessCreateFlags",
+                "name": "Flags",
+                "index": 4
+            },
+            {
+                "type": "bool",
+                "name": "InJob",
+                "index": 8
+            }
+        ]
+    },
+    "NtCreateSection": {
+        "category": "section",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "SectionHandle",
+                "index": 0,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "SECTION_ACCESS_MASK",
+                "name": "DesiredAccess",
+                "index": 1
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ObjectAttributes",
+                "index": 2,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "int64_t",
+                "name": "MaximumSize",
+                "index": 3,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "PAGE_PROTECTION",
+                "name": "SectionPageProtection",
+                "index": 4
+            },
+            {
+                "type": "uint32_t",
+                "name": "AllocationAttributes",
+                "index": 5
+            },
+            {
+                "type": "HANDLE",
+                "name": "FileHandle",
+                "index": 6,
+                "optional": true
+            }
+        ]
+    },
+    "NtCreateThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "CLIENT_ID",
+                "name": "ClientId",
+                "index": 4,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "CONTEXT",
+                "name": "ThreadContext",
+                "index": 5,
+                "pointer": true
+            },
+            {
+                "type": "INITIAL_TEB",
+                "name": "UserStack",
+                "index": 6,
+                "pointer": true
+            },
+            {
+                "type": "bool",
+                "name": "CreateSuspended",
+                "index": 7
+            }
+        ],
+        "parent": "NtCreateThreadBase"
+    },
+    "NtCreateThreadBase": {
+        "helper_base": true,
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ThreadHandle",
+                "index": 0,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "THREAD_ACCESS_MASK",
+                "name": "DesiredAccess",
+                "index": 1
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ObjectAttributes",
+                "index": 2,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "HANDLE",
+                "name": "ProcessHandle",
+                "index": 3
+            }
+        ]
+    },
+    "NtCreateThreadEx": {
+        "category": "thread",
+        "parent": "NtCreateThreadBase",
+        "arguments": [
+            {
+                "type": "VOID",
+                "name": "StartRoutine",
+                "index": 4,
+                "pointer": true
+            },
+            {
+                "type": "VOID",
+                "name": "Argument",
+                "index": 5,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "ThreadCreateFlags",
+                "name": "CreateFlags",
+                "index": 6
+            },
+            {
+                "type": "uint32_t",
+                "name": "ZeroBits",
+                "index": 7,
+                "pointer": true
+            },
+            {
+                "type": "uint64_t",
+                "name": "StackSize",
+                "index": 8
+            },
+            {
+                "type": "uint64_t",
+                "name": "MaximumStackSize",
+                "index": 9
+            },
+            {
+                "type": "PS_ATTRIBUTE_LIST",
+                "name": "AttributeList",
+                "index": 10,
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtCreateUserProcess": {
+        "category": "process",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ProcessHandle",
+                "index": 0,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "HANDLE",
+                "name": "ThreadHandle",
+                "index": 1,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "PROCESS_ACCESS_MASK",
+                "name": "ProcessDesiredAccess",
+                "index": 2
+            },
+            {
+                "type": "THREAD_ACCESS_MASK",
+                "name": "ThreadDesiredAccess",
+                "index": 3
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ProcessObjectAttributes",
+                "index": 4,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ThreadObjectAttributes",
+                "index": 5,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "ProcessCreateFlags",
+                "name": "ProcessFlags",
+                "index": 6
+            },
+            {
+                "type": "ThreadCreateFlags",
+                "name": "ThreadFlags",
+                "index": 7
+            },
+            {
+                "type": "RTL_USER_PROCESS_PARAMETERS",
+                "name": "ProcessParameters",
+                "index": 8,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "PS_CREATE_INFO",
+                "name": "CreateInfo",
+                "index": 9,
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "PS_ATTRIBUTE_LIST",
+                "name": "AttributeList",
+                "index": 10,
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtDebugActiveProcess": {
+        "category": "process",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ProcessHandle",
+                "index": 0
+            },
+            {
+                "type": "HANDLE",
+                "name": "DebugObjectHandle",
+                "index": 1
+            }
+        ]
+    },
+    "NtDelayExecution": {
+        "category": "time",
+        "arguments": [
+            {
+                "type": "bool",
+                "name": "Alertable",
+                "index": 0
+            },
+            {
+                "type": "int64_t",
+                "name": "DelayInterval",
+                "index": 1,
+                "pointer": true,
+                "helper": {
+                    "mode": "copy"
+                }
+            }
+        ]
+    },
+    "NtDeleteAtom": {
+        "category": "atom",
+        "arguments": [
+            {
+                "type": "RTL_ATOM",
+                "name": "Atom",
+                "index": 0
+            }
+        ]
+    },
+    "NtDeleteFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ObjectAttributes",
+                "index": 0,
+                "pointer": true
+            }
+        ]
+    },
+    "NtDeleteKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "KeyHandle",
+                "index": 0
+            }
+        ]
+    },
+    "NtDeleteValueKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "KeyHandle",
+                "index": 0
+            },
+            {
+                "type": "UNICODE_STRING",
+                "name": "ValueName",
+                "index": 1,
+                "pointer": true
+            }
+        ]
+    },
+    "NtDeviceIoControlFile": {
+        "category": "driver",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "FileHandle",
+                "index": 0
+            },
+            {
+                "type": "HANDLE",
+                "name": "EventHandle",
+                "index": 1,
+                "optional": true
+            },
+            {
+                "type": "IO_APC_ROUTINE",
+                "name": "ApcRoutine",
+                "index": 2,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "VOID",
+                "name": "ApcContext",
+                "index": 3,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "name": "IoStatusBlock",
+                "index": 4,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "IoControlCode",
+                "index": 5,
+                "writeBase": "hex"
+            },
+            {
+                "type": "VOID",
+                "name": "InputBuffer",
+                "index": 6,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "InputBufferLength",
+                "index": 7
+            },
+            {
+                "type": "VOID",
+                "name": "OutputBuffer",
+                "index": 8,
+                "pointer": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "OutputBufferLength",
+                "index": 9
+            }
+        ]
+    },
+    "NtDuplicateObject": {
+        "category": "object",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "SourceProcessHandle",
+                "index": 0
+            },
+            {
+                "type": "HANDLE",
+                "name": "SourceHandle",
+                "index": 1
+            },
+            {
+                "type": "HANDLE",
+                "name": "TargetProcessHandle",
+                "index": 2
+            },
+            {
+                "type": "HANDLE",
+                "name": "TargetHandle",
+                "index": 3,
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "ACCESS_MASK",
+                "name": "DesiredAccess",
+                "index": 4,
+                "optional": true
+            },
+            {
+                "type": "HANDLE_ATTRIBUTES",
+                "name": "HandleAttributes",
+                "index": 5
+            },
+            {
+                "type": "DuplicateObjectOptions",
+                "name": "Options",
+                "index": 6
+            }
+        ]
+    },
+    "NtDuplicateToken": {
+        "category": "token",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ExistingToken",
+                "index": 0
+            },
+            {
+                "type": "TOKEN_ACCESS_MASK",
+                "name": "DesiredAccess",
+                "index": 1
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "ObjectAttributes",
+                "index": 2,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "bool",
+                "name": "EffectiveOnly",
+                "index": 3
+            },
+            {
+                "type": "TOKEN_TYPE",
+                "name": "TokenType",
+                "index": 4
+            },
+            {
+                "type": "HANDLE",
+                "name": "NewTokenHandle",
+                "index": 5,
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtEnumerateKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "KeyHandle",
+                "index": 0
+            },
+            {
+                "type": "uint32_t",
+                "name": "Index",
+                "index": 1
+            },
+            {
+                "type": "KEY_INFORMATION_CLASS",
+                "name": "KeyInformationClass",
+                "index": 2
+            },
+            {
+                "type": "KEY_INFORMATION",
+                "name": "KeyInformation",
+                "index": 3,
+                "pointer": true,
+                "out": true,
+                "size_args": [
+                    "ResultLength",
+                    "KeyInformationLength"
+                ],
+                "type_arg": "KeyInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "name": "KeyInformationLength",
+                "index": 4
+            },
+            {
+                "type": "uint32_t",
+                "name": "ResultLength",
+                "index": 5,
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtEnumerateValueKey": {
+        "category": "registry",
+        "parent": "NtEnumerateQueryValueKey",
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "name": "Index",
+                "index": 1
+            }
+        ]
+    },
+    "NtFindAtom": {
+        "category": "atom",
+        "arguments": [
+            {
+                "type": "WStr",
+                "name": "AtomName",
+                "index": 0,
+                "pointer": true,
+                "size_arg": "AtomNameLength"
+            },
+            {
+                "type": "uint32_t",
+                "name": "AtomNameLength",
+                "index": 1,
+                "note": "This field does not exist in all sources... call may have changed between Windows versions!"
+            },
+            {
+                "type": "RTL_ATOM",
+                "name": "Atom",
+                "index": 2,
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtFlushInstructionCache": {
+        "category": "misc",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ProcessHandle",
+                "index": 0
+            },
+            {
+                "type": "VOID",
+                "name": "BaseAddress",
+                "index": 1,
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "NumberOfBytesToFlush",
+                "index": 2
+            }
+        ]
+    },
+    "NtFreeVirtualMemory": {
+        "category": "memory",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ProcessHandle",
+                "index": 0
+            },
+            {
+                "type": "size_t",
+                "name": "BaseAddress",
+                "index": 1,
+                "pointer": true,
+                "writeBase": "hex"
+            },
+            {
+                "type": "size_t",
+                "name": "RegionSize",
+                "index": 2,
+                "pointer": true
+            },
+            {
+                "type": "MEMORY_ALLOCATION_TYPE",
+                "name": "FreeType",
+                "index": 3
+            }
+        ]
+    },
+    "NtGetContextThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ThreadHandle",
+                "index": 0
+            },
+            {
+                "type": "VOID",
+                "name": "Context",
+                "index": 1,
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtLoadDriver": {
+        "category": "driver",
+        "arguments": [
+            {
+                "type": "UNICODE_STRING",
+                "name": "DriverServiceName",
+                "index": 0,
+                "pointer": true
+            }
+        ]
+    },
+    "NtLoadKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "DestinationKeyName",
+                "index": 0,
+                "pointer": true
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "name": "HiveFileName",
+                "index": 1,
+                "pointer": true
+            }
+        ]
+    },
+    "NtLoadKey2": {
+        "category": "registry",
+        "parent": "NtLoadKey",
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "name": "Flags",
+                "index": 2
+            }
+        ]
+    },
+    "NtLoadKeyEx": {
+        "category": "registry",
+        "parent": "NtLoadKey2",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "TrustClassKey",
+                "index": 3,
+                "optional": true
+            },
+            {
+                "type": "HANDLE",
+                "name": "Event",
+                "index": 4,
+                "optional": true
+            },
+            {
+                "type": "KEY_ACCESS_MASK",
+                "name": "DesiredAccess",
+                "index": 5,
+                "optional": true
+            },
+            {
+                "type": "HANDLE",
+                "name": "RootHandle",
+                "index": 6,
+                "pointer": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "name": "IoStatus",
+                "index": 7,
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtLockVirtualMemory": {
+        "category": "memory",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "size_t",
+                "index": 1,
+                "name": "BaseAddress",
+                "pointer": true,
+                "writeBase": "hex",
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "size_t",
+                "index": 2,
+                "name": "NumberOfBytes",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "MapType",
+                "index": 3,
+                "name": "LockOption"
+            }
+        ]
+    },
+    "NtMakePermanentObject": {
+        "category": "object",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "Handle"
+            }
+        ]
+    },
+    "NtMakeTemporaryObject": {
+        "category": "object",
+        "parent": "NtMakePermanentObject"
+    },
+    "NtMapViewOfSection": {
+        "category": "section",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "SectionHandle"
+            },
+            {
+                "type": "HANDLE",
+                "index": 1,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "size_t",
+                "index": 2,
+                "name": "BaseAddress",
+                "pointer": true,
+                "writeBase": "hex",
+                "in": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "uint64_t",
+                "index": 3,
+                "name": "ZeroBits",
+                "writeBase": "hex",
+                "optional": true
+            },
+            {
+                "type": "uint64_t",
+                "index": 4,
+                "name": "CommitSize"
+            },
+            {
+                "type": "uint64_t",
+                "index": 5,
+                "name": "SectionOffset",
+                "pointer": true,
+                "in": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "size_t",
+                "index": 6,
+                "name": "ViewSize",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "SECTION_INHERIT",
+                "index": 7,
+                "name": "InheritDisposition"
+            },
+            {
+                "type": "MEMORY_ALLOCATION_TYPE",
+                "index": 8,
+                "name": "AllocationType",
+                "optional": true
+            },
+            {
+                "type": "PAGE_PROTECTION",
+                "index": 9,
+                "name": "Win32Protect"
+            }
+        ]
+    },
+    "NtMapViewOfSectionEx": {
+        "category": "section",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "SectionHandle"
+            },
+            {
+                "type": "HANDLE",
+                "index": 1,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "size_t",
+                "index": 2,
+                "name": "BaseAddress",
+                "pointer": true,
+                "writeBase": "hex",
+                "in": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "uint64_t",
+                "index": 3,
+                "name": "SectionOffset",
+                "pointer": true,
+                "in": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "size_t",
+                "index": 4,
+                "name": "ViewSize",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "MEMORY_ALLOCATION_TYPE",
+                "index": 5,
+                "name": "AllocationType",
+                "optional": true
+            },
+            {
+                "type": "PAGE_PROTECTION",
+                "index": 6,
+                "name": "Win32Protect"
+            },
+            {
+                "type": "VOID",
+                "index": 7,
+                "name": "Parameters",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 8,
+                "name": "ParameterCount"
+            }
+        ]
+    },
+    "NtOpenDirectoryObject": {
+        "category": "object",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "DirectoryHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "DIR_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            }
+        ]
+    },
+    "NtOpenEvent": {
+        "category": "event",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "EventHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "EVENT_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            }
+        ]
+    },
+    "NtOpenFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "FileHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "FILE_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "index": 3,
+                "name": "IoStatusBlock",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "FILE_SHARE_ACCESS",
+                "index": 4,
+                "name": "ShareAccess"
+            },
+            {
+                "type": "FileOpenOptions",
+                "index": 5,
+                "name": "OpenOptions"
+            }
+        ]
+    },
+    "NtOpenKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "KeyHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "KEY_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            }
+        ]
+    },
+    "NtOpenKeyEx": {
+        "category": "registry",
+        "parent": "NtOpenKey",
+        "arguments": [
+            {
+                "type": "RegistryOpenOptions",
+                "index": 3,
+                "name": "OpenOptions"
+            }
+        ]
+    },
+    "NtOpenKeyTransacted": {
+        "category": "registry",
+        "parent": "NtOpenKey",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 3,
+                "name": "TransactionHandle"
+            }
+        ]
+    },
+    "NtOpenKeyTransactedEx": {
+        "category": "registry",
+        "parent": "NtOpenKeyEx",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 4,
+                "name": "TransactionHandle"
+            }
+        ]
+    },
+    "NtOpenMutant": {
+        "category": "mutant",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "MutantHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "MUTANT_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            }
+        ]
+    },
+    "NtOpenProcess": {
+        "category": "process",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "PROCESS_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            },
+            {
+                "type": "CLIENT_ID",
+                "index": 3,
+                "name": "ClientId",
+                "pointer": true
+            }
+        ]
+    },
+    "NtOpenProcessToken": {
+        "category": "token",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "TOKEN_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "HANDLE",
+                "name": "TokenHandle",
+                "pointer": true,
+                "out": true,
+                "conditional_indexes": [
+                    {
+                        "name": "NtOpenProcessToken",
+                        "index": 2
+                    },
+                    {
+                        "name": "NtOpenProcessTokenEx",
+                        "index": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "NtOpenProcessTokenEx": {
+        "category": "token",
+        "parent": "NtOpenProcessToken",
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "HandleAttributes"
+            }
+        ]
+    },
+    "NtOpenSection": {
+        "category": "section",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "SectionHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "SECTION_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            }
+        ]
+    },
+    "NtOpenSymbolicLinkObject": {
+        "category": "object",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "LinkHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            }
+        ]
+    },
+    "NtOpenThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ThreadHandle",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "THREAD_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "ObjectAttributes",
+                "pointer": true
+            },
+            {
+                "type": "CLIENT_ID",
+                "index": 3,
+                "name": "ClientId",
+                "pointer": true
+            }
+        ]
+    },
+    "NtOpenThreadToken": {
+        "category": "token",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ThreadHandle"
+            },
+            {
+                "type": "TOKEN_ACCESS_MASK",
+                "index": 1,
+                "name": "DesiredAccess"
+            },
+            {
+                "type": "bool",
+                "index": 2,
+                "name": "OpenAsSelf"
+            },
+            {
+                "type": "HANDLE",
+                "name": "TokenHandle",
+                "pointer": true,
+                "out": true,
+                "conditional_indexes": [
+                    {
+                        "name": "NtOpenThreadToken",
+                        "index": 3
+                    },
+                    {
+                        "name": "NtOpenThreadTokenEx",
+                        "index": 4
+                    }
+                ]
+            }
+        ]
+    },
+    "NtOpenThreadTokenEx": {
+        "category": "token",
+        "parent": "NtOpenThreadToken",
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "HandleAttributes",
+                "writeBase": "hex"
+            }
+        ]
+    },
+    "NtProtectVirtualMemory": {
+        "category": "memory",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "size_t",
+                "name": "BaseAddress",
+                "index": 1,
+                "pointer": true,
+                "writeBase": "hex",
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "NumberOfBytesToProtect",
+                "index": 2,
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "PAGE_PROTECTION",
+                "name": "NewAccessProtection",
+                "index": 3
+            },
+            {
+                "type": "PAGE_PROTECTION",
+                "name": "OldAccessProtection",
+                "index": 4,
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtPulseEvent": {
+        "category": "event",
+        "parent": "NtSetEvent"
+    },
+    "NtQueryAttributesFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 0,
+                "name": "ObjectAttributes",
+                "pointer": true
+            },
+            {
+                "type": "FILE_BASIC_INFORMATION",
+                "index": 1,
+                "name": "FileInformation",
+                "pointer": true,
+                "size_arg": "FileInformationLength",
+                "type_arg": "FileInformationClass",
+                "out": true
+            }
+        ]
+    },
+    "NtQueryDirectoryFileBase": {
+        "helper_base": true,
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "FileHandle"
+            },
+            {
+                "type": "HANDLE",
+                "index": 1,
+                "name": "Event",
+                "optional": true
+            },
+            {
+                "type": "IO_APC_ROUTINE",
+                "index": 2,
+                "name": "ApcRoutine",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "VOID",
+                "index": 3,
+                "name": "ApcContext",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "index": 4,
+                "name": "IoStatusBlock",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "FILE_INFORMATION",
+                "index": 5,
+                "name": "FileInformation",
+                "out": true,
+                "pointer": true,
+                "size_arg": "FileInformationLength",
+                "type_arg": "FileInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "index": 6,
+                "name": "FileInformationLength"
+            },
+            {
+                "type": "FILE_INFORMATION_CLASS",
+                "index": 7,
+                "name": "FileInformationClass"
+            },
+            {
+                "type": "UNICODE_STRING",
+                "index": 9,
+                "name": "FileName",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtQueryDirectoryFile": {
+        "category": "file",
+        "parent": "NtQueryDirectoryFileBase",
+        "arguments": [
+            {
+                "type": "bool",
+                "index": 8,
+                "name": "ReturnSingleEntry"
+            },
+            {
+                "type": "bool",
+                "index": 10,
+                "name": "RestartScan"
+            }
+        ]
+    },
+    "NtQueryDirectoryFileEx": {
+        "category": "file",
+        "parent": "NtQueryDirectoryFileBase",
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "index": 8,
+                "name": "QueryFlags"
+            }
+        ]
+    },
+    "NtQueryFullAttributesFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 0,
+                "name": "ObjectAttributes",
+                "pointer": true
+            },
+            {
+                "type": "FILE_NETWORK_OPEN_INFORMATION",
+                "index": 1,
+                "name": "FileInformation",
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtQueryInformationFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "FileHandle"
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "index": 1,
+                "name": "IoStatusBlock",
+                "pointer": true
+            },
+            {
+                "type": "FILE_INFORMATION",
+                "index": 2,
+                "name": "FileInformation",
+                "pointer": true,
+                "size_arg": "FileInformationLength",
+                "type_arg": "FileInformationClass",
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "FileInformationLength"
+            },
+            {
+                "type": "FILE_INFORMATION_CLASS",
+                "index": 4,
+                "name": "FileInformationClass"
+            }
+        ]
+    },
+    "NtQueryInformationProcess": {
+        "category": "process",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "PROCESS_INFORMATION_CLASS",
+                "index": 1,
+                "name": "ProcessInformationClass"
+            },
+            {
+                "type": "PROCESS_INFORMATION",
+                "index": 2,
+                "name": "ProcessInformation",
+                "pointer": true,
+                "out": true,
+                "type_arg": "ProcessInformationClass",
+                "size_args": [
+                    "ResultLength",
+                    "ProcessInformationLength"
+                ]
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "ProcessInformationLength"
+            },
+            {
+                "type": "uint32_t",
+                "index": 4,
+                "name": "ResultLength",
+                "optional": true,
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtQueryInformationThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ThreadHandle"
+            },
+            {
+                "type": "THREAD_INFORMATION_CLASS",
+                "index": 1,
+                "name": "ThreadInformationClass"
+            },
+            {
+                "type": "THREAD_INFORMATION",
+                "index": 2,
+                "name": "ThreadInformation",
+                "pointer": true,
+                "type_arg": "ThreadInformationClass",
+                "out": true,
+                "size_args": [
+                    "ResultLength",
+                    "ThreadInformationLength"
+                ]
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "ThreadInformationLength"
+            },
+            {
+                "type": "uint32_t",
+                "index": 4,
+                "name": "ResultLength",
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtQueryInformationToken": {
+        "category": "token",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "TokenHandle"
+            },
+            {
+                "type": "TOKEN_INFORMATION_CLASS",
+                "index": 1,
+                "name": "TokenInformationClass"
+            },
+            {
+                "type": "TOKEN_INFORMATION",
+                "index": 2,
+                "name": "TokenInformation",
+                "pointer": true,
+                "out": true,
+                "type_arg": "TokenInformationClass",
+                "size_args": [
+                    "ResultLength",
+                    "TokenInformationLength"
+                ]
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "TokenInformationLength"
+            },
+            {
+                "type": "uint32_t",
+                "index": 4,
+                "name": "ResultLength",
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtQueryKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "KeyHandle"
+            },
+            {
+                "type": "KEY_INFORMATION_CLASS",
+                "index": 1,
+                "name": "KeyInformationClass"
+            },
+            {
+                "type": "KEY_INFORMATION",
+                "index": 2,
+                "name": "KeyInformation",
+                "pointer": true,
+                "out": true,
+                "size_args": [
+                    "ResultLength",
+                    "KeyInformationLength"
+                ],
+                "type_arg": "KeyInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "KeyInformationLength"
+            },
+            {
+                "type": "uint32_t",
+                "index": 4,
+                "name": "ResultLength",
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtQueryMultipleValueKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "KeyHandle"
+            },
+            {
+                "type": "KEY_VALUE_ENTRY",
+                "index": 1,
+                "name": "ValueEntries",
+                "pointer": true,
+                "arraySize": "EntryCount",
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "EntryCount"
+            },
+            {
+                "type": "VOID",
+                "index": 3,
+                "name": "ValueBuffer",
+                "out": true,
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 4,
+                "name": "BufferLength",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 5,
+                "name": "RequiredBufferLength",
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtQuerySection": {
+        "category": "section",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "SectionHandle"
+            },
+            {
+                "type": "SECTION_INFORMATION_CLASS",
+                "index": 1,
+                "name": "SectionInformationClass"
+            },
+            {
+                "type": "SECTION_INFORMATION",
+                "index": 2,
+                "name": "SectionInformationBuffer",
+                "pointer": true,
+                "out": true,
+                "size_args": [
+                    "ResultLength",
+                    "SectionInformationLength"
+                ],
+                "type_arg": "SectionInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "SectionInformationLength"
+            },
+            {
+                "type": "uint32_t",
+                "index": 4,
+                "name": "ResultLength",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtQuerySymbolicLinkObject": {
+        "category": "object",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "LinkHandle"
+            },
+            {
+                "type": "UNICODE_STRING",
+                "index": 1,
+                "name": "LinkTarget",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "ReturnedLength",
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtQuerySystemInformation": {
+        "category": "system",
+        "arguments": [
+            {
+                "type": "SYSTEM_INFORMATION_CLASS",
+                "index": 0,
+                "name": "SystemInformationClass"
+            },
+            {
+                "type": "SYSTEM_INFORMATION",
+                "name": "SystemInformation",
+                "pointer": true,
+                "out": true,
+                "size_args": [
+                    "ResultLength",
+                    "SystemInformationLength"
+                ],
+                "type_arg": "SystemInformationClass",
+                "conditional_indexes": [
+                    {
+                        "name": "NtQuerySystemInformation",
+                        "index": 1
+                    },
+                    {
+                        "name": "NtQuerySystemInformationEx",
+                        "index": 3
+                    }
+                ]
+            },
+            {
+                "type": "uint32_t",
+                "name": "SystemInformationLength",
+                "conditional_indexes": [
+                    {
+                        "name": "NtQuerySystemInformation",
+                        "index": 2
+                    },
+                    {
+                        "name": "NtQuerySystemInformationEx",
+                        "index": 4
+                    }
+                ]
+            },
+            {
+                "type": "uint32_t",
+                "name": "ResultLength",
+                "pointer": true,
+                "out": true,
+                "optional": true,
+                "conditional_indexes": [
+                    {
+                        "name": "NtQuerySystemInformation",
+                        "index": 3
+                    },
+                    {
+                        "name": "NtQuerySystemInformationEx",
+                        "index": 5
+                    }
+                ]
+            }
+        ]
+    },
+    "NtQuerySystemInformationEx": {
+        "category": "system",
+        "parent": "NtQuerySystemInformation",
+        "arguments": [
+            {
+                "type": "VOID",
+                "index": 1,
+                "name": "InputBuffer",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "InputBufferLength"
+            }
+        ]
+    },
+    "NtQuerySystemTime": {
+        "category": "time",
+        "arguments": [
+            {
+                "type": "WindowsTime",
+                "index": 0,
+                "name": "SystemTime",
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtEnumerateQueryValueKey": {
+        "category": "registry",
+        "helper_base": true,
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "KeyHandle",
+                "index": 0
+            },
+            {
+                "type": "KEY_VALUE_INFORMATION_CLASS",
+                "name": "KeyValueInformationClass",
+                "index": 2
+            },
+            {
+                "type": "KEY_VALUE_INFORMATION",
+                "name": "KeyValueInformation",
+                "index": 3,
+                "pointer": true,
+                "out": true,
+                "size_args": [
+                    "ResultLength",
+                    "KeyValueInformationLength"
+                ],
+                "TODO_allow_partial": true,
+                "comment": "This can partially succeed, right now we don't handle that.",
+                "type_arg": "KeyValueInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "name": "KeyValueInformationLength",
+                "index": 4
+            },
+            {
+                "type": "uint32_t",
+                "name": "ResultLength",
+                "index": 5,
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtQueryValueKey": {
+        "category": "registry",
+        "parent": "NtEnumerateQueryValueKey",
+        "arguments": [
+            {
+                "type": "UNICODE_STRING",
+                "name": "ValueName",
+                "index": 1,
+                "pointer": true
+            }
+        ]
+    },
+    "NtQueryVirtualMemory": {
+        "category": "memory",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ProcessHandle",
+                "index": 0
+            },
+            {
+                "type": "VOID",
+                "name": "BaseAddress",
+                "index": 1,
+                "pointer": true
+            },
+            {
+                "type": "MEMORY_INFORMATION_CLASS",
+                "name": "MemoryInformationClass",
+                "index": 2
+            },
+            {
+                "type": "MEMORY_INFORMATION",
+                "name": "MemoryInformation",
+                "index": 3,
+                "pointer": true,
+                "out": true,
+                "size_args": [
+                    "ResultLength",
+                    "MemoryInformationLength"
+                ],
+                "type_arg": "MemoryInformationClass"
+            },
+            {
+                "type": "uint64_t",
+                "name": "MemoryInformationLength",
+                "index": 4
+            },
+            {
+                "type": "size_t",
+                "name": "ResultLength",
+                "index": 5,
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtQueryVolumeInformationFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "FileHandle"
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "index": 1,
+                "name": "IoStatusBlock",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "FS_INFORMATION",
+                "index": 2,
+                "name": "FileSystemInformation",
+                "pointer": true,
+                "size_arg": "FileSystemInformationLength",
+                "type_arg": "FileSystemInformationClass",
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "FileSystemInformationLength"
+            },
+            {
+                "type": "FS_INFORMATION_CLASS",
+                "index": 4,
+                "name": "FileSystemInformationClass"
+            }
+        ]
+    },
+    "NtQueueApcThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ThreadHandle"
+            },
+            {
+                "type": "IO_APC_ROUTINE",
+                "index": 1,
+                "name": "ApcRoutine",
+                "pointer": true
+            },
+            {
+                "type": "VOID",
+                "index": 2,
+                "name": "ApcRoutineContext",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "VOID",
+                "index": 3,
+                "name": "ApcStatusBlock",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 4,
+                "name": "ApcReserved",
+                "optional": true
+            }
+        ]
+    },
+    "NtReadWriteFile": {
+        "helper_base": true,
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "FileHandle"
+            },
+            {
+                "type": "HANDLE",
+                "index": 1,
+                "name": "Event",
+                "optional": true
+            },
+            {
+                "type": "IO_APC_ROUTINE",
+                "index": 2,
+                "name": "ApcRoutine",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "VOID",
+                "index": 3,
+                "name": "ApcContext",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "index": 4,
+                "name": "IoStatusBlock",
+                "pointer": true
+            },
+            {
+                "type": "VOID",
+                "index": 5,
+                "name": "Buffer",
+                "pointer": true,
+                "note": "This is an IN on WriteFile, and an OUT on ReadFile"
+            },
+            {
+                "type": "uint32_t",
+                "index": 6,
+                "name": "Length"
+            },
+            {
+                "type": "int64_t",
+                "index": 7,
+                "name": "ByteOffset",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 8,
+                "name": "Key",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtReadFile": {
+        "category": "file",
+        "parent": "NtReadWriteFile"
+    },
+    "NtReadVirtualMemory": {
+        "category": "memory",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "VOID",
+                "index": 1,
+                "name": "BaseAddress",
+                "pointer": true
+            },
+            {
+                "type": "VOID",
+                "index": 2,
+                "name": "Buffer",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "BufferSize"
+            },
+            {
+                "type": "uint32_t",
+                "index": 4,
+                "name": "ResultLength",
+                "pointer": true,
+                "optional": true,
+                "out": true
+            }
+        ]
+    },
+    "NtRemoveIoCompletion": {
+        "category": "misc",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "IoCompletionHandle"
+            },
+            {
+                "type": "uint32_t",
+                "index": 1,
+                "name": "CompletionKey",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "CompletionValue",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "index": 3,
+                "name": "IoStatusBlock",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "int64_t",
+                "index": 4,
+                "name": "Timeout",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtRemoveIoCompletionEx": {
+        "category": "misc",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "IoCompletionHandle"
+            },
+            {
+                "type": "FILE_IO_COMPLETION_INFORMATION",
+                "index": 1,
+                "name": "IoCompletionInformation",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "Count"
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "NumEntriesRemoved",
+                "pointer": true
+            },
+            {
+                "type": "int64_t",
+                "index": 4,
+                "name": "Timeout",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "bool",
+                "index": 5,
+                "name": "Alertable"
+            }
+        ]
+    },
+    "NtRemoveProcessDebug": {
+        "category": "process",
+        "parent": "NtDebugActiveProcess"
+    },
+    "NtRenameKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "KeyHandle"
+            },
+            {
+                "type": "UNICODE_STRING",
+                "index": 1,
+                "name": "NewName",
+                "pointer": true
+            }
+        ]
+    },
+    "NtReplaceKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 0,
+                "name": "NewHiveFileName",
+                "pointer": true
+            },
+            {
+                "type": "HANDLE",
+                "index": 1,
+                "name": "KeyHandle"
+            },
+            {
+                "type": "OBJECT_ATTRIBUTES",
+                "index": 2,
+                "name": "BackupHiveFileName",
+                "pointer": true
+            }
+        ]
+    },
+    "NtReplyPort": {
+        "category": "port",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "PortHandle"
+            },
+            {
+                "type": "PORT_MESSAGE",
+                "index": 1,
+                "name": "Reply",
+                "pointer": true
+            }
+        ]
+    },
+    "NtRequestPort": {
+        "category": "port",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "PortHandle"
+            },
+            {
+                "type": "PORT_MESSAGE",
+                "index": 1,
+                "name": "Request",
+                "pointer": true
+            }
+        ]
+    },
+    "NtRequestWaitReplyPort": {
+        "category": "port",
+        "parent": "NtRequestPort",
+        "arguments": [
+            {
+                "type": "PORT_MESSAGE",
+                "index": 2,
+                "name": "IncomingReply",
+                "pointer": true,
+                "out": true
+            }
+        ]
+    },
+    "NtResetEvent": {
+        "category": "event",
+        "parent": "NtSetEvent"
+    },
+    "NtResumeThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ThreadHandle"
+            },
+            {
+                "type": "uint32_t",
+                "index": 1,
+                "name": "SuspendCount",
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtSaveKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "KeyHandle"
+            },
+            {
+                "type": "HANDLE",
+                "index": 1,
+                "name": "FileHandle"
+            }
+        ]
+    },
+    "NtSaveKeyEx": {
+        "category": "registry",
+        "parent": "NtSaveKey",
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "Format",
+                "writeBase": "hex"
+            }
+        ]
+    },
+    "NtSetContextThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "name": "ThreadHandle",
+                "index": 0
+            },
+            {
+                "type": "VOID",
+                "name": "Context",
+                "index": 1,
+                "pointer": true
+            }
+        ]
+    },
+    "NtSetEvent": {
+        "category": "event",
+        "parent": "NtClearEvent",
+        "arguments": [
+            {
+                "type": "int32_t",
+                "index": 1,
+                "name": "PreviousState",
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtSetEventBoostPriority": {
+        "category": "event",
+        "parent": "NtClearEvent"
+    },
+    "NtSetInformationFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "FileHandle"
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "index": 1,
+                "name": "IoStatusBlock",
+                "pointer": true
+            },
+            {
+                "type": "FILE_INFORMATION",
+                "index": 2,
+                "name": "FileInformation",
+                "pointer": true,
+                "size_arg": "FileInformationLength",
+                "type_arg": "FileInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "FileInformationLength"
+            },
+            {
+                "type": "FILE_INFORMATION_CLASS",
+                "index": 4,
+                "name": "FileInformationClass"
+            }
+        ]
+    },
+    "NtSetInformationProcess": {
+        "category": "process",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "PROCESS_INFORMATION_CLASS",
+                "index": 1,
+                "name": "ProcessInformationClass"
+            },
+            {
+                "type": "PROCESS_INFORMATION",
+                "index": 2,
+                "name": "ProcessInformation",
+                "pointer": true,
+                "size_arg": "ProcessInformationLength",
+                "type_arg": "ProcessInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "ProcessInformationLength"
+            }
+        ]
+    },
+    "NtSetInformationThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ThreadHandle"
+            },
+            {
+                "type": "THREAD_INFORMATION_CLASS",
+                "index": 1,
+                "name": "ThreadInformationClass"
+            },
+            {
+                "type": "THREAD_INFORMATION",
+                "index": 2,
+                "name": "ThreadInformation",
+                "pointer": true,
+                "size_arg": "ThreadInformationLength",
+                "type_arg": "ThreadInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "ThreadInformationLength"
+            }
+        ]
+    },
+    "NtSetInformationToken": {
+        "category": "token",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "TokenHandle"
+            },
+            {
+                "type": "TOKEN_INFORMATION_CLASS",
+                "index": 1,
+                "name": "TokenInformationClass"
+            },
+            {
+                "type": "TOKEN_INFORMATION",
+                "index": 2,
+                "name": "TokenInformation",
+                "pointer": true,
+                "size_arg": "TokenInformationLength",
+                "type_arg": "TokenInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "TokenInformationLength"
+            }
+        ]
+    },
+    "NtSetSystemInformation": {
+        "category": "system",
+        "arguments": [
+            {
+                "type": "SYSTEM_INFORMATION_CLASS",
+                "index": 0,
+                "name": "SystemInformationClass"
+            },
+            {
+                "type": "SYSTEM_INFORMATION",
+                "index": 1,
+                "name": "SystemInformation",
+                "pointer": true,
+                "size_arg": "SystemInformationLength",
+                "type_arg": "SystemInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "name": "SystemInformationLength",
+                "index": 2
+            }
+        ]
+    },
+    "NtSetSystemTime": {
+        "category": "time",
+        "arguments": [
+            {
+                "type": "WindowsTime",
+                "index": 0,
+                "name": "SystemTime",
+                "pointer": true
+            },
+            {
+                "type": "WindowsTime",
+                "index": 1,
+                "name": "PreviousTime",
+                "pointer": true
+            }
+        ]
+    },
+    "NtSetValueKey": {
+        "category": "registry",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "KeyHandle"
+            },
+            {
+                "type": "UNICODE_STRING",
+                "index": 1,
+                "name": "ValueName",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "TitleIndex"
+            },
+            {
+                "type": "REG_TYPE",
+                "index": 3,
+                "name": "Type"
+            },
+            {
+                "type": "KEY_VALUE",
+                "index": 4,
+                "name": "Data",
+                "pointer": true,
+                "type_arg": "Type",
+                "size_arg": "DataSize"
+            },
+            {
+                "type": "uint32_t",
+                "index": 5,
+                "name": "DataSize"
+            }
+        ]
+    },
+    "NtSetVolumeInformationFile": {
+        "category": "file",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "FileHandle"
+            },
+            {
+                "type": "IO_STATUS_BLOCK",
+                "index": 1,
+                "name": "IoStatusBlock",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "FS_INFORMATION",
+                "index": 2,
+                "name": "FileSystemInformation",
+                "pointer": true,
+                "size_arg": "FileSystemInformationLength",
+                "type_arg": "FileSystemInformationClass"
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "FileSystemInformationLength"
+            },
+            {
+                "type": "FS_INFORMATION_CLASS",
+                "index": 4,
+                "name": "FileSystemInformationClass"
+            }
+        ]
+    },
+    "NtShutdownSystem": {
+        "category": "system",
+        "arguments": [
+            {
+                "type": "SHUTDOWN_ACTION",
+                "index": 0,
+                "name": "Action"
+            }
+        ]
+    },
+    "NtSuspendThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ThreadHandle"
+            },
+            {
+                "type": "uint32_t",
+                "index": 1,
+                "name": "PreviousSuspendCount",
+                "out": true,
+                "optional": true,
+                "pointer": true
+            }
+        ]
+    },
+    "NtTerminateProcess": {
+        "category": "process",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle",
+                "optional": true
+            },
+            {
+                "type": "NTSTATUS",
+                "index": 1,
+                "name": "ExitStatus"
+            }
+        ]
+    },
+    "NtTerminateThread": {
+        "category": "thread",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ThreadHandle"
+            },
+            {
+                "type": "NTSTATUS",
+                "index": 1,
+                "name": "ExitStatus"
+            }
+        ]
+    },
+    "NtUnloadDriver": {
+        "category": "driver",
+        "parent": "NtLoadDriver"
+    },
+    "NtUnlockVirtualMemory": {
+        "category": "memory",
+        "parent": "NtLockVirtualMemory"
+    },
+    "NtUnmapViewOfSection": {
+        "category": "section",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "VOID",
+                "index": 1,
+                "name": "BaseAddress",
+                "pointer": true
+            }
+        ]
+    },
+    "NtWaitForObjectsBase": {
+        "helper_base": true,
+        "arguments": [
+            {
+                "type": "bool",
+                "name": "Alertable",
+                "conditional_indexes": [
+                    {
+                        "name": "NtWaitForSingleObject",
+                        "index": 1
+                    },
+                    {
+                        "name": "NtWaitForMultipleObjects",
+                        "index": 3
+                    }
+                ]
+            },
+            {
+                "type": "int64_t",
+                "name": "Timeout",
+                "pointer": true,
+                "optional": true,
+                "conditional_indexes": [
+                    {
+                        "name": "NtWaitForSingleObject",
+                        "index": 2
+                    },
+                    {
+                        "name": "NtWaitForMultipleObjects",
+                        "index": 4
+                    }
+                ]
+            }
+        ]
+    },
+    "NtWaitForSingleObject": {
+        "category": "object",
+        "parent": "NtWaitForObjectsBase",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "Handle"
+            }
+        ]
+    },
+    "NtWaitForMultipleObjects": {
+        "category": "object",
+        "parent": "NtWaitForObjectsBase",
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "index": 0,
+                "name": "HandleCount"
+            },
+            {
+                "type": "VOID",
+                "index": 1,
+                "name": "HandleArray",
+                "pointer": true
+            },
+            {
+                "type": "OBJECT_WAIT_TYPE",
+                "index": 2,
+                "name": "WaitType"
+            }
+        ]
+    },
+    "NtWriteFile": {
+        "category": "file",
+        "parent": "NtReadWriteFile"
+    },
+    "NtWriteVirtualMemory": {
+        "category": "memory",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "ProcessHandle"
+            },
+            {
+                "type": "VOID",
+                "index": 1,
+                "name": "BaseAddress",
+                "pointer": true
+            },
+            {
+                "type": "VOID",
+                "index": 2,
+                "name": "Buffer",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 3,
+                "name": "BufferSize"
+            },
+            {
+                "type": "uint32_t",
+                "index": 4,
+                "name": "ResultLength",
+                "pointer": true,
+                "optional": true,
+                "out": true
+            }
+        ]
+    },
+    "NtQueryPerformanceCounter": {
+        "category": "system",
+        "arguments": [
+            {
+                "type": "int64_t",
+                "index": 0,
+                "name": "PerformanceCounter",
+                "pointer": true,
+                "out": true
+            },
+            {
+                "type": "int64_t",
+                "index": 1,
+                "name": "PerformanceFrequency",
+                "pointer": true,
+                "out": true,
+                "optional": true
+            }
+        ]
+    },
+    "NtTraceControl": {
+        "category": "misc",
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "index": 0,
+                "name": "FunctionCode",
+                "in": true,
+                "out": false
+            },
+            {
+                "type": "VOID",
+                "index": 1,
+                "name": "InBuffer",
+                "in": true,
+                "out": false,
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "InBufferLen",
+                "in": true,
+                "out": false,
+                "optional": true
+            },
+            {
+                "type": "VOID",
+                "index": 3,
+                "name": "OutBuffer",
+                "pointer": true,
+                "in": true,
+                "out": false,
+                "optional": true
+            },
+            {
+                "type": "VOID",
+                "index": 4,
+                "name": "OutBufferLen",
+                "pointer": true,
+                "in": true,
+                "out": false,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "index": 5,
+                "name": "ReturnSize",
+                "pointer": true,
+                "in": true,
+                "out": false
+            }
+        ]
+    },
+    "NtTraceEvent": {
+        "category": "misc",
+        "arguments": [
+            {
+                "type": "HANDLE",
+                "index": 0,
+                "name": "TraceHandle",
+                "in": true,
+                "out": false
+            },
+            {
+                "type": "uint32_t",
+                "index": 1,
+                "name": "Flags",
+                "in": true,
+                "out": false
+            },
+            {
+                "type": "uint32_t",
+                "index": 2,
+                "name": "FieldSize",
+                "in": true,
+                "out": false
+            },
+            {
+                "type": "VOID",
+                "index": 3,
+                "name": "Fields",
+                "pointer": true,
+                "in": true,
+                "out": false
+            }
+        ]
+    }
+}

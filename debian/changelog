@@ -1,0 +1,23 @@
+introvirt (0.55.0~focal4) focal; urgency=medium
+
+  * Enable link time optimizations
+
+ -- Stephen Pape <srpape@gmail.com>  Wed, 17 Mar 2021 13:20:44 -0400
+
+introvirt (0.55.0~focal3) focal; urgency=medium
+
+  * Add clang-format to build requirements
+
+ -- Stephen Pape <srpape@gmail.com>  Wed, 17 Mar 2021 13:07:50 -0400
+
+introvirt (0.55.0~focal2) focal; urgency=medium
+
+  * Add doxygen to build requirements
+
+ -- Stephen Pape <srpape@gmail.com>  Wed, 17 Mar 2021 12:59:59 -0400
+
+introvirt (0.55.0~focal1) focal; urgency=low
+
+  * Initial upload!
+
+ -- Stephen Pape <srpape@gmail.com>  Tue, 16 Mar 2021 17:34:36 -0400
