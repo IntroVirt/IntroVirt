@@ -1,0 +1,29 @@
+introvirt (0.55.0~bionic5) bionic; urgency=medium
+
+  * Fix bionic dependencies
+
+ -- Stephen Pape <srpape@gmail.com>  Fri, 19 Mar 2021 14:34:17 -0400
+
+introvirt (0.55.0~bionic4) bionic; urgency=medium
+
+  * Enable link time optimizations
+
+ -- Stephen Pape <srpape@gmail.com>  Wed, 17 Mar 2021 13:20:44 -0400
+
+introvirt (0.55.0~bionic3) bionic; urgency=medium
+
+  * Add clang-format to build requirements
+
+ -- Stephen Pape <srpape@gmail.com>  Wed, 17 Mar 2021 13:07:50 -0400
+
+introvirt (0.55.0~bionic2) bionic; urgency=medium
+
+  * Add doxygen to build requirements
+
+ -- Stephen Pape <srpape@gmail.com>  Wed, 17 Mar 2021 12:59:59 -0400
+
+introvirt (0.55.0~bionic1) bionic; urgency=low
+
+  * Initial upload!
+
+ -- Stephen Pape <srpape@gmail.com>  Tue, 16 Mar 2021 17:34:36 -0400

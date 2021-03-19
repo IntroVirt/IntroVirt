@@ -1,0 +1,68 @@
+Source: introvirt
+Section: devel
+Priority: optional
+Maintainer: Stephen Pape <srpape@gmail.com>
+Build-Depends: cmake,
+               libcurl4-openssl-dev,
+               libboost-dev,
+               libboost-program-options-dev,
+               liblog4cxx-dev,
+               libmspdb-dev,
+               python3-jinja2,
+               python3,
+               doxygen,
+               clang-format,
+               debhelper (>= 8.9.7),
+               linux-libc-dev (>= 2.6.27) [i386]
+Standards-Version: 4.4.0
+Homepage: https://github.com/IntroVirt/IntroVirt
+Vcs-Browser: https://github.com/IntroVirt/IntroVirt
+Vcs-Git: https://github.com/IntroVirt/IntroVirt.git
+
+Package: libintrovirt-dev
+Section: libdevel
+Architecture: any
+Depends: libc6-dev,
+         libintrovirt1 (= ${binary:Version}),
+         libmspdb-dev,
+         ${misc:Depends}
+Multi-Arch: same
+Description: development library and header files for libintrovirt1
+ Headers, static libraries, and documentation for the libintrovirt library.
+ .
+ Virtual machine introspection library
+
+Package: libintrovirt1
+Section: libs
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${misc:Depends},
+         libcurl4,
+         liblog4cxx10v5,
+         libmspdb1,
+         ${shlibs:Depends}
+Multi-Arch: same
+Description: virtual machine introspection library
+ Virtual machine introspection library
+
+Package: libintrovirt-doc
+Section: doc
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${misc:Depends}
+Multi-Arch: same
+Description: virtual machine introspection library
+ Documentation for libintrovirt1
+
+Package: introvirt-tools
+Section: utils
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: libintrovirt1 (= ${binary:Version}),
+        libboost-program-options1.65.1,
+        ${misc:Depends},         
+        ${shlibs:Depends}
+Multi-Arch: same
+Description: tools for virtual machine introspection
+ Virtual machine introspection library tools
+
