@@ -60,7 +60,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: libintrovirt1 (= ${binary:Version}),
         libboost-program-options1.65.1,
-        ${misc:Depends},         
+        ${misc:Depends}, 
         ${shlibs:Depends}
 Multi-Arch: same
 Description: tools for virtual machine introspection

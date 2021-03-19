@@ -1,3 +1,15 @@
+introvirt (0.55.0~focal6) focal; urgency=medium
+
+  * Fix postinstall script for libintrovirt1
+
+ -- Stephen Pape <srpape@gmail.com>  Fri, 19 Mar 2021 19:09:15 -0400
+
+introvirt (0.55.0~focal5) focal; urgency=medium
+
+  * Fix dependencies
+
+ -- Stephen Pape <srpape@gmail.com>  Fri, 19 Mar 2021 14:34:17 -0400
+
 introvirt (0.55.0~focal4) focal; urgency=medium
 
   * Enable link time optimizations
