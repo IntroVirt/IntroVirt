@@ -17,7 +17,7 @@
 
 #include "CRYPTOAPI_BLOB.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 namespace introvirt {
 namespace windows {
@@ -30,15 +30,13 @@ namespace crypt32 {
  */
 class CRYPT_ALGORITHM_IDENTIFIER {
   public:
-    virtual GuestVirtualAddress pszObjId() const = 0;
-    virtual void pszObjId(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<char[]> pszObjId() const = 0;
+    virtual void pszObjId(const guest_ptr<char[]>& ptr) = 0;
 
     virtual const CRYPTOAPI_BLOB& Parameters() const = 0;
     virtual CRYPTOAPI_BLOB& Parameters() = 0;
 
-    virtual std::string szObjId() const = 0;
-
-    static std::unique_ptr<CRYPT_ALGORITHM_IDENTIFIER> make_unique(const GuestVirtualAddress& gva,
+    static std::shared_ptr<CRYPT_ALGORITHM_IDENTIFIER> make_shared(const guest_ptr<void>& ptr,
                                                                    bool x64);
 
     /**

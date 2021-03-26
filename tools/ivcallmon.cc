@@ -54,14 +54,21 @@ class BreakpointHandler final {
         return_rsp_ = event.vcpu().registers().rsp() + 8;
         // std::cout << "    Return RSP 0x" << std::hex << return_rsp_ << '\n' << std::dec;
 
-        GuestVirtualAddress return_address_ptr(event.vcpu(), event.vcpu().registers().rsp());
-        GuestVirtualAddress return_address(
-            return_address_ptr.create(*guest_ptr<uint64_t>(return_address_ptr)));
+        const auto& vcpu = event.vcpu();
+        const auto& regs = vcpu.registers();
+
+        // Read the value at RSP
+        guest_ptr<guest_size_t*, guest_size_t> ppreturn_address(vcpu, regs.rsp());
+        auto test = ppreturn_address.get();
+
+        // Create another pointer using the value at RSP
+        guest_ptr<guest_size_t> preturn_address = ppreturn_address.get();
 
         // std::cout << "    Return RIP " << return_address << '\n';
 
-        return_bp_ = domain_->create_breakpoint(
-            return_address, std::bind(&BreakpointHandler::return_hit, this, std::placeholders::_1));
+        return_bp_ =
+            domain_->create_breakpoint(preturn_address, std::bind(&BreakpointHandler::return_hit,
+                                                                  this, std::placeholders::_1));
 
         std::cout.flush();
     }
@@ -99,7 +106,7 @@ class BreakpointHandler final {
         return *this;
     }
 
-    BreakpointHandler(Domain& domain, const GuestAddress& address, const std::string& name,
+    BreakpointHandler(Domain& domain, const guest_ptr<void>& address, const std::string& name,
                       uint64_t pid)
         : domain_(&domain), name_(name), pid_(pid) {
         bp_ = domain.create_breakpoint(
@@ -151,7 +158,8 @@ class CallMonitor final : public EventCallback {
             if (boost::algorithm::ends_with(file_object->FileName(), "ntdll.dll")) {
                 // Found it
                 // Breakpoint everything exported
-                auto lib = pe::PE::make_unique(entry->StartingAddress());
+                auto lib =
+                    pe::PE::make_unique(guest_ptr<void>(event.vcpu(), entry->StartingAddress()));
                 auto& pdb = lib->pdb();
                 for (const auto& symbol : pdb.global_symbols()) {
                     if (symbol->function() || symbol->code()) {
@@ -162,9 +170,10 @@ class CallMonitor final : public EventCallback {
                             continue;
                         std::cout << "Adding breakpoint for " << symbol->name() << '\n';
                         try {
-                            breakpoints_.emplace_back(
-                                event.domain(), entry->StartingAddress() + symbol->image_offset(),
-                                symbol->name(), process.UniqueProcessId());
+                            guest_ptr<void> ptr(event.vcpu(),
+                                                entry->StartingAddress() + symbol->image_offset());
+                            breakpoints_.emplace_back(event.domain(), ptr, symbol->name(),
+                                                      process.UniqueProcessId());
                         } catch (VirtualAddressNotPresentException& ex) {
                             std::cout << "  Not present!\n";
                         }

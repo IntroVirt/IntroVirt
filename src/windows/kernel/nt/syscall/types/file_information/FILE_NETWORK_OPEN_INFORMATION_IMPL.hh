@@ -40,35 +40,35 @@ struct _FILE_NETWORK_OPEN_INFORMATION {
 class FILE_NETWORK_OPEN_INFORMATION_IMPL final : public FILE_NETWORK_OPEN_INFORMATION {
   public:
     WindowsTime CreationTime() const override {
-        return WindowsTime::from_windows_time(data_->CreationTime);
+        return WindowsTime::from_windows_time(ptr_->CreationTime);
     }
     WindowsTime LastAccessTime() const override {
-        return WindowsTime::from_windows_time(data_->LastAccessTime);
+        return WindowsTime::from_windows_time(ptr_->LastAccessTime);
     }
     WindowsTime LastWriteTime() const override {
-        return WindowsTime::from_windows_time(data_->LastWriteTime);
+        return WindowsTime::from_windows_time(ptr_->LastWriteTime);
     }
     WindowsTime ChangeTime() const override {
-        return WindowsTime::from_windows_time(data_->ChangeTime);
+        return WindowsTime::from_windows_time(ptr_->ChangeTime);
     }
-    uint64_t EndOfFile() const override { return data_->EndOfFile; }
+    uint64_t EndOfFile() const override { return ptr_->EndOfFile; }
 
     FILE_ATTRIBUTES FileAttributes() const override {
-        return FILE_ATTRIBUTES(data_->FileAttributes);
+        return FILE_ATTRIBUTES(ptr_->FileAttributes);
     }
 
-    void CreationTime(WindowsTime time) override { data_->CreationTime = time.windows_time(); }
-    void LastAccessTime(WindowsTime time) override { data_->LastAccessTime = time.windows_time(); }
-    void LastWriteTime(WindowsTime time) override { data_->LastWriteTime = time.windows_time(); }
-    void ChangeTime(WindowsTime time) override { data_->ChangeTime = time.windows_time(); }
-    void EndOfFile(uint64_t eof) override { data_->EndOfFile = eof; }
-    void FileAttributes(FILE_ATTRIBUTES atts) override { data_->FileAttributes = atts.get(); }
+    void CreationTime(WindowsTime time) override { ptr_->CreationTime = time.windows_time(); }
+    void LastAccessTime(WindowsTime time) override { ptr_->LastAccessTime = time.windows_time(); }
+    void LastWriteTime(WindowsTime time) override { ptr_->LastWriteTime = time.windows_time(); }
+    void ChangeTime(WindowsTime time) override { ptr_->ChangeTime = time.windows_time(); }
+    void EndOfFile(uint64_t eof) override { ptr_->EndOfFile = eof; }
+    void FileAttributes(FILE_ATTRIBUTES atts) override { ptr_->FileAttributes = atts.get(); }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileNetworkOpenInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -76,13 +76,12 @@ class FILE_NETWORK_OPEN_INFORMATION_IMPL final : public FILE_NETWORK_OPEN_INFORM
 
     Json::Value json() const override;
 
-    FILE_NETWORK_OPEN_INFORMATION_IMPL(const GuestVirtualAddress& gva);
-    FILE_NETWORK_OPEN_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_NETWORK_OPEN_INFORMATION_IMPL(const guest_ptr<void>& ptr);
+    FILE_NETWORK_OPEN_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_NETWORK_OPEN_INFORMATION> data_;
+    guest_ptr<structs::_FILE_NETWORK_OPEN_INFORMATION> ptr_;
 };
 
 } // namespace nt

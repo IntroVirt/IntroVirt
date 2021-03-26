@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 
@@ -36,13 +36,13 @@ class SecBufferDesc {
     virtual uint32_t cBuffers() const = 0;
     virtual void cBuffers(uint32_t cBuffers) = 0;
 
-    virtual GuestVirtualAddress pBuffers() const = 0;
-    virtual void pBuffers(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> pBuffers() const = 0;
+    virtual void pBuffers(const guest_ptr<void>& ptr) = 0;
 
     /**
      * @brief Create a SecBufferDesc
      */
-    static std::unique_ptr<SecBufferDesc> make_unique(const GuestVirtualAddress& gva, bool x64);
+    static std::shared_ptr<SecBufferDesc> make_shared(const guest_ptr<void>& ptr, bool x64);
 
     /**
      * @brief Get the size of the structure

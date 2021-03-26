@@ -19,8 +19,8 @@ namespace introvirt {
 namespace windows {
 namespace pe {
 
-std::unique_ptr<PE> PE::make_unique(const GuestVirtualAddress& gva) {
-    return std::make_unique<PE_IMPL>(gva);
+std::unique_ptr<PE> PE::make_unique(const guest_ptr<void>& ptr) {
+    return std::make_unique<PE_IMPL>(ptr);
 }
 
 } // namespace pe

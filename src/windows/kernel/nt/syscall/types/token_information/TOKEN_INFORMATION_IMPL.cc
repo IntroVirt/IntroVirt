@@ -30,36 +30,36 @@ namespace nt {
 template <typename PtrType>
 static std::unique_ptr<TOKEN_INFORMATION>
 make_unique_impl(const NtKernel& kernel, TOKEN_INFORMATION_CLASS information_class,
-                 const GuestVirtualAddress& gva, uint32_t buffer_size) {
+                 const guest_ptr<void>& ptr, uint32_t buffer_size) {
 
     // TODO(pape): Implement missing types
     switch (information_class) {
     case TOKEN_INFORMATION_CLASS::TokenGroups:
-        return std::make_unique<TOKEN_GROUPS_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<TOKEN_GROUPS_IMPL<PtrType>>(ptr, buffer_size);
     case TOKEN_INFORMATION_CLASS::TokenOwner:
-        return std::make_unique<TOKEN_OWNER_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<TOKEN_OWNER_IMPL<PtrType>>(ptr, buffer_size);
     case TOKEN_INFORMATION_CLASS::TokenPrivileges:
-        return std::make_unique<TOKEN_PRIVILEGES_IMPL>(gva, buffer_size);
+        return std::make_unique<TOKEN_PRIVILEGES_IMPL>(ptr, buffer_size);
     case TOKEN_INFORMATION_CLASS::TokenUser:
-        return std::make_unique<TOKEN_USER_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<TOKEN_USER_IMPL<PtrType>>(ptr, buffer_size);
     case TOKEN_INFORMATION_CLASS::TokenIsAppContainer:
-        return std::make_unique<TOKEN_IS_APP_CONTAINER_IMPL>(gva, buffer_size);
+        return std::make_unique<TOKEN_IS_APP_CONTAINER_IMPL>(ptr, buffer_size);
     }
 
-    return std::make_unique<TOKEN_INFORMATION_IMPL<>>(information_class, gva, buffer_size);
+    return std::make_unique<TOKEN_INFORMATION_IMPL<>>(information_class, ptr, buffer_size);
 }
 
 std::unique_ptr<TOKEN_INFORMATION>
 TOKEN_INFORMATION::make_unique(const NtKernel& kernel, TOKEN_INFORMATION_CLASS information_class,
-                               const GuestVirtualAddress& gva, uint32_t buffer_size) {
+                               const guest_ptr<void>& ptr, uint32_t buffer_size) {
 
     if (unlikely(buffer_size == 0))
         return nullptr;
 
     if (kernel.x64())
-        return make_unique_impl<uint64_t>(kernel, information_class, gva, buffer_size);
+        return make_unique_impl<uint64_t>(kernel, information_class, ptr, buffer_size);
     else
-        return make_unique_impl<uint32_t>(kernel, information_class, gva, buffer_size);
+        return make_unique_impl<uint32_t>(kernel, information_class, ptr, buffer_size);
 }
 
 } // namespace nt

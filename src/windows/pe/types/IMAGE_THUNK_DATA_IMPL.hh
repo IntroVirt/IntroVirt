@@ -49,8 +49,8 @@ class IMAGE_THUNK_DATA_IMPL final : public IMAGE_THUNK_DATA {
     bool imported_by_name() const override { return importByName.get(); }
     bool imported_by_ordinal() const override { return !imported_by_name(); }
     const std::string& Function() const override { return function_; }
-    uint64_t AddressOfData() const override { return data_->AddressOfData; }
-    uint64_t Ordinal() const override { return data_->Ordinal; }
+    uint64_t AddressOfData() const override { return ptr_->AddressOfData; }
+    uint64_t Ordinal() const override { return ptr_->Ordinal; }
 
     // TODO: Break this out into a separate class?
     uint16_t Hint() const override {
@@ -60,25 +60,25 @@ class IMAGE_THUNK_DATA_IMPL final : public IMAGE_THUNK_DATA {
         return 0;
     }
 
-    IMAGE_THUNK_DATA_IMPL(const GuestVirtualAddress& image_base, const GuestVirtualAddress& gva)
-        : data_(gva) {
+    IMAGE_THUNK_DATA_IMPL(const guest_ptr<void>& image_base, const guest_ptr<void>& ptr)
+        : ptr_(ptr) {
 
         static const uint64_t IMPORT_ORDINAL_FLAGS = (1LL << ((sizeof(PtrType) * 8) - 1));
 
-        GuestVirtualAddress pImportByName;
-        if (!(data_->AddressOfData & IMPORT_ORDINAL_FLAGS) && data_->AddressOfData) {
-            pImportByName = image_base + data_->Function;
+        guest_ptr<void> pImportByName;
+        if (!(ptr_->AddressOfData & IMPORT_ORDINAL_FLAGS) && ptr_->AddressOfData) {
+            pImportByName = image_base + ptr_->Function;
         }
 
         if (pImportByName) {
             importByName.reset(pImportByName);
-            const GuestVirtualAddress function_str_ptr(pImportByName + 2);
-            function_ = map_guest_cstr(function_str_ptr);
+            const guest_ptr<void> function_str_ptr(pImportByName + 2);
+            function_ = map_guest_cstring(function_str_ptr).str();
         }
     }
 
   private:
-    guest_ptr<structs::_IMAGE_THUNK_DATA<PtrType>> data_;
+    guest_ptr<structs::_IMAGE_THUNK_DATA<PtrType>> ptr_;
     guest_ptr<structs::_IMAGE_IMPORT_BY_NAME> importByName;
     std::string function_;
 };

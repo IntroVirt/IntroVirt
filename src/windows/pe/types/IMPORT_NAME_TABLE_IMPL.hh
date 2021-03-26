@@ -35,7 +35,7 @@ class IMPORT_NAME_TABLE_IMPL final : public IMPORT_NAME_TABLE {
         return imports_;
     }
 
-    IMPORT_NAME_TABLE_IMPL(const GuestVirtualAddress& image_base, GuestVirtualAddress pDescriptor,
+    IMPORT_NAME_TABLE_IMPL(const guest_ptr<void>& image_base, guest_ptr<void> pDescriptor,
                            uint32_t size) {
 
         const int count =

@@ -22,13 +22,13 @@ namespace windows {
 namespace pe {
 
 IMAGE_RESOURCE_DIRECTORY_ENTRY_IMPL::IMAGE_RESOURCE_DIRECTORY_ENTRY_IMPL(
-    const GuestVirtualAddress& pImageBase, const GuestVirtualAddress& pResourceSection,
-    const GuestVirtualAddress& pResourceEntry)
-    : data_(pResourceEntry) {
+    const guest_ptr<void>& pImageBase, const guest_ptr<void>& pResourceSection,
+    const guest_ptr<void>& pResourceEntry)
+    : ptr_(pResourceEntry) {
 
     if (NameIsString()) {
         // Get the string length and convert to the length in bytes
-        const GuestVirtualAddress pStrLen = pResourceSection + data_->NameOffset;
+        const guest_ptr<void> pStrLen = pResourceSection + ptr_->NameOffset;
 
         // This is the number of char16_ts, not bytes.
         const uint16_t strLen = *guest_ptr<uint16_t>(pStrLen);
@@ -36,15 +36,15 @@ IMAGE_RESOURCE_DIRECTORY_ENTRY_IMPL::IMAGE_RESOURCE_DIRECTORY_ENTRY_IMPL(
         if (strLen > 0) {
             // TODO: This doesn't look right. The string is at the same address as the length?
             Name_ = Utf16String::convert(
-                guest_ptr<char16_t[]>(pResourceSection + data_->NameOffset + 2, strLen));
+                guest_ptr<char16_t[]>(pResourceSection + ptr_->NameOffset + 2, strLen));
         }
     }
 
     if (DataIsDirectory()) {
-        const GuestVirtualAddress pDirectory = pResourceSection + data_->OffsetToDirectory;
+        const guest_ptr<void> pDirectory = pResourceSection + ptr_->OffsetToDirectory;
         directory_.emplace(pImageBase, pResourceSection, pDirectory);
     } else {
-        const GuestVirtualAddress pData = pResourceSection + data_->OffsetToData;
+        const guest_ptr<void> pData = pResourceSection + ptr_->OffsetToData;
         data_entry_.emplace(pImageBase, pData);
     }
 }

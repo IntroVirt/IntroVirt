@@ -15,7 +15,6 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/syscall/types/SECURITY_QUALITY_OF_SERVICE.hh>
 
 namespace introvirt {
@@ -37,31 +36,30 @@ static_assert(sizeof(_SECURITY_QUALITY_OF_SERVICE) == 0xC);
 
 class SECURITY_QUALITY_OF_SERVICE_IMPL final : public SECURITY_QUALITY_OF_SERVICE {
   public:
-    uint32_t Length() const override { return data_->Length; }
-    void Length(uint32_t Length) override { data_->Length = Length; }
+    uint32_t Length() const override { return ptr_->Length; }
+    void Length(uint32_t Length) override { ptr_->Length = Length; }
 
     SECURITY_IMPERSONATION_LEVEL ImpersonationLevel() const override {
-        return static_cast<SECURITY_IMPERSONATION_LEVEL>(data_->ImpersonationLevel);
+        return static_cast<SECURITY_IMPERSONATION_LEVEL>(ptr_->ImpersonationLevel);
     }
     void ImpersonationLevel(SECURITY_IMPERSONATION_LEVEL ImpersonationLevel) override {
-        data_->ImpersonationLevel = ImpersonationLevel;
+        ptr_->ImpersonationLevel = ImpersonationLevel;
     }
 
     SECURITY_CONTEXT_TRACKING_MODE ContextTrackingMode() const override {
-        return data_->ContextTrackingMode;
+        return ptr_->ContextTrackingMode;
     }
     void ContextTrackingMode(SECURITY_CONTEXT_TRACKING_MODE ContextTrackingMode) override {
-        data_->ContextTrackingMode = ContextTrackingMode;
+        ptr_->ContextTrackingMode = ContextTrackingMode;
     }
 
-    bool EffectiveOnly() const override { return data_->EffectiveOnly; }
-    void EffectiveOnly(bool EffectiveOnly) override { data_->EffectiveOnly = EffectiveOnly; }
+    bool EffectiveOnly() const override { return ptr_->EffectiveOnly; }
+    void EffectiveOnly(bool EffectiveOnly) override { ptr_->EffectiveOnly = EffectiveOnly; }
 
-    SECURITY_QUALITY_OF_SERVICE_IMPL(const GuestVirtualAddress& gva);
+    SECURITY_QUALITY_OF_SERVICE_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_SECURITY_QUALITY_OF_SERVICE> data_;
+    guest_ptr<structs::_SECURITY_QUALITY_OF_SERVICE> ptr_;
 };
 
 } // namespace nt

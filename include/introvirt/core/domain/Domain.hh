@@ -22,8 +22,8 @@
 #include <introvirt/core/domain/Guest.hh>
 #include <introvirt/core/event/EventCallback.hh>
 #include <introvirt/core/fwd.hh>
-#include <introvirt/core/memory/GuestAddress.hh>
 #include <introvirt/core/memory/GuestMemoryMapping.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/compiler.hh>
 
 #include <cstdint>
@@ -50,7 +50,7 @@ class Domain {
      * @param callback The callback function to run
      * @return std::shared_ptr<Breakpoint> That clears the breakpoint when it goes off-scope
      */
-    virtual std::shared_ptr<Breakpoint> create_breakpoint(const GuestAddress& address,
+    virtual std::shared_ptr<Breakpoint> create_breakpoint(const guest_ptr<void>& address,
                                                           std::function<void(Event&)> callback) = 0;
 
     /**
@@ -60,7 +60,7 @@ class Domain {
      * @param callback The callback function to run
      * @return std::shared_ptr<Breakpoint> That clears the breakpoint when it goes off-scope
      */
-    virtual std::unique_ptr<Watchpoint> create_watchpoint(const GuestAddress& address,
+    virtual std::unique_ptr<Watchpoint> create_watchpoint(const guest_ptr<void>& address,
                                                           uint64_t length, bool read, bool write,
                                                           bool execute,
                                                           std::function<void(Event&)> callback) = 0;
@@ -207,7 +207,8 @@ class Domain {
      * @return The mapped memory
      * @throws BadPhysicalAddressException If the guest physical address could not be mapped
      */
-    virtual GuestMemoryMapping map_pfns(const uint64_t* pfns, size_t count) const = 0;
+    virtual std::shared_ptr<GuestMemoryMapping> map_pfns(const uint64_t* pfns,
+                                                         size_t count) const = 0;
 
     /**
      * @brief Toggle system call interception for all VCPUs

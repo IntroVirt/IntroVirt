@@ -30,8 +30,8 @@ enum class WindowsCallType { AUTO, CDECL, STDCALL, FASTCALL, X64 };
 
 class WindowsFunctionCall : public FunctionCall {
   public:
-    GuestVirtualAddress return_address() const override;
-    void return_address(const GuestVirtualAddress& value) override;
+    guest_ptr<void> return_address() const override;
+    void return_address(const guest_ptr<void>& value) override;
 
     bool is_return_event(Event& event) const override;
     void handle_return(Event& event) override;
@@ -53,17 +53,11 @@ class WindowsFunctionCall : public FunctionCall {
     uint64_t get_argument(unsigned int index) const;
     void set_argument(unsigned int index, uint64_t value);
 
-    GuestVirtualAddress get_address_argument(unsigned int index) const;
-    void set_address_argument(unsigned int index, const GuestVirtualAddress& address);
+    guest_ptr<void> get_address_argument(unsigned int index) const;
+    void set_address_argument(unsigned int index, const guest_ptr<void>& address);
 
     Vcpu& vcpu();
     const Vcpu& vcpu() const;
-
-    uint64_t get_ptrsize_value(const GuestVirtualAddress& gva) const;
-    void set_ptrsize_value(const GuestVirtualAddress& gva, uint64_t value);
-
-    GuestVirtualAddress get_ptr(const GuestVirtualAddress& gva) const;
-    void set_ptr(const GuestVirtualAddress& gva, const GuestVirtualAddress& value);
 
     WindowsFunctionCall(Event& event, unsigned int argument_count,
                         WindowsCallType type = WindowsCallType::AUTO);
@@ -79,10 +73,7 @@ class WindowsFunctionCall : public FunctionCall {
     void _set_argument_x64(unsigned int index, uint64_t value);
 
     WindowsEvent* event_;
-
-    GuestVirtualAddress stack_ptr_;
-    guest_ptr<uint32_t[]> stack32_;
-    guest_ptr<uint64_t[]> stack64_;
+    guest_ptr<guest_size_t[]> stack_;
 
     std::function<uint64_t(unsigned int)> get_argument_;
     std::function<void(unsigned int, uint64_t)> set_argument_;
@@ -92,6 +83,8 @@ class WindowsFunctionCall : public FunctionCall {
 
     bool returned_ = false;
     uint64_t raw_return_value_ = -1;
+
+    bool x64_;
 };
 
 } // namespace windows

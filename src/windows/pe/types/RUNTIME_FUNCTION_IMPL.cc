@@ -26,7 +26,7 @@ const UnwindInfo* RUNTIME_FUNCTION_IMPL::UnwindData() const {
 
     if (!UnwindData_) {
         UnwindData_ =
-            std::make_unique<UnwindInfoImpl>(section_->image_base_address() + data_->UnwindData);
+            std::make_unique<UnwindInfoImpl>(section_->image_base_address() + ptr_->UnwindData);
     }
     return UnwindData_.get();
 }
@@ -36,7 +36,7 @@ const RUNTIME_FUNCTION* RUNTIME_FUNCTION_IMPL::chained_function() const {
         throw InvalidMethodException();
 
     if ((Chained_ == nullptr) && (section_ != nullptr)) {
-        Chained_ = section_->get_function_at_rva(data_->UnwindData - 0x01);
+        Chained_ = section_->get_function_at_rva(ptr_->UnwindData - 0x01);
     }
     return Chained_;
 }

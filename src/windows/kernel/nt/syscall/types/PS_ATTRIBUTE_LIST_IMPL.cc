@@ -43,17 +43,17 @@ Json::Value PS_ATTRIBUTE_LIST_IMPL<PtrType>::json() const {
 }
 
 template <typename PtrType>
-PS_ATTRIBUTE_LIST_IMPL<PtrType>::PS_ATTRIBUTE_LIST_IMPL(const GuestVirtualAddress& gva)
-    : array_iterable_type(gva, gva + offsetof(structs::_PS_ATTRIBUTE_LIST<PtrType>, Attributes)),
-      gva_(gva),
+PS_ATTRIBUTE_LIST_IMPL<PtrType>::PS_ATTRIBUTE_LIST_IMPL(const guest_ptr<void>& ptr)
+    : array_iterable_type(ptr, ptr + offsetof(structs::_PS_ATTRIBUTE_LIST<PtrType>, Attributes)),
+      ptr_(ptr),
       buffer_size_(array_iterable_type::length() * sizeof(structs::_PS_ATTRIBUTE<PtrType>)) {}
 
 std::unique_ptr<PS_ATTRIBUTE_LIST> PS_ATTRIBUTE_LIST::make_unique(const NtKernel& kernel,
-                                                                  const GuestVirtualAddress& gva) {
+                                                                  const guest_ptr<void>& ptr) {
     if (kernel.x64())
-        return std::make_unique<PS_ATTRIBUTE_LIST_IMPL<uint64_t>>(gva);
+        return std::make_unique<PS_ATTRIBUTE_LIST_IMPL<uint64_t>>(ptr);
     else
-        return std::make_unique<PS_ATTRIBUTE_LIST_IMPL<uint32_t>>(gva);
+        return std::make_unique<PS_ATTRIBUTE_LIST_IMPL<uint32_t>>(ptr);
 }
 
 template class PS_ATTRIBUTE_LIST_IMPL<uint32_t>;

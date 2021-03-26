@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/fwd.hh>
 #include <introvirt/windows/kernel/nt/const/ObjectType.hh>
 
@@ -51,7 +51,7 @@ class TypeTable {
      * @param address The address of the OBJECT_TYPE
      * @return The normalized object type
      */
-    virtual ObjectType normalize(const GuestVirtualAddress& address) const = 0;
+    virtual ObjectType normalize(const guest_ptr<void>& address) const = 0;
 
     /**
      * @brief Convert a normalized ObjectType to it's native representation

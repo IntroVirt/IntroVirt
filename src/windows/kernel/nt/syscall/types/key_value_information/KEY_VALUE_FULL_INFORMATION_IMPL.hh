@@ -50,7 +50,7 @@ class KEY_VALUE_FULL_INFORMATION_IMPL final : public KEY_VALUE_FULL_INFORMATION_
     const std::string& Name() const override { return Name_->utf8(); }
     void Name(const std::string& value) override {
         Name_->set(value);
-        data_->NameLength = Name_->Length();
+        ptr_->NameLength = Name_->Length();
     }
 
     const KEY_VALUE* Data() const override { return Data_.get(); }
@@ -60,7 +60,7 @@ class KEY_VALUE_FULL_INFORMATION_IMPL final : public KEY_VALUE_FULL_INFORMATION_
 
     Json::Value json() const override;
 
-    KEY_VALUE_FULL_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    KEY_VALUE_FULL_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
     std::optional<WStr> Name_;

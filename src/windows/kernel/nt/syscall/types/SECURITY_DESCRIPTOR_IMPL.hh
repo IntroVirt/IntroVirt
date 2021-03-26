@@ -35,10 +35,10 @@ struct _SECURITY_DESCRIPTOR {
     uint8_t Revision;
     uint8_t Sbz1;
     SECURITY_DESCRIPTOR_CONTROL Control;
-    PtrType Owner; /* SID */
-    PtrType Group; /* SID */
-    PtrType Sacl;  /* ACL */
-    PtrType Dacl;  /* ACL */
+    guest_member_ptr<_SID, PtrType> Owner;
+    guest_member_ptr<_SID, PtrType> Group;
+    PtrType Sacl; /* ACL */
+    PtrType Dacl; /* ACL */
 };
 
 static_assert(sizeof(_SECURITY_DESCRIPTOR<uint32_t>) == 0x14);
@@ -48,34 +48,57 @@ static_assert(sizeof(_SECURITY_DESCRIPTOR<uint64_t>) == 0x28);
 
 template <typename PtrType>
 class SECURITY_DESCRIPTOR_IMPL final : public SECURITY_DESCRIPTOR {
-  public:
-    uint8_t Revision() const override;
-    uint8_t Sbz1() const override;
-    SECURITY_DESCRIPTOR_CONTROL Control() const override;
+    using _SECURITY_DESCRIPTOR = structs::_SECURITY_DESCRIPTOR<PtrType>;
 
-    SID* Owner() override;
-    const SID* Owner() const override;
-    SID* Group() override;
-    const SID* Group() const override;
+  public:
+    uint8_t Revision() const override { return ptr_->Revision; }
+    void Revision(uint8_t Revision) override { ptr_->Revision = Revision; }
+
+    uint8_t Sbz1() const override { return ptr_->Sbz1; }
+    void Sbz1(uint8_t Sbz1) override { ptr_->Sbz1 = Sbz1; }
+
+    SECURITY_DESCRIPTOR_CONTROL Control() const override { return ptr_->Control; }
+    void Control(SECURITY_DESCRIPTOR_CONTROL Control) override { ptr_->Control = Control; }
+
+    SID* Owner() override {
+        {
+            std::lock_guard lock(OwnerInit_);
+            if (!Owner_) {
+                if (ptr_->Owner)
+                    Owner_.emplace(ptr_->Owner.get(ptr_));
+            }
+        }
+
+        if (Owner_.has_value())
+            return &(*Owner_);
+
+        return nullptr;
+    }
+
+    SID* Group() override {
+        {
+            std::lock_guard lock(OwnerInit_);
+            if (!Group_) {
+                if (ptr_->Group)
+                    Group_.emplace(ptr_->Group.get(ptr_));
+            }
+        }
+
+        if (Group_.has_value())
+            return &(*Group_);
+
+        return nullptr;
+    }
+
     // TODO(pape): Getters for ACLs
 
-    void Revision(uint8_t Revision) override;
-    void Sbz1(uint8_t Sbz1) override;
-    void Control(SECURITY_DESCRIPTOR_CONTROL Control) override;
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    GuestVirtualAddress address() const override;
-
-    SECURITY_DESCRIPTOR_IMPL(const GuestVirtualAddress& gva);
+    SECURITY_DESCRIPTOR_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
+    SECURITY_DESCRIPTOR_IMPL(guest_ptr<_SECURITY_DESCRIPTOR>&& ptr) : ptr_(std::move(ptr)) {}
 
   private:
-    GuestVirtualAddress OwnerPtr() const;
-    GuestVirtualAddress GroupPtr() const;
-    GuestVirtualAddress SaclPtr() const;
-    GuestVirtualAddress DaclPtr() const;
-
-  private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_SECURITY_DESCRIPTOR<PtrType>> header_;
+    guest_ptr<structs::_SECURITY_DESCRIPTOR<PtrType>> ptr_;
 
     std::mutex OwnerInit_;
     std::optional<SID_IMPL> Owner_;

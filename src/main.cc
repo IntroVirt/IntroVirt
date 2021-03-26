@@ -21,6 +21,10 @@
 #include <log4cxx/propertyconfigurator.h>
 #include <log4cxx/xml/domconfigurator.h>
 
+#include <boost/stacktrace.hpp>
+
+#include <csignal>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 
@@ -42,6 +46,17 @@ namespace filesystem = std::experimental::filesystem;
 static constexpr uint32_t DesiredMapMapCount = 1000000;
 
 namespace introvirt {
+
+void crash_handler(int signum) {
+    // This should be safe
+    boost::stacktrace::safe_dump_to("./introvirt-crash.dmp");
+
+    // This is less safe, but we're crashing anyway
+    log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("introvirt.crash"));
+    LOG4CXX_FATAL(logger, "Program crashed with " << strsignal(signum));
+    LOG4CXX_FATAL(logger, boost::stacktrace::stacktrace());
+    exit(254);
+}
 
 static void soMain() __attribute__((constructor));
 
@@ -91,6 +106,9 @@ static void soMain() {
 
     const bool is_debug_build = VersionInfo::is_debug_build();
     const bool is_optimized_build = VersionInfo::is_optimized_build();
+
+    // Register some signal handers in case of crash
+    ::signal(SIGSEGV, &crash_handler);
 
     // The logger has to be defined in this function. If declared static it'd execute before the
     // library is initialized.

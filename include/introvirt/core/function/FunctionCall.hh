@@ -16,9 +16,11 @@
 #pragma once
 
 #include <introvirt/core/fwd.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
+#include <introvirt/util/json/json.hh>
 
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -33,16 +35,16 @@ class FunctionCall {
     /**
      * @brief Get the return address for this function call
      *
-     * @return GuestVirtualAddress
+     * @return guest_ptr
      */
-    virtual GuestVirtualAddress return_address() const = 0;
+    virtual guest_ptr<void> return_address() const = 0;
 
     /**
      * @brief Set the return address for this function call
      *
      * @param value The new return address to use
      */
-    virtual void return_address(const GuestVirtualAddress& value) = 0;
+    virtual void return_address(const guest_ptr<void>& value) = 0;
 
     /**
      * @brief Check if the user is requesting that the return be intercepted
@@ -105,6 +107,13 @@ class FunctionCall {
      * @param os
      */
     virtual void write(std::ostream& os = std::cout) const = 0;
+
+    /**
+     * @brief Get the function as Json
+     *
+     * @return Json::Value
+     */
+    virtual Json::Value json() const = 0;
 
     /**
      * @brief Store arbitrary data with the FunctionCall

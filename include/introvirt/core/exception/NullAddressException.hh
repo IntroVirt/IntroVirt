@@ -20,7 +20,7 @@
 namespace introvirt {
 
 /**
- * @brief Thrown when calling a method on a "null" GuestAddress instance
+ * @brief Thrown when calling a method on a "null" guest_ptr instance
  *
  */
 class NullAddressException final : public TraceableException {

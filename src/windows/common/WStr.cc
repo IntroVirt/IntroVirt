@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
-#include <introvirt/core/memory/guest_ptr.hh>
-#include <introvirt/util/compiler.hh>
 #include <introvirt/windows/common/WStr.hh>
+
+#include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
+#include <introvirt/util/compiler.hh>
+#include <introvirt/util/introvirt_assert.hh>
 #include <introvirt/windows/exception/StringConversionException.hh>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -29,101 +29,45 @@
 namespace introvirt {
 namespace windows {
 
-class WStr::IMPL {
-  public:
-    IMPL(const GuestVirtualAddress& gva) : gva_(gva) {
-        // Map and determine the length of the string
-        auto wstr = map_guest_wstr(gva);
-        length_ = wstr.length() * sizeof(char16_t);
+guest_ptr<void> WStr::ptr() const { return buf_; }
 
-        // TODO: Would be nice if we didn't have to re-map
-        buf_.reset(gva_, length_);
+WStr::WStr(const guest_ptr<void>& ptr)
+    : buf_(map_guest_wstring(ptr)), len_(buf_.length() * sizeof(char16_t)) {}
+
+WStr::WStr(const guest_ptr<void>& ptr, size_t buffer_size)
+    : buf_(ptr, buffer_size / sizeof(char16_t)) {
+
+    // Determine the length of the string
+    size_t len;
+    for (len = 0; len < buf_.length() && buf_[len]; ++len) {
     }
 
-    IMPL(const GuestVirtualAddress& gva, size_t buffer_size) : gva_(gva), length_(buffer_size) {
-        if (buffer_size == 0)
-            return;
-        buf_.reset(gva, buffer_size);
+    len_ = len * sizeof(char16_t);
+}
 
-        const auto* buf = reinterpret_cast<const char16_t*>(buf_.get());
+WStr::WStr(const guest_ptr<void>& ptr, size_t buffer_size, size_t len)
+    : buf_(ptr, buffer_size / sizeof(char16_t)), len_(len) {
+    introvirt_assert(buffer_size >= len, "Length too small for buffer");
+}
 
-        // Search the buffer for a null terminator
-        for (unsigned int i = 0; i < (buf_.length() / 2); i++) {
-            if (buf[i] == 0) {
-                length_ = i * 2;
-                break;
-            }
-        }
-    }
-
-    IMPL(const GuestVirtualAddress& gva, size_t length, size_t buffer_size)
-        : gva_(gva), length_(length) {
-
-        assert(buffer_size >= length);
-
-        if (buffer_size == 0)
-            return;
-
-        try {
-            buf_.reset(gva_, buffer_size);
-        } catch (VirtualAddressNotPresentException& ex) {
-            // Try again, but this time use the length rather than the buffer size.
-            // This is only a problem when trying to call "set", the buffer will be smaller.
-            if (length > 0)
-                buf_.reset(gva, length);
-        }
-    }
-
-    IMPL(guest_ptr<uint8_t[]>&& src, size_t len) : buf_(std::move(src)) {
-        if (len == 0)
-            len = buf_.length();
-
-        length_ = len;
-    }
-
-  public:
-    GuestVirtualAddress gva_;
-    guest_ptr<uint8_t[]> buf_;
-    size_t length_;
-};
-
-GuestVirtualAddress WStr::address() const { return pImpl_->gva_; }
-
-WStr::WStr(const GuestVirtualAddress& gva) : pImpl_(std::make_unique<IMPL>(gva)) {}
-
-WStr::WStr(const GuestVirtualAddress& gva, size_t buffer_size)
-    : pImpl_(std::make_unique<IMPL>(gva, buffer_size)) {}
-
-WStr::WStr(const GuestVirtualAddress& gva, size_t len, size_t buffer_size)
-    : pImpl_(std::make_unique<IMPL>(gva, len, buffer_size)) {}
-
-WStr::WStr(guest_ptr<uint8_t[]>&& src, size_t len)
-    : pImpl_(std::make_unique<IMPL>(std::move(src), len)) {}
-
-uint16_t WStr::Length() const { return pImpl_->length_; }
-
-uint16_t WStr::MaximumLength() const { return pImpl_->buf_.length(); }
-
-const uint8_t* WStr::Buffer() const { return reinterpret_cast<const uint8_t*>(pImpl_->buf_.get()); }
+uint16_t WStr::Length() const { return len_; }
+uint16_t WStr::MaximumLength() const { return buf_.length() * sizeof(char16_t); }
+const uint8_t* WStr::Buffer() const { return reinterpret_cast<const uint8_t*>(buf_.get()); }
 
 void WStr::set(const std::u16string& value) {
-    const size_t buffer_size = pImpl_->buf_.length();
-
     // Zero the buffer
-    std::memset(pImpl_->buf_.get(), 0, buffer_size);
+    std::memset(buf_.get(), 0, buf_.length());
 
     // Copy in our data
     const size_t copy_size = value.length() * sizeof(char16_t);
-
-    if (unlikely(copy_size > pImpl_->buf_.length())) {
+    if (unlikely(copy_size > buf_.length())) {
         throw StringConversionException("Buffer too small for string data");
     }
 
-    std::memcpy(pImpl_->buf_.get(), value.data(), copy_size);
+    std::memcpy(buf_.get(), value.data(), copy_size);
 
     // Update the length
-    pImpl_->length_ = copy_size;
-
+    len_ = copy_size;
     invalidate();
 }
 

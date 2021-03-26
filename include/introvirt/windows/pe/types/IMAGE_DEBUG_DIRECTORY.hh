@@ -18,7 +18,6 @@
 #include <introvirt/windows/pe/const/ImageDebugType.hh>
 #include <introvirt/windows/pe/types/CV_INFO.hh>
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/fwd.hh>
 
 #include <cstdint>

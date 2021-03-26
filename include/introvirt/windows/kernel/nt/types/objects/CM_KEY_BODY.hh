@@ -57,7 +57,7 @@ class CM_KEY_BODY : public OBJECT {
     virtual const std::string& full_key_path() const = 0;
 
     static std::shared_ptr<CM_KEY_BODY> make_shared(const NtKernel& kernel,
-                                                    const GuestVirtualAddress& gva);
+                                                    const guest_ptr<void>& ptr);
 
     static std::shared_ptr<CM_KEY_BODY> make_shared(const NtKernel& kernel,
                                                     std::unique_ptr<OBJECT_HEADER>&& object_header);

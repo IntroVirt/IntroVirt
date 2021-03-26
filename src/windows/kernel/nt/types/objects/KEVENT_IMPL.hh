@@ -31,7 +31,7 @@ namespace nt {
 template <typename PtrType>
 class KEVENT_IMPL final : public DISPATCHER_OBJECT_IMPL<PtrType, KEVENT> {
   public:
-    KEVENT_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    KEVENT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     KEVENT_IMPL(const NtKernelImpl<PtrType>& kernel,
                 std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 };

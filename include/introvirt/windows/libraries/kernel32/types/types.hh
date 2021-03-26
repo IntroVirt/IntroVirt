@@ -15,5 +15,8 @@
  */
 #pragma once
 
+#include "../const/const.hh"
+
 #include "PROCESS_INFORMATION.hh"
-#include "STARTUPINFO.hh"
+#include "STARTUPINFOA.hh"
+#include "STARTUPINFOW.hh"

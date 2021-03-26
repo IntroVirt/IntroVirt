@@ -54,63 +54,63 @@ Json::Value FILE_INFORMATION_IMPL::json() const {
 template <typename PtrType>
 std::unique_ptr<FILE_INFORMATION>
 make_unique_impl(const NtKernel& kernel, FILE_INFORMATION_CLASS information_class,
-                 const GuestVirtualAddress& gva, uint32_t buffer_size) {
+                 const guest_ptr<void>& ptr, uint32_t buffer_size) {
 
     switch (information_class) {
     case FILE_INFORMATION_CLASS::FileAccessInformation:
-        return std::make_unique<FILE_ACCESS_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_ACCESS_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileAlignmentInformation:
-        return std::make_unique<FILE_ALIGNMENT_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_ALIGNMENT_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileAllInformation:
-        return std::make_unique<FILE_ALL_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_ALL_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileAttributeTagInformation:
-        return std::make_unique<FILE_ATTRIBUTE_TAG_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_ATTRIBUTE_TAG_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileBasicInformation:
-        return std::make_unique<FILE_BASIC_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_BASIC_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileBothDirectoryInformation:
-        return std::make_unique<FILE_BOTH_DIR_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_BOTH_DIR_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileDispositionInformation:
-        return std::make_unique<FILE_DISPOSITION_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_DISPOSITION_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileEaInformation:
-        return std::make_unique<FILE_EA_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_EA_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileEndOfFileInformation:
-        return std::make_unique<FILE_END_OF_FILE_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_END_OF_FILE_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileFullDirectoryInformation:
-        return std::make_unique<FILE_FULL_DIR_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_FULL_DIR_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileIdBothDirectoryInformation:
-        return std::make_unique<FILE_ID_BOTH_DIR_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_ID_BOTH_DIR_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileInternalInformation:
-        return std::make_unique<FILE_INTERNAL_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_INTERNAL_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileModeInformation:
-        return std::make_unique<FILE_MODE_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_MODE_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileNameInformation:
-        return std::make_unique<FILE_NAME_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_NAME_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileNetworkOpenInformation:
-        return std::make_unique<FILE_NETWORK_OPEN_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_NETWORK_OPEN_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FilePositionInformation:
-        return std::make_unique<FILE_POSITION_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_POSITION_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileRenameInformation:
-        return std::make_unique<FILE_RENAME_INFORMATION_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<FILE_RENAME_INFORMATION_IMPL<PtrType>>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileStandardInformation:
-        return std::make_unique<FILE_STANDARD_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_STANDARD_INFORMATION_IMPL>(ptr, buffer_size);
     case FILE_INFORMATION_CLASS::FileStreamInformation:
-        return std::make_unique<FILE_STREAM_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<FILE_STREAM_INFORMATION_IMPL>(ptr, buffer_size);
     }
 
-    return std::make_unique<FILE_INFORMATION_IMPL>(information_class, gva, buffer_size);
+    return std::make_unique<FILE_INFORMATION_IMPL>(information_class, ptr, buffer_size);
 }
 
 std::unique_ptr<FILE_INFORMATION>
 FILE_INFORMATION::make_unique(const NtKernel& kernel, FILE_INFORMATION_CLASS information_class,
-                              const GuestVirtualAddress& gva, uint32_t buffer_size) {
+                              const guest_ptr<void>& ptr, uint32_t buffer_size) {
 
     if (unlikely(buffer_size == 0))
         return nullptr;
 
     if (kernel.x64())
-        return make_unique_impl<uint64_t>(kernel, information_class, gva, buffer_size);
+        return make_unique_impl<uint64_t>(kernel, information_class, ptr, buffer_size);
     else
-        return make_unique_impl<uint32_t>(kernel, information_class, gva, buffer_size);
+        return make_unique_impl<uint32_t>(kernel, information_class, ptr, buffer_size);
 }
 
 } // namespace nt

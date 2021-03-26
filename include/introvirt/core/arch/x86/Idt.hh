@@ -16,7 +16,7 @@
 #pragma once
 
 #include <introvirt/core/fwd.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 #include <memory>
@@ -35,7 +35,7 @@ enum IdtEntryType {
 
 class IdtEntry {
   public:
-    virtual GuestVirtualAddress entry_point() const = 0;
+    virtual guest_ptr<void> entry_point() const = 0;
     virtual bool present() const = 0;
     virtual uint8_t dpl() const = 0;
     virtual bool storage_segment() const = 0;
@@ -57,7 +57,7 @@ class Idt {
      * @param index The index into the Idt
      * @return The IdtEntry at the specified index
      */
-    virtual std::unique_ptr<const IdtEntry> entry(uint index) const = 0;
+    virtual std::unique_ptr<const IdtEntry> entry(size_t index) const = 0;
 
     /**
      * @brief Get the number of entries in the IDT

@@ -48,7 +48,7 @@ class VS_VERSIONINFO : public FILE_INFO {
      */
     virtual const pe::VarFileInfo* VarFileInfo() const = 0;
 
-    static std::unique_ptr<VS_VERSIONINFO> make_unique(const GuestVirtualAddress& gva);
+    static std::unique_ptr<VS_VERSIONINFO> make_unique(const guest_ptr<void>& ptr);
 };
 
 } /* namespace pe */

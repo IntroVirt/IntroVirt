@@ -23,8 +23,8 @@
     }
 
 #define DEFINE_ADDRESS_GETTER_SETTER(classname, name, index)                                       \
-    GuestVirtualAddress classname::name() const { return name##_; }                                \
-    void classname::name(const GuestVirtualAddress& gva) {                                         \
+    guest_ptr<void> classname::name() const { return name##_; }                                    \
+    void classname::name(const guest_ptr<void>& ptr) {                                             \
         set_address_argument(index, gva);                                                          \
         name##_ = gva;                                                                             \
     }

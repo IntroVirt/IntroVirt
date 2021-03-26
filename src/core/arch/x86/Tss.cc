@@ -22,23 +22,23 @@
 namespace introvirt {
 namespace x86 {
 
-GuestVirtualAddress Tss::sp0() const {
+guest_ptr<void> Tss::sp0() const {
     const Registers& registers = vcpu_.registers();
     auto tr = registers.tr();
 
     // On both 32-bit and 64-bit, the value is held at base + 4
     uint64_t pSp0 = tr.base() + 4;
 
-    uint64_t result;
+    uint64_t sp0;
     if (vcpu_.registers().efer().lme()) {
         // 64-bit mode
-        result = *guest_ptr<uint64_t>(GuestVirtualAddress(vcpu_, pSp0));
+        sp0 = *guest_ptr<uint64_t>(vcpu_, pSp0);
     } else {
         // 32-bit mode
-        result = *guest_ptr<uint32_t>(GuestVirtualAddress(vcpu_, pSp0));
+        sp0 = *guest_ptr<uint32_t>(vcpu_, pSp0);
     }
 
-    return GuestVirtualAddress(vcpu_, result);
+    return guest_ptr<void>(vcpu_, sp0);
 }
 
 Tss::Tss(const Vcpu& vcpu) : vcpu_(vcpu) {}

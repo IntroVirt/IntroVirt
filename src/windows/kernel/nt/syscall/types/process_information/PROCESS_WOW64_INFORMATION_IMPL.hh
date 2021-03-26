@@ -36,15 +36,15 @@ using PROCESS_WOW64_INFORMATION_IMPL_BASE =
 
 class PROCESS_WOW64_INFORMATION_IMPL final : public PROCESS_WOW64_INFORMATION_IMPL_BASE {
   public:
-    uint32_t Peb32Address() const override { return this->data_->pPeb32; }
-    void Peb32Address(uint32_t pPeb32) override { this->data_->pPeb32 = pPeb32; }
+    uint32_t Peb32Address() const override { return this->ptr_->pPeb32; }
+    void Peb32Address(uint32_t pPeb32) override { this->ptr_->pPeb32 = pPeb32; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    PROCESS_WOW64_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    PROCESS_WOW64_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : PROCESS_WOW64_INFORMATION_IMPL_BASE(PROCESS_INFORMATION_CLASS::ProcessWow64Information,
-                                              gva, buffer_size) {}
+                                              ptr, buffer_size) {}
 };
 
 } // namespace nt

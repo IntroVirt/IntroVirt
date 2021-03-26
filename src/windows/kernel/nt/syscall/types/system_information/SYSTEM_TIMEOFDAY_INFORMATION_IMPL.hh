@@ -45,42 +45,40 @@ using SYSTEM_TIMEOFDAY_INFORMATION_IMPL_BASE =
 class SYSTEM_TIMEOFDAY_INFORMATION_IMPL final : public SYSTEM_TIMEOFDAY_INFORMATION_IMPL_BASE {
   public:
     WindowsTime BootTime() const override {
-        return WindowsTime::from_windows_time(this->data_->BootTime);
+        return WindowsTime::from_windows_time(this->ptr_->BootTime);
     }
-    void BootTime(WindowsTime BootTime) override {
-        this->data_->BootTime = BootTime.windows_time();
-    }
+    void BootTime(WindowsTime BootTime) override { this->ptr_->BootTime = BootTime.windows_time(); }
 
     WindowsTime CurrentTime() const override {
-        return WindowsTime::from_windows_time(this->data_->CurrentTime);
+        return WindowsTime::from_windows_time(this->ptr_->CurrentTime);
     }
     void CurrentTime(WindowsTime CurrentTime) override {
-        this->data_->CurrentTime = CurrentTime.windows_time();
+        this->ptr_->CurrentTime = CurrentTime.windows_time();
     }
 
-    int64_t TimeZoneBias() const override { return this->data_->TimeZoneBias; }
-    void TimeZoneBias(int64_t TimeZoneBias) override { this->data_->TimeZoneBias = TimeZoneBias; }
+    int64_t TimeZoneBias() const override { return this->ptr_->TimeZoneBias; }
+    void TimeZoneBias(int64_t TimeZoneBias) override { this->ptr_->TimeZoneBias = TimeZoneBias; }
 
-    uint32_t TimeZoneId() const override { return this->data_->TimeZoneId; }
-    void TimeZoneId(uint32_t TimeZoneId) override { this->data_->TimeZoneId = TimeZoneId; }
+    uint32_t TimeZoneId() const override { return this->ptr_->TimeZoneId; }
+    void TimeZoneId(uint32_t TimeZoneId) override { this->ptr_->TimeZoneId = TimeZoneId; }
 
-    uint32_t Reserved() const override { return this->data_->Reserved; }
-    void Reserved(uint32_t Reserved) override { this->data_->Reserved = Reserved; }
+    uint32_t Reserved() const override { return this->ptr_->Reserved; }
+    void Reserved(uint32_t Reserved) override { this->ptr_->Reserved = Reserved; }
 
-    uint64_t BootTimeBias() const override { return this->data_->BootTimeBias; }
-    void BootTimeBias(uint64_t BootTimeBias) override { this->data_->BootTimeBias = BootTimeBias; }
+    uint64_t BootTimeBias() const override { return this->ptr_->BootTimeBias; }
+    void BootTimeBias(uint64_t BootTimeBias) override { this->ptr_->BootTimeBias = BootTimeBias; }
 
-    uint64_t SleepTimeBias() const override { return this->data_->SleepTimeBias; }
+    uint64_t SleepTimeBias() const override { return this->ptr_->SleepTimeBias; }
     void SleepTimeBias(uint64_t SleepTimeBias) override {
-        this->data_->SleepTimeBias = SleepTimeBias;
+        this->ptr_->SleepTimeBias = SleepTimeBias;
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    SYSTEM_TIMEOFDAY_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    SYSTEM_TIMEOFDAY_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : SYSTEM_TIMEOFDAY_INFORMATION_IMPL_BASE(
-              SYSTEM_INFORMATION_CLASS::SystemTimeOfDayInformation, gva, buffer_size) {}
+              SYSTEM_INFORMATION_CLASS::SystemTimeOfDayInformation, ptr, buffer_size) {}
 };
 
 } // namespace nt

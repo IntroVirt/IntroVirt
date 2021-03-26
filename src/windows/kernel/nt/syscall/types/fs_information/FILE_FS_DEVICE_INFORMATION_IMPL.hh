@@ -36,22 +36,22 @@ static_assert(sizeof(_FILE_FS_DEVICE_INFORMATION) == 0x8);
 class FILE_FS_DEVICE_INFORMATION_IMPL final : public FILE_FS_DEVICE_INFORMATION {
   public:
     nt::DeviceType DeviceType() const override {
-        return static_cast<nt::DeviceType>(data_->DeviceType);
+        return static_cast<nt::DeviceType>(ptr_->DeviceType);
     }
     void DeviceType(nt::DeviceType type) override {
-        data_->DeviceType = static_cast<uint32_t>(type);
+        ptr_->DeviceType = static_cast<uint32_t>(type);
     }
 
-    uint32_t Characteristics() const override { return data_->Characteristics; }
+    uint32_t Characteristics() const override { return ptr_->Characteristics; }
     void Characteristics(uint32_t characteristics) override {
-        data_->Characteristics = characteristics;
+        ptr_->Characteristics = characteristics;
     }
 
     FS_INFORMATION_CLASS FsInformationClass() const override {
         return FS_INFORMATION_CLASS::FileFsDeviceInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -59,12 +59,11 @@ class FILE_FS_DEVICE_INFORMATION_IMPL final : public FILE_FS_DEVICE_INFORMATION 
 
     Json::Value json() const override;
 
-    FILE_FS_DEVICE_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_FS_DEVICE_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_FS_DEVICE_INFORMATION> data_;
+    guest_ptr<structs::_FILE_FS_DEVICE_INFORMATION> ptr_;
 };
 
 } // namespace nt

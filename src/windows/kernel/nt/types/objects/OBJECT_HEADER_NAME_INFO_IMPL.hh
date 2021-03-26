@@ -33,8 +33,7 @@ class OBJECT_HEADER_NAME_INFO_IMPL final : public OBJECT_HEADER_NAME_INFO {
   public:
     const std::string& Name() const override;
 
-    OBJECT_HEADER_NAME_INFO_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                 const GuestVirtualAddress& gva);
+    OBJECT_HEADER_NAME_INFO_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
   private:
     const structs::OBJECT_HEADER_NAME_INFO* offsets_;

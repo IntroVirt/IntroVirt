@@ -68,11 +68,11 @@ class FILE_ID_BOTH_DIR_INFORMATION_ENTRY {
     virtual uint64_t FileId() const = 0;
     virtual void FileId(uint64_t FileId) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
     virtual uint32_t buffer_size() const = 0;
 
     static std::shared_ptr<FILE_ID_BOTH_DIR_INFORMATION_ENTRY>
-    make_shared(const GuestVirtualAddress& gva);
+    make_shared(const guest_ptr<void>& ptr);
 
     virtual ~FILE_ID_BOTH_DIR_INFORMATION_ENTRY() = default;
 };

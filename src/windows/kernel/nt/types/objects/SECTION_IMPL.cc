@@ -41,13 +41,13 @@ uint64_t SECTION_IMPL<PtrType>::EndingVpn() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress SECTION_IMPL<PtrType>::StartingVa() const {
-    return this->address().create(StartingVpn() << x86::PageDirectory::PAGE_SHIFT);
+guest_ptr<void> SECTION_IMPL<PtrType>::StartingVa() const {
+    return this->ptr_.clone(StartingVpn() << x86::PageDirectory::PAGE_SHIFT);
 }
 
 template <typename PtrType>
-GuestVirtualAddress SECTION_IMPL<PtrType>::EndingVa() const {
-    return this->address().create(EndingVpn() << x86::PageDirectory::PAGE_SHIFT);
+guest_ptr<void> SECTION_IMPL<PtrType>::EndingVa() const {
+    return this->ptr_.clone(EndingVpn() << x86::PageDirectory::PAGE_SHIFT);
 }
 
 template <typename PtrType>
@@ -59,7 +59,7 @@ template <typename PtrType>
 const CONTROL_AREA* SECTION_IMPL<PtrType>::ControlArea() const {
     std::lock_guard lock(mtx_);
     if (!ControlArea_) {
-        const auto pControlArea = this->address().create(section->ControlArea.get<PtrType>(buffer));
+        const auto pControlArea = this->ptr_.clone(section->ControlArea.get<PtrType>(buffer));
         if (!pControlArea)
             return nullptr;
         ControlArea_.emplace(kernel_, pControlArea);
@@ -71,16 +71,15 @@ template <typename PtrType>
 const FILE_OBJECT* SECTION_IMPL<PtrType>::FileObject() const {
     std::lock_guard lock(mtx_);
     if (!FileObject_) {
-        const auto pFileObject = this->address().create(section->FileObject.get<PtrType>(buffer));
+        const auto pFileObject = this->ptr_.clone(section->FileObject.get<PtrType>(buffer));
         FileObject_.emplace(kernel_, pFileObject);
     }
     return &(*FileObject_);
 }
 
 template <typename PtrType>
-SECTION_IMPL<PtrType>::SECTION_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                    const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, SECTION>(kernel, gva, ObjectType::Section), kernel_(kernel) {
+SECTION_IMPL<PtrType>::SECTION_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, SECTION>(kernel, ptr, ObjectType::Section), kernel_(kernel) {
 
     try {
         section = LoadOffsets<structs::SECTION>(kernel);
@@ -89,7 +88,7 @@ SECTION_IMPL<PtrType>::SECTION_IMPL(const NtKernelImpl<PtrType>& kernel,
         throw;
     }
 
-    buffer.reset(gva, section->size());
+    buffer.reset(ptr, section->size());
 }
 
 template <typename PtrType>
@@ -105,25 +104,24 @@ SECTION_IMPL<PtrType>::SECTION_IMPL(const NtKernelImpl<PtrType>& kernel,
         throw;
     }
 
-    buffer.reset(OBJECT_IMPL<PtrType, SECTION>::address(), section->size());
+    buffer.reset(this->ptr_, section->size());
 }
 
-std::shared_ptr<SECTION> SECTION::make_shared(const NtKernel& kernel,
-                                              const GuestVirtualAddress& gva) {
+std::shared_ptr<SECTION> SECTION::make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr) {
     if (kernel.MajorVersion() >= 10) {
         if (kernel.x64())
             return std::make_shared<SECTION_IMPL<uint64_t>>(
-                static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+                static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
         else
             return std::make_shared<SECTION_IMPL<uint32_t>>(
-                static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+                static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
     } else {
         if (kernel.x64())
             return std::make_shared<SECTION_OBJECT_IMPL<uint64_t>>(
-                static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+                static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
         else
             return std::make_shared<SECTION_OBJECT_IMPL<uint32_t>>(
-                static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+                static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
     }
 }
 

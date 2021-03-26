@@ -37,12 +37,14 @@ struct _FILE_IO_COMPLETION_INFORMATION {
 
 template <typename PtrType>
 class FILE_IO_COMPLETION_INFORMATION_IMPL final : public FILE_IO_COMPLETION_INFORMATION {
-  public:
-    uint64_t KeyContextPtr() const override { return data_->KeyContext; }
-    void KeyContextPtr(uint64_t value) override { data_->KeyContext = value; }
+    using _FILE_IO_COMPLETION_INFORMATION = structs::_FILE_IO_COMPLETION_INFORMATION<PtrType>;
 
-    uint64_t ApcContextPtr() const override { return data_->ApcContext; }
-    void ApcContextPtr(uint64_t value) override { data_->ApcContext = value; }
+  public:
+    uint64_t KeyContextPtr() const override { return ptr_->KeyContext; }
+    void KeyContextPtr(uint64_t value) override { ptr_->KeyContext = value; }
+
+    uint64_t ApcContextPtr() const override { return ptr_->ApcContext; }
+    void ApcContextPtr(uint64_t value) override { ptr_->ApcContext = value; }
 
     const IO_STATUS_BLOCK* IoStatusBlock() const override;
     IO_STATUS_BLOCK* IoStatusBlock() override;
@@ -50,16 +52,14 @@ class FILE_IO_COMPLETION_INFORMATION_IMPL final : public FILE_IO_COMPLETION_INFO
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    FILE_IO_COMPLETION_INFORMATION_IMPL(const GuestVirtualAddress& gva)
-        : gva_(gva), data_(gva_),
-          io_status_block_(
-              gva_ + offsetof(structs::_FILE_IO_COMPLETION_INFORMATION<PtrType>, IoStatusBlock)) {}
+    FILE_IO_COMPLETION_INFORMATION_IMPL(const guest_ptr<void>& ptr)
+        : ptr_(ptr),
+          io_status_block_(ptr + offsetof(_FILE_IO_COMPLETION_INFORMATION, IoStatusBlock)) {}
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_FILE_IO_COMPLETION_INFORMATION<PtrType>> data_;
+    guest_ptr<_FILE_IO_COMPLETION_INFORMATION> ptr_;
     IO_STATUS_BLOCK_IMPL<PtrType> io_status_block_;
 };
 

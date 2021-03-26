@@ -43,10 +43,10 @@ class LUID_AND_ATTRIBUTES {
     virtual LUID_ATTRIBUTES Attributes() const = 0;
     virtual void Attributes(LUID_ATTRIBUTES attributes) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
-    static std::unique_ptr<LUID_AND_ATTRIBUTES> make_unique(const GuestVirtualAddress& gva);
-    static std::shared_ptr<LUID_AND_ATTRIBUTES> make_shared(const GuestVirtualAddress& gva);
+    static std::unique_ptr<LUID_AND_ATTRIBUTES> make_unique(const guest_ptr<void>& ptr);
+    static std::shared_ptr<LUID_AND_ATTRIBUTES> make_shared(const guest_ptr<void>& ptr);
 
     virtual ~LUID_AND_ATTRIBUTES() = default;
 };

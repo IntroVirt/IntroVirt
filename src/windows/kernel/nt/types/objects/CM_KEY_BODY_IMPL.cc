@@ -51,7 +51,7 @@ const CM_KEY_CONTROL_BLOCK& CM_KEY_BODY_IMPL<PtrType>::KeyControlBlock() const {
         if (unlikely(!pKeyControlBlock))
             throw InvalidStructureException("CM_KEY_CONTROL_BLOCK::KeyControlBlock was null");
         KeyControlBlock_ = std::make_unique<CM_KEY_CONTROL_BLOCK_IMPL<PtrType>>(
-            kernel_, this->address().create(pKeyControlBlock));
+            kernel_, this->ptr_.clone(pKeyControlBlock));
     }
     return *KeyControlBlock_;
 }
@@ -63,11 +63,11 @@ uint64_t CM_KEY_BODY_IMPL<PtrType>::ProcessID() const {
 
 template <typename PtrType>
 CM_KEY_BODY_IMPL<PtrType>::CM_KEY_BODY_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                            const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, CM_KEY_BODY>(kernel, gva, ObjectType::Key), kernel_(kernel),
+                                            const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, CM_KEY_BODY>(kernel, ptr, ObjectType::Key), kernel_(kernel),
       offsets_(LoadOffsets<structs::CM_KEY_BODY>(kernel)) {
 
-    buffer_.reset(gva, offsets_->size());
+    buffer_.reset(ptr, offsets_->size());
 }
 
 template <typename PtrType>
@@ -77,17 +77,17 @@ CM_KEY_BODY_IMPL<PtrType>::CM_KEY_BODY_IMPL(
     : OBJECT_IMPL<PtrType, CM_KEY_BODY>(kernel, std::move(object_header), ObjectType::Key),
       kernel_(kernel), offsets_(LoadOffsets<structs::CM_KEY_BODY>(kernel)) {
 
-    buffer_.reset(OBJECT_IMPL<PtrType, CM_KEY_BODY>::address(), offsets_->size());
+    buffer_.reset(this->ptr_, offsets_->size());
 }
 
 std::shared_ptr<CM_KEY_BODY> CM_KEY_BODY::make_shared(const NtKernel& kernel,
-                                                      const GuestVirtualAddress& gva) {
+                                                      const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<CM_KEY_BODY_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<CM_KEY_BODY_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<CM_KEY_BODY>

@@ -274,7 +274,7 @@ void KvmVcpu::inject_sysenter() {
 int KvmVcpu::event_fd() const { return fd_; }
 
 void KvmVcpu::write_registers() {
-    assert(fd_ != 0);
+    introvirt_assert(fd_ != 0, "");
     registers().write();
 }
 

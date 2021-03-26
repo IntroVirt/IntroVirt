@@ -29,8 +29,6 @@
 #include <introvirt/windows/exception/TypeInformationException.hh>
 #include <introvirt/windows/kernel/nt/types/objects/OBJECT_TYPE.hh>
 
-#include <log4cxx/logger.h>
-
 #include <algorithm>
 #include <array>
 #include <fstream>
@@ -41,29 +39,26 @@ namespace introvirt {
 namespace windows {
 namespace nt {
 
-static log4cxx::LoggerPtr
-    logger(log4cxx::Logger::getLogger("introvirt.windows.kernel.nt.ObTypeIndexTable"));
-
 template <typename PtrType>
-int TypeTableImpl<PtrType>::parseObjectTypeTable(const GuestVirtualAddress& pObTypeIndexTable) {
+int TypeTableImpl<PtrType>::parseObjectTypeTable(const guest_ptr<void>& pObTypeIndexTable) {
 
     // Starting off after the three we pre-populate
     unsigned int idx = 3;
 
     // Arbitrary number that we should never reach
     while (idx < MaxTableSize) {
-        // Get the address of the entry we want to read
-        GuestVirtualAddress ppObjectType = pObTypeIndexTable + (sizeof(PtrType) * idx);
 
         try {
-            // Read the entry. If it's 0, we're at the end of the table.
-            guest_ptr<PtrType> pObjectType(ppObjectType);
-            if (*pObjectType == 0) {
+            // Offset to the entry we want to read
+            // If it's 0, we're at the end of the table.
+            guest_ptr<void*, PtrType> ppObjectType(pObTypeIndexTable + (sizeof(PtrType) * idx));
+            guest_ptr<void> pObjectType = ppObjectType.get();
+            if (!pObjectType) {
                 return idx;
             }
 
             // Parse the object and print some information
-            auto type = OBJECT_TYPE::make_shared(kernel_, pObTypeIndexTable.create(*pObjectType));
+            auto type = OBJECT_TYPE::make_shared(kernel_, pObjectType);
             LOG4CXX_DEBUG(logger,
                           "Found type " << static_cast<int>(type->Index()) << ": " << type->Name());
 
@@ -91,16 +86,16 @@ ObjectType TypeTableImpl<PtrType>::normalize(uint32_t type) const {
 }
 
 template <typename PtrType>
-ObjectType TypeTableImpl<PtrType>::normalize(const GuestVirtualAddress& address) const {
-    auto iter = xp_to_normalized_.find(address.virtual_address());
+ObjectType TypeTableImpl<PtrType>::normalize(const guest_ptr<void>& ptr) const {
+    auto iter = xp_to_normalized_.find(ptr.address());
     if (iter != xp_to_normalized_.end()) {
         return iter->second;
     }
 
-    auto type = OBJECT_TYPE::make_shared(kernel_, address);
+    auto type = OBJECT_TYPE::make_shared(kernel_, ptr);
     const ObjectType index = normalize(type->Index());
 
-    xp_to_normalized_[address.virtual_address()] = index;
+    xp_to_normalized_[ptr.address()] = index;
     return index;
 }
 
@@ -276,7 +271,7 @@ TypeTableImpl<PtrType>::TypeTableImpl(const NtKernelImpl<PtrType>& kernel) : ker
     }
 
     try {
-        const GuestVirtualAddress pObTypeIndexTable = kernel.symbol("ObTypeIndexTable");
+        const guest_ptr<void> pObTypeIndexTable = kernel.symbol("ObTypeIndexTable");
         table_size_ = parseObjectTypeTable(pObTypeIndexTable);
         LOG4CXX_DEBUG(logger, "ObTypeIndexTable initialized: " << table_size_ << " entries");
     } catch (SymbolNotFoundException& ex) {

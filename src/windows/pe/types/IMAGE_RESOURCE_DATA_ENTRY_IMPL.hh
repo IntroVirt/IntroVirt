@@ -38,19 +38,18 @@ struct _IMAGE_RESOURCE_DATA_ENTRY {
 
 class IMAGE_RESOURCE_DATA_ENTRY_IMPL final : public IMAGE_RESOURCE_DATA_ENTRY {
   public:
-    uint32_t OffsetToData() const { return data_->OffsetToData; }
-    uint32_t Size() const { return data_->Size; }
-    uint32_t CodePage() const { return data_->CodePage; }
+    uint32_t OffsetToData() const { return ptr_->OffsetToData; }
+    uint32_t Size() const { return ptr_->Size; }
+    uint32_t CodePage() const { return ptr_->CodePage; }
 
-    GuestVirtualAddress data_address() const { return image_base_ + OffsetToData(); }
+    guest_ptr<void> data_address() const { return image_base_ + OffsetToData(); }
 
-    IMAGE_RESOURCE_DATA_ENTRY_IMPL(const GuestVirtualAddress& image_base,
-                                   const GuestVirtualAddress& gva)
-        : image_base_(image_base), data_(gva) {}
+    IMAGE_RESOURCE_DATA_ENTRY_IMPL(const guest_ptr<void>& image_base, const guest_ptr<void>& ptr)
+        : image_base_(image_base), ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress image_base_;
-    guest_ptr<structs::_IMAGE_RESOURCE_DATA_ENTRY> data_;
+    const guest_ptr<void> image_base_;
+    guest_ptr<structs::_IMAGE_RESOURCE_DATA_ENTRY> ptr_;
 };
 
 } // namespace pe

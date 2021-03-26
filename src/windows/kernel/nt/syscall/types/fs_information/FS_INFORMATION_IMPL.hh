@@ -32,16 +32,16 @@ class FS_INFORMATION_IMPL final : public FS_INFORMATION {
 
     FS_INFORMATION_CLASS FsInformationClass() const override { return class_; }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
     uint32_t buffer_size() const override { return buffer_size_; }
 
-    FS_INFORMATION_IMPL(FS_INFORMATION_CLASS information_class, const GuestVirtualAddress& gva,
+    FS_INFORMATION_IMPL(FS_INFORMATION_CLASS information_class, const guest_ptr<void>& ptr,
                         uint32_t buffer_size)
-        : class_(information_class), gva_(gva), buffer_size_(buffer_size) {}
+        : class_(information_class), ptr_(ptr), buffer_size_(buffer_size) {}
 
   private:
     const FS_INFORMATION_CLASS class_;
-    const GuestVirtualAddress gva_;
+    guest_ptr<void> ptr_;
     const uint32_t buffer_size_;
 };
 

@@ -48,65 +48,65 @@ using SYSTEM_BASIC_INFORMATION_IMPL_BASE =
 
 class SYSTEM_BASIC_INFORMATION_IMPL final : public SYSTEM_BASIC_INFORMATION_IMPL_BASE {
   public:
-    uint32_t TimerResolution() const override { return this->data_->TimerResolution; }
+    uint32_t TimerResolution() const override { return this->ptr_->TimerResolution; }
     void TimerResolution(uint32_t TimerResolution) override {
-        this->data_->TimerResolution = TimerResolution;
+        this->ptr_->TimerResolution = TimerResolution;
     }
 
-    uint32_t PageSize() const override { return this->data_->PageSize; }
-    void PageSize(uint32_t PageSize) override { this->data_->PageSize = PageSize; }
+    uint32_t PageSize() const override { return this->ptr_->PageSize; }
+    void PageSize(uint32_t PageSize) override { this->ptr_->PageSize = PageSize; }
 
-    uint32_t NumberOfPhysicalPages() const override { return this->data_->NumberOfPhysicalPages; }
+    uint32_t NumberOfPhysicalPages() const override { return this->ptr_->NumberOfPhysicalPages; }
     void NumberOfPhysicalPages(uint32_t NumberOfPhysicalPages) override {
-        this->data_->NumberOfPhysicalPages = NumberOfPhysicalPages;
+        this->ptr_->NumberOfPhysicalPages = NumberOfPhysicalPages;
     }
 
     uint32_t LowestPhysicalPageNumber() const override {
-        return this->data_->LowestPhysicalPageNumber;
+        return this->ptr_->LowestPhysicalPageNumber;
     }
     void LowestPhysicalPageNumber(uint32_t LowestPhysicalPageNumber) override {
-        this->data_->LowestPhysicalPageNumber = LowestPhysicalPageNumber;
+        this->ptr_->LowestPhysicalPageNumber = LowestPhysicalPageNumber;
     }
 
     uint32_t HighestPhysicalPageNumber() const override {
-        return this->data_->HighestPhysicalPageNumber;
+        return this->ptr_->HighestPhysicalPageNumber;
     }
     void HighestPhysicalPageNumber(uint32_t HighestPhysicalPageNumber) override {
-        this->data_->HighestPhysicalPageNumber = HighestPhysicalPageNumber;
+        this->ptr_->HighestPhysicalPageNumber = HighestPhysicalPageNumber;
     }
 
-    uint32_t AllocationGranularity() const override { return this->data_->AllocationGranularity; }
+    uint32_t AllocationGranularity() const override { return this->ptr_->AllocationGranularity; }
     void AllocationGranularity(uint32_t AllocationGranularity) override {
-        this->data_->AllocationGranularity = AllocationGranularity;
+        this->ptr_->AllocationGranularity = AllocationGranularity;
     }
 
-    uint32_t MinimumUserModeAddress() const override { return this->data_->MinimumUserModeAddress; }
+    uint32_t MinimumUserModeAddress() const override { return this->ptr_->MinimumUserModeAddress; }
     void MinimumUserModeAddress(uint32_t MinimumUserModeAddress) override {
-        this->data_->MinimumUserModeAddress = MinimumUserModeAddress;
+        this->ptr_->MinimumUserModeAddress = MinimumUserModeAddress;
     }
 
-    uint32_t MaximumUserModeAddress() const override { return this->data_->MaximumUserModeAddress; }
+    uint32_t MaximumUserModeAddress() const override { return this->ptr_->MaximumUserModeAddress; }
     void MaximumUserModeAddress(uint32_t MaximumUserModeAddress) override {
-        this->data_->MaximumUserModeAddress = MaximumUserModeAddress;
+        this->ptr_->MaximumUserModeAddress = MaximumUserModeAddress;
     }
 
     uint32_t ActiveProcessorsAffinityMask() const override {
-        return this->data_->ActiveProcessorsAffinityMask;
+        return this->ptr_->ActiveProcessorsAffinityMask;
     }
     void ActiveProcessorsAffinityMask(uint32_t ActiveProcessorsAffinityMask) override {
-        this->data_->ActiveProcessorsAffinityMask = ActiveProcessorsAffinityMask;
+        this->ptr_->ActiveProcessorsAffinityMask = ActiveProcessorsAffinityMask;
     }
 
-    uint8_t NumberOfProcessors() const override { return this->data_->NumberOfProcessors; }
+    uint8_t NumberOfProcessors() const override { return this->ptr_->NumberOfProcessors; }
     void NumberOfProcessors(uint8_t NumberOfProcessors) override {
-        this->data_->NumberOfProcessors = NumberOfProcessors;
+        this->ptr_->NumberOfProcessors = NumberOfProcessors;
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    SYSTEM_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
-        : SYSTEM_BASIC_INFORMATION_IMPL_BASE(SYSTEM_INFORMATION_CLASS::SystemBasicInformation, gva,
+    SYSTEM_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
+        : SYSTEM_BASIC_INFORMATION_IMPL_BASE(SYSTEM_INFORMATION_CLASS::SystemBasicInformation, ptr,
                                              buffer_size) {}
 };
 

@@ -22,12 +22,12 @@ namespace introvirt {
 namespace windows {
 namespace crypt32 {
 
-std::unique_ptr<CRYPT_VERIFY_MESSAGE_PARA>
-CRYPT_VERIFY_MESSAGE_PARA::make_unique(const GuestVirtualAddress& gva, bool x64) {
+std::shared_ptr<CRYPT_VERIFY_MESSAGE_PARA>
+CRYPT_VERIFY_MESSAGE_PARA::make_shared(const guest_ptr<void>& ptr, bool x64) {
     if (x64) {
-        return std::make_unique<CRYPT_VERIFY_MESSAGE_PARA_IMPL<uint64_t>>(gva);
+        return std::make_shared<CRYPT_VERIFY_MESSAGE_PARA_IMPL<uint64_t>>(ptr);
     }
-    return std::make_unique<CRYPT_VERIFY_MESSAGE_PARA_IMPL<uint32_t>>(gva);
+    return std::make_shared<CRYPT_VERIFY_MESSAGE_PARA_IMPL<uint32_t>>(ptr);
 }
 
 size_t CRYPT_VERIFY_MESSAGE_PARA::size(bool x64) {

@@ -20,7 +20,6 @@
 #include <introvirt/core/domain/Vcpu.hh>
 #include <introvirt/core/event/Event.hh>
 #include <introvirt/core/function/FunctionCall.hh>
-#include <introvirt/core/memory/GuestAddress.hh>
 
 #include <functional>
 #include <memory>
@@ -86,7 +85,7 @@ class FunctionCallFactory final {
         }
     }
 
-    FunctionCallFactory(const GuestAddress& address, std::function<void(Event&, T&)> callback,
+    FunctionCallFactory(const guest_ptr<void>& address, std::function<void(Event&, T&)> callback,
                         std::function<void(Event&, T&)> return_callback,
                         std::function<bool(Event&)> filter = nullptr)
         : callback_(callback), return_callback_(return_callback), filter_(filter) {

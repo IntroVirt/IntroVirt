@@ -15,25 +15,18 @@
  */
 
 #include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/util/n2hexstr.hh>
 
 namespace introvirt {
 
-class VirtualAddressNotPresentException::IMPL {
-  public:
-    GuestVirtualAddress gva_;
-};
-
-GuestVirtualAddress VirtualAddressNotPresentException::virtual_address() const {
-    return pImpl_->gva_;
+uint64_t VirtualAddressNotPresentException::virtual_address() const {
+    return this->virtual_address_;
 }
 
-VirtualAddressNotPresentException::VirtualAddressNotPresentException(const GuestVirtualAddress& gva)
-    : MemoryException("Virtual address " + to_string(gva) + " not present"),
-      pImpl_(std::make_unique<IMPL>()) {
-
-    pImpl_->gva_ = gva;
-}
+VirtualAddressNotPresentException::VirtualAddressNotPresentException(uint64_t virtual_address,
+                                                                     uint64_t page_directory)
+    : MemoryException("Virtual address " + n2hexstr(virtual_address) + " not present"),
+      virtual_address_(virtual_address), page_directory_(page_directory) {}
 
 VirtualAddressNotPresentException::VirtualAddressNotPresentException(
     VirtualAddressNotPresentException&& src) noexcept = default;

@@ -21,7 +21,7 @@
 #include <introvirt/windows/kernel/nt/types/objects/OBJECT_HEADER_PROCESS_INFO.hh>
 #include <introvirt/windows/kernel/nt/types/objects/OBJECT_HEADER_QUOTA_INFO.hh>
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/const/ObjectType.hh>
 
 #include <introvirt/windows/kernel/nt/fwd.hh>
@@ -49,7 +49,7 @@ class OBJECT_HEADER {
     /**
      * @returns The guest address of the object that comes after the header
      */
-    virtual GuestVirtualAddress Body() const = 0;
+    virtual guest_ptr<void> Body() const = 0;
 
     /**
      * @brief Get the creator information
@@ -124,10 +124,10 @@ class OBJECT_HEADER {
     /**
      * @returns The virtual address of the OBJECT_HEADER
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     static std::unique_ptr<OBJECT_HEADER> make_unique(const NtKernel& kernel,
-                                                      const GuestVirtualAddress& gva);
+                                                      const guest_ptr<void>& ptr);
 
     virtual ~OBJECT_HEADER() = default;
 };

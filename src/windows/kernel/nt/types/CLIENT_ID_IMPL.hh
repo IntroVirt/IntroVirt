@@ -18,6 +18,8 @@
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/types/CLIENT_ID.hh>
 
+#include <boost/io/ios_state.hpp>
+
 namespace introvirt {
 namespace windows {
 namespace nt {
@@ -35,24 +37,32 @@ struct _CLIENT_ID {
 template <typename PtrType>
 class CLIENT_ID_IMPL final : public CLIENT_ID {
   public:
-    uint64_t UniqueProcess() const override;
-    uint64_t UniqueThread() const override;
+    uint64_t UniqueProcess() const override { return ptr_->UniqueProcess; }
+    uint64_t UniqueThread() const override { return ptr_->UniqueThread; }
 
-    void UniqueProcess(uint64_t pid) override;
-    void UniqueThread(uint64_t tid) override;
+    void UniqueProcess(uint64_t pid) override { ptr_->UniqueProcess = pid; }
+    void UniqueThread(uint64_t tid) override { ptr_->UniqueThread = tid; }
 
-    void write(std::ostream& os, const std::string& linePrefix = "") const override;
+    void write(std::ostream& os, const std::string& linePrefix = "") const override {
+        boost::io::ios_flags_saver ifs(os);
+        os << std::dec;
+        os << linePrefix << *this << '\n';
+    }
 
-    Json::Value json() const override;
-    operator Json::Value() const override;
+    Json::Value json() const override {
+        Json::Value result;
+        result["UniqueProcess"] = UniqueProcess();
+        result["UniqueThread"] = UniqueThread();
+        return result;
+    }
+    operator Json::Value() const override { return json(); }
 
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    CLIENT_ID_IMPL(const GuestVirtualAddress& gva);
+    CLIENT_ID_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_CLIENT_ID<PtrType>> client_id_;
+    const guest_ptr<structs::_CLIENT_ID<PtrType>> ptr_;
 };
 
 } // namespace nt

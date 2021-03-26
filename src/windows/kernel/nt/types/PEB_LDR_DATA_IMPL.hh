@@ -15,6 +15,10 @@
  */
 #pragma once
 
+#include "LDR_DATA_TABLE_ENTRY_IMPL.hh"
+
+#include "windows/kernel/nt/util/ListParser.hh"
+
 #include "windows/kernel/nt/structs/base.hh"
 #include "windows/kernel/nt/structs/structs.hh"
 
@@ -53,18 +57,39 @@ class NtKernelImpl;
 
 template <typename PtrType>
 class PEB_LDR_DATA_IMPL final : public PEB_LDR_DATA {
+    using _PEB_LDR_DATA = structs::_PEB_LDR_DATA<PtrType>;
+    using _LDR_DATA_TABLE_ENTRY = structs::_LDR_DATA_TABLE_ENTRY<PtrType>;
+
   public:
     const std::vector<std::shared_ptr<const LDR_DATA_TABLE_ENTRY>>&
     InLoadOrderList() const override {
         return InLoadOrderList_;
     }
 
-    PEB_LDR_DATA_IMPL(const GuestVirtualAddress& gva);
+    PEB_LDR_DATA_IMPL(guest_ptr<_PEB_LDR_DATA>&& ptr) : base_(ptr), ptr_(std::move(ptr)) {
+        if (ptr_->Initialized == 0) {
+            // Table not Initialized
+            return;
+        }
+
+        // Let's walk them in load order
+        const uint16_t InLoadOrderListOffset = offsetof(_PEB_LDR_DATA, InLoadOrderModuleList);
+        const uint16_t InLoadOrderLinksOffset = offsetof(_LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+
+        const auto pInLoadOrderList = base_ + InLoadOrderListOffset;
+
+        std::vector<guest_ptr<void>> entries =
+            parse_list_ptrtype<PtrType>(pInLoadOrderList, InLoadOrderLinksOffset);
+
+        for (const guest_ptr<void>& entry : entries) {
+            InLoadOrderList_.emplace_back(
+                std::make_shared<LDR_DATA_TABLE_ENTRY_IMPL<PtrType>>(entry));
+        }
+    }
 
   private:
-    const GuestVirtualAddress gva_;
-
-    guest_ptr<structs::_PEB_LDR_DATA<PtrType>> data_;
+    guest_ptr<void> base_;
+    guest_ptr<_PEB_LDR_DATA> ptr_;
 
     std::vector<std::shared_ptr<const LDR_DATA_TABLE_ENTRY>> InLoadOrderList_;
 };

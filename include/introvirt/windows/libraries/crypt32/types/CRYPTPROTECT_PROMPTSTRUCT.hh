@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 
@@ -34,9 +34,9 @@ class CRYPTPROTECT_PROMPTSTRUCT {
     virtual uint64_t hwndApp() const = 0;
     virtual void hwndApp(uint64_t hwndApp) = 0;
 
-    virtual std::string szPrompt() const = 0;
+    virtual guest_ptr<char[]> szPrompt() const = 0;
 
-    static std::unique_ptr<CRYPTPROTECT_PROMPTSTRUCT> make_unique(const GuestVirtualAddress& gva,
+    static std::shared_ptr<CRYPTPROTECT_PROMPTSTRUCT> make_shared(const guest_ptr<void>& ptr,
                                                                   bool x64);
 
     /**

@@ -49,18 +49,18 @@ using MEMORY_INFORMATION_IMPL_BASE =
 template <typename PtrType>
 class MEMORY_BASIC_INFORMATION_IMPL final : public MEMORY_INFORMATION_IMPL_BASE<PtrType> {
   public:
-    uint64_t BaseAddress() const override { return this->data_->BaseAddress; }
-    uint64_t AllocationBase() const override { return this->data_->AllocationBase; }
-    PAGE_PROTECTION AllocationProtect() const override { return this->data_->AllocationProtect; }
-    uint64_t RegionSize() const override { return this->data_->RegionSize; }
-    MEMORY_ALLOCATION_TYPE State() const override { return this->data_->State; }
-    PAGE_PROTECTION Protect() const override { return this->data_->Protect; }
-    MEMORY_ALLOCATION_TYPE Type() const override { return this->data_->Type; }
+    uint64_t BaseAddress() const override { return this->ptr_->BaseAddress; }
+    uint64_t AllocationBase() const override { return this->ptr_->AllocationBase; }
+    PAGE_PROTECTION AllocationProtect() const override { return this->ptr_->AllocationProtect; }
+    uint64_t RegionSize() const override { return this->ptr_->RegionSize; }
+    MEMORY_ALLOCATION_TYPE State() const override { return this->ptr_->State; }
+    PAGE_PROTECTION Protect() const override { return this->ptr_->Protect; }
+    MEMORY_ALLOCATION_TYPE Type() const override { return this->ptr_->Type; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    MEMORY_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    MEMORY_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 };
 
 } // namespace nt

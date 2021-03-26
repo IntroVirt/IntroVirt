@@ -25,31 +25,31 @@ namespace nt {
 
 template <typename PtrType>
 std::unique_ptr<MEMORY_INFORMATION> make_unique_impl(MEMORY_INFORMATION_CLASS information_class,
-                                                     const GuestVirtualAddress& gva,
+                                                     const guest_ptr<void>& ptr,
                                                      uint32_t buffer_size) {
 
     // TODO(pape): Implement missing types
     switch (information_class) {
     case MEMORY_INFORMATION_CLASS::MemoryBasicInformation:
-        return std::make_unique<MEMORY_BASIC_INFORMATION_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<MEMORY_BASIC_INFORMATION_IMPL<PtrType>>(ptr, buffer_size);
     case MEMORY_INFORMATION_CLASS::MemorySectionName:
-        return std::make_unique<MEMORY_SECTION_NAME_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<MEMORY_SECTION_NAME_IMPL<PtrType>>(ptr, buffer_size);
     }
 
-    return std::make_unique<MEMORY_INFORMATION_IMPL<>>(information_class, gva, buffer_size);
+    return std::make_unique<MEMORY_INFORMATION_IMPL<>>(information_class, ptr, buffer_size);
 }
 
 std::unique_ptr<MEMORY_INFORMATION>
 MEMORY_INFORMATION::make_unique(const NtKernel& kernel, MEMORY_INFORMATION_CLASS information_class,
-                                const GuestVirtualAddress& gva, uint32_t buffer_size) {
+                                const guest_ptr<void>& ptr, uint32_t buffer_size) {
 
     if (unlikely(buffer_size == 0))
         return nullptr;
 
     if (kernel.x64())
-        return make_unique_impl<uint64_t>(information_class, gva, buffer_size);
+        return make_unique_impl<uint64_t>(information_class, ptr, buffer_size);
     else
-        return make_unique_impl<uint32_t>(information_class, gva, buffer_size);
+        return make_unique_impl<uint32_t>(information_class, ptr, buffer_size);
 }
 
 } // namespace nt

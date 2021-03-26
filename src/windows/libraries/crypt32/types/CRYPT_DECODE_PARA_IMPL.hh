@@ -30,33 +30,31 @@ namespace structs {
 template <typename PtrType>
 struct _CRYPT_DECODE_PARA {
     uint32_t cbSize;
-    PtrType pfnAlloc;
-    PtrType pfnFree;
+    guest_member_ptr<void, PtrType> pfnAlloc;
+    guest_member_ptr<void, PtrType> pfnFree;
 };
+
+static_assert(sizeof(_CRYPT_DECODE_PARA<uint32_t>) == 12);
+static_assert(sizeof(_CRYPT_DECODE_PARA<uint64_t>) == 24);
 
 } // namespace structs
 
 template <typename PtrType>
 class CRYPT_DECODE_PARA_IMPL final : public CRYPT_DECODE_PARA {
   public:
-    uint32_t cbSize() const override { return data_->cbSize; }
-    void cbSize(uint32_t cbSize) override { data_->cbSize = cbSize; }
+    uint32_t cbSize() const override { return ptr_->cbSize; }
+    void cbSize(uint32_t cbSize) override { ptr_->cbSize = cbSize; }
 
-    GuestVirtualAddress pfnAlloc() const override { return gva_.create(data_->pfnAlloc); }
-    void pfnAlloc(const GuestVirtualAddress& gva) override {
-        data_->pfnAlloc = gva.virtual_address();
-    }
+    guest_ptr<void> pfnAlloc() const override { return ptr_->pfnAlloc.get(ptr_); }
+    void pfnAlloc(const guest_ptr<void>& ptr) override { ptr_->pfnAlloc.set(ptr); }
 
-    GuestVirtualAddress pfnFree() const override { return gva_.create(data_->pfnFree); }
-    void pfnFree(const GuestVirtualAddress& gva) override {
-        data_->pfnFree = gva.virtual_address();
-    }
+    guest_ptr<void> pfnFree() const override { return ptr_->pfnFree.get(ptr_); }
+    void pfnFree(const guest_ptr<void>& ptr) override { ptr_->pfnFree.set(ptr); }
 
-    CRYPT_DECODE_PARA_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    CRYPT_DECODE_PARA_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_CRYPT_DECODE_PARA<PtrType>> data_;
+    guest_ptr<structs::_CRYPT_DECODE_PARA<PtrType>> ptr_;
 };
 
 } // namespace crypt32

@@ -55,7 +55,7 @@ void print_guest_information(const WindowsGuest& guest, po::variables_map& vm) {
     std::cout << "  CPUs: " << kernel.cpu_count() << '\n';
     std::cout << "  Version: " << kernel.MajorVersion() << '.' << kernel.MinorVersion() << '\n';
     std::cout << "  Build: " << kernel.NtBuildNumber() << '\n';
-    std::cout << "  Base: " << kernel.base_address() << '\n';
+    std::cout << "  Base: " << kernel.ptr() << '\n';
     if (cv_info) {
         std::cout << "  PDB: " << cv_info->PdbFileName() << " " << cv_info->PdbIdentifier() << '\n';
     }
@@ -64,7 +64,8 @@ void print_guest_information(const WindowsGuest& guest, po::variables_map& vm) {
     std::cout << "  Loaded kernel modules: " << drivers.size() << '\n';
     if (vm.count("drivers")) {
         for (const auto& module : kernel.PsLoadedModuleList()) {
-            std::cout << "    " << module->DllBase() << ": " << module->FullDllName() << '\n';
+            std::cout << "    " << n2hexstr(module->DllBase()) << ": " << module->FullDllName()
+                      << '\n';
         }
     }
 }

@@ -97,8 +97,8 @@ class TOKEN_PRIVILEGES : public TOKEN_INFORMATION {
      */
     virtual const_iterator end() const = 0;
 
-    static std::unique_ptr<TOKEN_PRIVILEGES> make_unique(const GuestVirtualAddress& gva);
-    static std::unique_ptr<TOKEN_PRIVILEGES> make_unique(const GuestVirtualAddress& gva,
+    static std::unique_ptr<TOKEN_PRIVILEGES> make_unique(const guest_ptr<void>& ptr);
+    static std::unique_ptr<TOKEN_PRIVILEGES> make_unique(const guest_ptr<void>& ptr,
                                                          uint32_t buffer_size);
 };
 

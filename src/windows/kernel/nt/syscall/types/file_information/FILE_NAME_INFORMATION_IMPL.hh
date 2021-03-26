@@ -39,14 +39,14 @@ class FILE_NAME_INFORMATION_IMPL final : public FILE_NAME_INFORMATION {
     const std::string& FileName() const override { return FileName_->utf8(); }
     void FileName(const std::string& value) override {
         FileName_->set(value);
-        data_->FileNameLength = FileName_->Length();
+        ptr_->FileNameLength = FileName_->Length();
     }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileNameInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -54,12 +54,11 @@ class FILE_NAME_INFORMATION_IMPL final : public FILE_NAME_INFORMATION {
 
     Json::Value json() const override;
 
-    FILE_NAME_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_NAME_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_NAME_INFORMATION> data_;
+    guest_ptr<structs::_FILE_NAME_INFORMATION> ptr_;
     std::optional<WStr> FileName_;
 };
 

@@ -116,52 +116,52 @@ struct _IMAGE_OPTIONAL_HEADER<uint64_t> {
 template <typename PtrType>
 class IMAGE_OPTIONAL_HEADER_IMPL final : public IMAGE_OPTIONAL_HEADER {
   public:
-    uint16_t Magic() const override { return data_->Magic; }
-    uint8_t MajorLinkerVersion() const override { return data_->MajorLinkerVersion; }
-    uint8_t MinorLinkerVersion() const override { return data_->MinorLinkerVersion; }
-    uint32_t SizeOfCode() const override { return data_->SizeOfCode; }
-    uint32_t SizeOfInitializedData() const override { return data_->SizeOfInitializedData; }
-    uint32_t SizeOfUninitializedData() const override { return data_->SizeOfUninitializedData; }
-    GuestVirtualAddress AddressOfEntryPoint() const override {
-        return image_base_ + data_->AddressOfEntryPoint;
+    uint16_t Magic() const override { return ptr_->Magic; }
+    uint8_t MajorLinkerVersion() const override { return ptr_->MajorLinkerVersion; }
+    uint8_t MinorLinkerVersion() const override { return ptr_->MinorLinkerVersion; }
+    uint32_t SizeOfCode() const override { return ptr_->SizeOfCode; }
+    uint32_t SizeOfInitializedData() const override { return ptr_->SizeOfInitializedData; }
+    uint32_t SizeOfUninitializedData() const override { return ptr_->SizeOfUninitializedData; }
+    guest_ptr<void> AddressOfEntryPoint() const override {
+        return image_base_ + ptr_->AddressOfEntryPoint;
     }
-    GuestVirtualAddress BaseOfCode() const override { return image_base_ + data_->BaseOfCode; }
-    GuestVirtualAddress BaseOfData() const override {
+    guest_ptr<void> BaseOfCode() const override { return image_base_ + ptr_->BaseOfCode; }
+    guest_ptr<void> BaseOfData() const override {
         if constexpr (std::is_same_v<PtrType, uint64_t>) {
-            return NullGuestAddress();
+            return nullptr;
         } else {
-            return image_base_ + data_->BaseOfData;
+            return image_base_ + ptr_->BaseOfData;
         }
     }
-    uint64_t ImageBase() const override { return data_->ImageBase; }
-    uint32_t SectionAlignment() const override { return data_->SectionAlignment; }
-    uint32_t FileAlignment() const override { return data_->FileAlignment; }
+    uint64_t ImageBase() const override { return ptr_->ImageBase; }
+    uint32_t SectionAlignment() const override { return ptr_->SectionAlignment; }
+    uint32_t FileAlignment() const override { return ptr_->FileAlignment; }
     uint16_t MajorOperatingSystemVersion() const override {
-        return data_->MajorOperatingSystemVersion;
+        return ptr_->MajorOperatingSystemVersion;
     }
     uint16_t MinorOperatingSystemVersion() const override {
-        return data_->MinorOperatingSystemVersion;
+        return ptr_->MinorOperatingSystemVersion;
     }
-    uint16_t MajorImageVersion() const override { return data_->MajorImageVersion; }
-    uint16_t MinorImageVersion() const override { return data_->MinorImageVersion; }
-    uint16_t MajorSubsystemVersion() const override { return data_->MajorSubsystemVersion; }
-    uint16_t MinorSubsystemVersion() const override { return data_->MinorSubsystemVersion; }
-    uint32_t Win32VersionValue() const override { return data_->Win32VersionValue; }
-    uint32_t SizeOfImage() const override { return data_->SizeOfImage; }
-    uint32_t SizeOfHeaders() const override { return data_->SizeOfHeaders; }
-    uint32_t CheckSum() const override { return data_->CheckSum; }
-    uint16_t Subsystem() const override { return data_->Subsystem; }
-    uint16_t DllCharacteristics() const override { return data_->DllCharacteristics; }
-    uint64_t SizeOfStackReserve() const override { return data_->SizeOfStackReserve; }
-    uint64_t SizeOfStackCommit() const override { return data_->SizeOfStackCommit; }
-    uint64_t SizeOfHeapReserve() const override { return data_->SizeOfHeapReserve; }
-    uint64_t SizeOfHeapCommit() const override { return data_->SizeOfHeapCommit; }
-    uint32_t LoaderFlags() const override { return data_->LoaderFlags; }
-    uint32_t NumberOfRvaAndSizes() const override { return data_->NumberOfRvaAndSizes; }
+    uint16_t MajorImageVersion() const override { return ptr_->MajorImageVersion; }
+    uint16_t MinorImageVersion() const override { return ptr_->MinorImageVersion; }
+    uint16_t MajorSubsystemVersion() const override { return ptr_->MajorSubsystemVersion; }
+    uint16_t MinorSubsystemVersion() const override { return ptr_->MinorSubsystemVersion; }
+    uint32_t Win32VersionValue() const override { return ptr_->Win32VersionValue; }
+    uint32_t SizeOfImage() const override { return ptr_->SizeOfImage; }
+    uint32_t SizeOfHeaders() const override { return ptr_->SizeOfHeaders; }
+    uint32_t CheckSum() const override { return ptr_->CheckSum; }
+    uint16_t Subsystem() const override { return ptr_->Subsystem; }
+    uint16_t DllCharacteristics() const override { return ptr_->DllCharacteristics; }
+    uint64_t SizeOfStackReserve() const override { return ptr_->SizeOfStackReserve; }
+    uint64_t SizeOfStackCommit() const override { return ptr_->SizeOfStackCommit; }
+    uint64_t SizeOfHeapReserve() const override { return ptr_->SizeOfHeapReserve; }
+    uint64_t SizeOfHeapCommit() const override { return ptr_->SizeOfHeapCommit; }
+    uint32_t LoaderFlags() const override { return ptr_->LoaderFlags; }
+    uint32_t NumberOfRvaAndSizes() const override { return ptr_->NumberOfRvaAndSizes; }
 
     const structs::_IMAGE_DATA_DIRECTORY& data_directory(ImageDirectoryType type) const {
-        assert(type <= IMAGE_DIRECTORY_ENTRY_MAX);
-        return data_->DataDirectory[type];
+        introvirt_assert(type <= IMAGE_DIRECTORY_ENTRY_MAX, "");
+        return ptr_->DataDirectory[type];
     }
 
     const IMAGE_RELOCATION_SECTION* basereloc_directory() const override {
@@ -264,8 +264,8 @@ class IMAGE_OPTIONAL_HEADER_IMPL final : public IMAGE_OPTIONAL_HEADER {
             if (!import_directory_) {
                 const auto& dir = data_directory(ImageDirectoryType::IMAGE_DIRECTORY_ENTRY_IMPORT);
                 if (dir.VirtualAddress) {
-                    const auto ptr = image_base_ + dir.VirtualAddress;
-                    resource_directory_.emplace(image_base_, ptr, dir.Size);
+                    import_directory_.emplace(image_base_, image_base_ + dir.VirtualAddress,
+                                              dir.Size);
                 }
             }
         }
@@ -276,17 +276,15 @@ class IMAGE_OPTIONAL_HEADER_IMPL final : public IMAGE_OPTIONAL_HEADER {
         return nullptr;
     }
 
-    inline GuestVirtualAddress address() const override { return gva_; }
+    inline guest_ptr<void> ptr() const override { return ptr_; }
     inline bool x64() const override { return std::is_same_v<PtrType, uint64_t>; }
 
-    IMAGE_OPTIONAL_HEADER_IMPL(const GuestVirtualAddress& image_base,
-                               const GuestVirtualAddress& gva)
-        : image_base_(image_base), gva_(gva), data_(gva_) {}
+    IMAGE_OPTIONAL_HEADER_IMPL(const guest_ptr<void>& image_base, const guest_ptr<void>& ptr)
+        : image_base_(image_base), ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress image_base_;
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_IMAGE_OPTIONAL_HEADER<PtrType>> data_;
+    const guest_ptr<void> image_base_;
+    guest_ptr<structs::_IMAGE_OPTIONAL_HEADER<PtrType>> ptr_;
 
     mutable std::mutex basereloc_directory_init_;
     mutable std::optional<IMAGE_RELOCATION_SECTION_IMPL> basereloc_directory_;

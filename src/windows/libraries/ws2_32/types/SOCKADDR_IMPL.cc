@@ -23,16 +23,16 @@ namespace introvirt {
 namespace windows {
 namespace ws2_32 {
 
-std::unique_ptr<SOCKADDR> SOCKADDR::make_unique(const GuestVirtualAddress& gva, bool x64) {
+std::shared_ptr<SOCKADDR> SOCKADDR::make_shared(const guest_ptr<void>& ptr, bool x64) {
     // Read the family at the given address
 
-    const uint16_t sa_family = *guest_ptr<uint16_t>(gva);
+    const uint16_t sa_family = *guest_ptr<uint16_t>(ptr);
     switch (sa_family) {
     case AF_INET:
-        return std::make_unique<SOCKADDR_IN_IMPL>(gva);
+        return std::make_shared<SOCKADDR_IN_IMPL>(ptr);
     }
 
-    return std::make_unique<SOCKADDR_IMPL>(gva);
+    return std::make_shared<SOCKADDR_IMPL>(ptr);
 }
 
 size_t SOCKADDR::size(bool x64) { return sizeof(structs::_SOCKADDR); }

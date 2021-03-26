@@ -22,7 +22,6 @@
 #include <introvirt/windows/pe.hh>
 
 #include <introvirt/core/domain/Vcpu.hh>
-#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/compiler.hh>
 
 #include <log4cxx/logger.h>
@@ -64,23 +63,24 @@ uint64_t DBGKD_GET_VERSION64_IMPL::PsLoadedModuleList() const {
 }
 
 DBGKD_GET_VERSION64_IMPL::DBGKD_GET_VERSION64_IMPL(const NtKernel& kernel) {
-    GuestVirtualAddress kernel_base = kernel.base_address();
+    const guest_ptr<void>& kernel_base = kernel.ptr();
     const Domain& domain = kernel_base.domain();
 
     try {
         // Find the address of KdVersionBlock using the PDB file
-        GuestVirtualAddress ptr = kernel.symbol("KdVersionBlock");
-
+        guest_ptr<void> ptr = kernel.symbol("KdVersionBlock");
+        introvirt_assert(ptr, "");
         LOG4CXX_DEBUG(logger, "KdVersionBlock: " << ptr);
 
         // Try to map in the structure
         header_.reset(ptr);
+        introvirt_assert(header_, "");
     } catch (SymbolNotFoundException& ex) {
         throw GuestDetectionException(domain, "Failed to find KdVersionBlock in PDB file");
     }
 
     // Sanity checks
-    if (KernelBase() != kernel_base.virtual_address()) {
+    if (KernelBase() != kernel_base.address()) {
         throw GuestDetectionException(domain, "KdVersionBlock kernel base mismatch");
     }
 }

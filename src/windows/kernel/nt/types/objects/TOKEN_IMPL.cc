@@ -96,14 +96,13 @@ void TOKEN_IMPL<PtrType>::PrivilegesEnabled(uint64_t Privileges) {
 }
 
 template <typename PtrType>
-void TOKEN_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel,
-                               const GuestVirtualAddress& gva) {
+void TOKEN_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr) {
     // Load offsets
     token = LoadOffsets<structs::TOKEN>(kernel);
     auto sid_and_attributes = LoadOffsets<structs::SID_AND_ATTRIBUTES>(kernel);
 
     // Map in the structure
-    buffer.reset(gva, token->size());
+    buffer.reset(ptr, token->size());
 
     const uint32_t UserAndGroupCount = token->UserAndGroupCount.get<uint32_t>(buffer);
     if (unlikely(UserAndGroupCount == 0))
@@ -115,23 +114,23 @@ void TOKEN_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel,
      * with header->UserAndGroupCount elements. Each element is sizeof(_SID_AND_ATTRIBUTES). The
      * first element is the User, the rest are Groups
      */
-    const auto pUserAndGroups = gva.create(token->UserAndGroups.get<PtrType>(buffer));
+    const auto pUserAndGroups = ptr.clone(token->UserAndGroups.get<PtrType>(buffer));
     user_.emplace(pUserAndGroups);
     for (size_t i = 1; i < UserAndGroupCount; ++i) {
         const auto pSidAndAttributes = pUserAndGroups + (i * sid_and_attributes->size());
         groups_.emplace_back(std::make_shared<SID_AND_ATTRIBUTES_IMPL<PtrType>>(pSidAndAttributes));
     }
 
-    const auto pPrimaryGroup = gva.create(token->PrimaryGroup.get<PtrType>(buffer));
+    const auto pPrimaryGroup = ptr.clone(token->PrimaryGroup.get<PtrType>(buffer));
     if (pPrimaryGroup)
         primary_group_.emplace(pPrimaryGroup);
 }
 
 template <typename PtrType>
-TOKEN_IMPL<PtrType>::TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, TOKEN>(kernel, gva, ObjectType::Token), kernel_(kernel) {
+TOKEN_IMPL<PtrType>::TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, TOKEN>(kernel, ptr, ObjectType::Token), kernel_(kernel) {
 
-    init(kernel, gva);
+    init(kernel, ptr);
 }
 
 template <typename PtrType>
@@ -140,16 +139,16 @@ TOKEN_IMPL<PtrType>::TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel,
     : OBJECT_IMPL<PtrType, TOKEN>(kernel, std::move(object_header), ObjectType::Token),
       kernel_(kernel) {
 
-    init(kernel, OBJECT_IMPL<PtrType, TOKEN>::address());
+    init(kernel, this->ptr_);
 }
 
-std::shared_ptr<TOKEN> TOKEN::make_shared(const NtKernel& kernel, const GuestVirtualAddress& gva) {
+std::shared_ptr<TOKEN> TOKEN::make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<TOKEN_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<TOKEN_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<TOKEN> TOKEN::make_shared(const NtKernel& kernel,

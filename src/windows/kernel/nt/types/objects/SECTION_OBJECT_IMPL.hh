@@ -37,15 +37,15 @@ class SECTION_OBJECT_IMPL final : public OBJECT_IMPL<PtrType, SECTION> {
     uint64_t StartingVpn() const override;
     uint64_t EndingVpn() const override;
 
-    GuestVirtualAddress StartingVa() const override;
-    GuestVirtualAddress EndingVa() const override;
+    guest_ptr<void> StartingVa() const override;
+    guest_ptr<void> EndingVa() const override;
 
     uint64_t SizeOfSection() const override;
 
     const CONTROL_AREA* ControlArea() const override;
     const FILE_OBJECT* FileObject() const override;
 
-    SECTION_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    SECTION_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     SECTION_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel,
                         std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 

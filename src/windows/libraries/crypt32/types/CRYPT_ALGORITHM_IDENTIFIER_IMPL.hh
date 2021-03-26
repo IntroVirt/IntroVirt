@@ -31,7 +31,7 @@ namespace structs {
 
 template <typename PtrType>
 struct _CRYPT_ALGORITHM_IDENTIFIER {
-    PtrType pszObjId;
+    guest_member_ptr<char[], PtrType> pszObjId;
     _CRYPTOAPI_BLOB<PtrType> Parameters;
 };
 
@@ -40,26 +40,18 @@ struct _CRYPT_ALGORITHM_IDENTIFIER {
 template <typename PtrType>
 class CRYPT_ALGORITHM_IDENTIFIER_IMPL final : public CRYPT_ALGORITHM_IDENTIFIER {
   public:
-    GuestVirtualAddress pszObjId() const override { return gva_.create(data_->pszObjId); }
-    void pszObjId(const GuestVirtualAddress& gva) override {
-        data_->pszObjId = gva.virtual_address();
-    }
+    guest_ptr<char[]> pszObjId() const override { return ptr_->pszObjId.cstring(ptr_); }
+    void pszObjId(const guest_ptr<char[]>& ptr) override { ptr_->pszObjId.set(ptr); }
 
     const CRYPTOAPI_BLOB& Parameters() const override { return blob_; }
     CRYPTOAPI_BLOB& Parameters() override { return blob_; }
 
-    std::string szObjId() const override {
-        auto mapping = map_guest_cstr(pszObjId());
-        return std::string(mapping.get(), mapping.length());
-    }
-
-    CRYPT_ALGORITHM_IDENTIFIER_IMPL(const GuestVirtualAddress& gva)
-        : gva_(gva), data_(gva),
-          blob_(gva_ + offsetof(structs::_CRYPT_ALGORITHM_IDENTIFIER<PtrType>, Parameters)) {}
+    CRYPT_ALGORITHM_IDENTIFIER_IMPL(const guest_ptr<void>& ptr)
+        : ptr_(ptr), blob_(ptr + offsetof(_CRYPT_ALGORITHM_IDENTIFIER, Parameters)) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_CRYPT_ALGORITHM_IDENTIFIER<PtrType>> data_;
+    using _CRYPT_ALGORITHM_IDENTIFIER = structs::_CRYPT_ALGORITHM_IDENTIFIER<PtrType>;
+    guest_ptr<_CRYPT_ALGORITHM_IDENTIFIER> ptr_;
     CRYPTOAPI_BLOB_IMPL<PtrType> blob_;
 };
 

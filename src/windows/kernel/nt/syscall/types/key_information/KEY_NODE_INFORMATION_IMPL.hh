@@ -43,12 +43,12 @@ static_assert(sizeof(_KEY_NODE_INFORMATION) == 0x18);
 class KEY_NODE_INFORMATION_IMPL final : public KEY_NODE_INFORMATION {
   public:
     WindowsTime LastWriteTime() const override {
-        return WindowsTime::from_windows_time(data_->LastWriteTime);
+        return WindowsTime::from_windows_time(ptr_->LastWriteTime);
     }
-    void LastWriteTime(WindowsTime value) override { data_->LastWriteTime = value.windows_time(); }
+    void LastWriteTime(WindowsTime value) override { ptr_->LastWriteTime = value.windows_time(); }
 
-    uint32_t TitleIndex() const override { return data_->TitleIndex; }
-    void TitleIndex(uint32_t value) override { data_->TitleIndex = value; }
+    uint32_t TitleIndex() const override { return ptr_->TitleIndex; }
+    void TitleIndex(uint32_t value) override { ptr_->TitleIndex = value; }
 
     const std::string& Class() const override { return ClassName_->utf8(); }
     void Class(const std::string& value) override { ClassName_->set(value); }
@@ -60,7 +60,7 @@ class KEY_NODE_INFORMATION_IMPL final : public KEY_NODE_INFORMATION {
         return KEY_INFORMATION_CLASS::KeyNodeInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -68,12 +68,11 @@ class KEY_NODE_INFORMATION_IMPL final : public KEY_NODE_INFORMATION {
 
     Json::Value json() const override;
 
-    KEY_NODE_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    KEY_NODE_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_KEY_NODE_INFORMATION> data_;
+    guest_ptr<structs::_KEY_NODE_INFORMATION> ptr_;
     std::optional<WStr> ClassName_;
     std::optional<WStr> Name_;
 };

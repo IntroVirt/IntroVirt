@@ -32,7 +32,7 @@ namespace structs {
 
 template <typename PtrType>
 struct _TOKEN_OWNER {
-    PtrType Owner;
+    guest_member_ptr<_SID, PtrType> Owner;
 };
 
 } // namespace structs
@@ -41,8 +41,8 @@ template <typename PtrType>
 class TOKEN_OWNER_IMPL final
     : public TOKEN_INFORMATION_IMPL<TOKEN_OWNER, structs::_TOKEN_OWNER<PtrType>> {
   public:
-    GuestVirtualAddress OwnerPtr() const override;
-    void OwnerPtr(const GuestVirtualAddress& gva) override;
+    guest_ptr<void> OwnerPtr() const override;
+    void OwnerPtr(const guest_ptr<void>& ptr) override;
 
     SID* Owner() override;
     const SID* Owner() const override;
@@ -51,7 +51,7 @@ class TOKEN_OWNER_IMPL final
 
     Json::Value json() const override;
 
-    TOKEN_OWNER_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    TOKEN_OWNER_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
     using TOKEN_OWNER_IMPL_BASE =

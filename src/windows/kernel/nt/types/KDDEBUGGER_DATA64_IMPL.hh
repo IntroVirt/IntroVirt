@@ -17,7 +17,6 @@
 
 #include "windows/kernel/nt/structs/base.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/types/KDDEBUGGER_DATA64.hh>
 
@@ -53,15 +52,14 @@ class KDDEBUGGER_DATA64_IMPL final : public KDDEBUGGER_DATA64 {
     KDDEBUGGER_DATA64_IMPL(const NtKernel& kernel);
 
   private:
-    GuestVirtualAddress kiProcessorBlock_;
     uint32_t CmNtCSDVersion_ = 0;
 
     std::string NtBuildLab_;
     structs::_KDDEBUGGER_DATA64 debuggerData_{};
 
-    guest_ptr<PtrType> pObpTypeObjectType_;
-    guest_ptr<PtrType> pObpRootDirectoryObject_;
-    guest_ptr<PtrType> pPspCidTable_;
+    guest_ptr<const PtrType> pObpTypeObjectType_;
+    guest_ptr<const PtrType> pObpRootDirectoryObject_;
+    guest_ptr<const PtrType> pPspCidTable_;
 };
 
 } // namespace nt

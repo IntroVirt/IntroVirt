@@ -43,22 +43,22 @@ static_assert(sizeof(_FILE_RENAME_INFORMATION<uint64_t>) == 0x14);
 template <typename PtrType>
 class FILE_RENAME_INFORMATION_IMPL final : public FILE_RENAME_INFORMATION {
   public:
-    bool ReplaceIfExists() const override { return data_->ReplaceIfExists; }
-    uint64_t RootDirectory() const override { return data_->RootDirectory; }
+    bool ReplaceIfExists() const override { return ptr_->ReplaceIfExists; }
+    uint64_t RootDirectory() const override { return ptr_->RootDirectory; }
     const std::string& FileName() const override { return FileName_->utf8(); }
 
-    void ReplaceIfExists(bool value) override { data_->ReplaceIfExists = value; }
-    void RootDirectory(uint64_t value) override { data_->RootDirectory = value; }
+    void ReplaceIfExists(bool value) override { ptr_->ReplaceIfExists = value; }
+    void RootDirectory(uint64_t value) override { ptr_->RootDirectory = value; }
     void FileName(const std::string& value) override {
         FileName_->set(value);
-        data_->FileNameLength = FileName_->Length();
+        ptr_->FileNameLength = FileName_->Length();
     }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileRenameInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -66,12 +66,11 @@ class FILE_RENAME_INFORMATION_IMPL final : public FILE_RENAME_INFORMATION {
 
     Json::Value json() const override;
 
-    FILE_RENAME_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_RENAME_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_RENAME_INFORMATION<PtrType>> data_;
+    guest_ptr<structs::_FILE_RENAME_INFORMATION<PtrType>> ptr_;
     std::optional<WStr> FileName_;
 };
 

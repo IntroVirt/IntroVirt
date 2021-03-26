@@ -29,7 +29,6 @@
 #include <introvirt/core/exception/SystemCallInjectionException.hh>
 #include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
 #include <introvirt/core/injection/system_call.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/fwd.hh>
 #include <introvirt/windows/event/WindowsEvent.hh>
 #include <introvirt/windows/kernel/nt/const/NTSTATUS.hh>
@@ -157,7 +156,7 @@ class SystemCallInjector final {
     SystemCallInjector(Event& event, SystemCallIndex index, unsigned int argument_count,
                        unsigned int additional_stack)
         : event_(static_cast<WindowsEvent&>(event)), guest_(event_.guest()) {
-        assert(event.os_type() == OS::Windows);
+        introvirt_assert(event.os_type() == OS::Windows, "");
 
         auto& vcpu = event_.vcpu();
         auto& regs = vcpu.registers();
@@ -204,10 +203,9 @@ class SystemCallInjector final {
         do {
             auto& vcpu = event_.vcpu();
 
-            // Make sure the page is accessible
-            GuestVirtualAddress ptr(vcpu, i);
             try {
-                guest_ptr<uint8_t> p(ptr);
+                // Make sure the page is accessible
+                guest_ptr<uint8_t> p(vcpu, i);
             } catch (VirtualAddressNotPresentException& ex) {
                 LOG4CXX_DEBUG(syscall_injector_logger,
                               "Stack " << ex.virtual_address()
@@ -229,9 +227,10 @@ class SystemCallInjector final {
                     }
                 }
 
-                auto result = introvirt::inject::system_call<nt::NtDeleteFile>(ptr);
+                auto result =
+                    introvirt::inject::system_call<nt::NtDeleteFile>(guest_ptr<void>(vcpu, i));
                 LOG4CXX_DEBUG(syscall_injector_logger,
-                              "Paged in stack " << ptr << " via NtDeleteFile hack: " << result);
+                              "Paged in stack via NtDeleteFile hack: " << result);
 
                 // Okay we should be paged in!
             }
@@ -240,7 +239,8 @@ class SystemCallInjector final {
     }
 
     void begin_sysenter(unsigned int arg_count, unsigned int additional_stack) {
-        auto& regs = event_.vcpu().registers();
+        auto& vcpu = event_.vcpu();
+        auto& regs = vcpu.registers();
         uint64_t rip;
 
         /*
@@ -268,13 +268,13 @@ class SystemCallInjector final {
         // In KVM, since the RIP changes, it won't happen twice.
         // It will not work if the VCPU is already in the kernel, though!
         // For example, if we do this in a CR3 write event the guest will die.
-        event_.vcpu().inject_sysenter();
+        vcpu.inject_sysenter();
 
         switch (event_.type()) {
         case EventType::EVENT_FAST_SYSCALL:
             // SYSENTER has already been triggered
             // Get the original return address from the stack
-            rip = *guest_ptr<uint32_t>(GuestVirtualAddress(regs.rdx()));
+            rip = *guest_ptr<uint32_t>(vcpu, regs.rdx());
             // Windows has moved the userland stack pointer to RDX, move it back to make some room
             regs.rdx(regs.rdx() - stack_offset);
             break;
@@ -293,7 +293,7 @@ class SystemCallInjector final {
         rsp_ = regs.rdx();
 
         // Write the return address on our new stack
-        *guest_ptr<uint32_t>(GuestVirtualAddress(regs.rdx())) = rip;
+        *guest_ptr<uint32_t>(vcpu, regs.rdx()) = rip;
     }
 
     void begin_syscall(unsigned int arg_count, unsigned int additional_stack) {

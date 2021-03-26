@@ -33,7 +33,7 @@ class IMAGE_EXCEPTION_SECTION_IMPL final : public IMAGE_EXCEPTION_SECTION {
   public:
     const RUNTIME_FUNCTION* get_function_at_rva(uint32_t rva) const {
         const unsigned int index =
-            (rva - exception_section_.value()) / sizeof(structs::_RUNTIME_FUNCTION);
+            (rva - exception_section_.address()) / sizeof(structs::_RUNTIME_FUNCTION);
 
         return functionAtIndex(index);
     }
@@ -42,7 +42,7 @@ class IMAGE_EXCEPTION_SECTION_IMPL final : public IMAGE_EXCEPTION_SECTION {
         // binary search
         int high = count_, low = 0;
         const RUNTIME_FUNCTION* found = nullptr;
-        const uint64_t codeOffset = rip - image_base_address_.virtual_address();
+        const uint64_t codeOffset = rip - image_base_address_.address();
 
         while (low < high && (found == nullptr)) {
             unsigned int index = (high + low) / 2;
@@ -60,10 +60,10 @@ class IMAGE_EXCEPTION_SECTION_IMPL final : public IMAGE_EXCEPTION_SECTION {
         return found;
     }
 
-    GuestVirtualAddress image_base_address() const { return image_base_address_; }
+    guest_ptr<void> image_base_address() const { return image_base_address_; }
 
-    IMAGE_EXCEPTION_SECTION_IMPL(const GuestVirtualAddress& image_base_address,
-                                 const GuestVirtualAddress& exception_section, uint32_t size)
+    IMAGE_EXCEPTION_SECTION_IMPL(const guest_ptr<void>& image_base_address,
+                                 const guest_ptr<void>& exception_section, uint32_t size)
         : image_base_address_(image_base_address), exception_section_(exception_section) {
 
         count_ = size / sizeof(structs::_RUNTIME_FUNCTION);
@@ -76,8 +76,8 @@ class IMAGE_EXCEPTION_SECTION_IMPL final : public IMAGE_EXCEPTION_SECTION {
 
         auto iter = cache_.find(index);
         if (iter == cache_.end()) {
-            const GuestVirtualAddress pentry =
-                exception_section_.value() + (index * sizeof(structs::_RUNTIME_FUNCTION));
+            const guest_ptr<void> pentry = image_base_address_.clone(
+                exception_section_.address() + (index * sizeof(structs::_RUNTIME_FUNCTION)));
 
             auto result = cache_.try_emplace(index, this, pentry);
             return &(result.first->second);
@@ -87,8 +87,8 @@ class IMAGE_EXCEPTION_SECTION_IMPL final : public IMAGE_EXCEPTION_SECTION {
     }
 
   private:
-    const GuestVirtualAddress image_base_address_;
-    const GuestVirtualAddress exception_section_;
+    const guest_ptr<void> image_base_address_;
+    const guest_ptr<void> exception_section_;
     mutable std::map<int, RUNTIME_FUNCTION_IMPL> cache_;
     uint32_t count_;
 };

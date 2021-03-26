@@ -32,58 +32,55 @@ namespace kernel32 {
 
 template <typename PtrType>
 uint64_t PROCESS_INFORMATION_IMPL<PtrType>::hProcess() const {
-    return buffer_->hProcess;
+    return ptr_->hProcess;
 }
 template <typename PtrType>
 void PROCESS_INFORMATION_IMPL<PtrType>::hProcess(uint64_t hProcess) {
-    buffer_->hProcess = hProcess;
+    ptr_->hProcess = hProcess;
 }
 
 template <typename PtrType>
 uint64_t PROCESS_INFORMATION_IMPL<PtrType>::hThread() const {
-    return buffer_->hThread;
+    return ptr_->hThread;
 }
 template <typename PtrType>
 void PROCESS_INFORMATION_IMPL<PtrType>::hThread(uint64_t hThread) {
-    buffer_->hThread = hThread;
+    ptr_->hThread = hThread;
 }
 
 template <typename PtrType>
 uint32_t PROCESS_INFORMATION_IMPL<PtrType>::dwProcessId() const {
-    return buffer_->dwProcessId;
+    return ptr_->dwProcessId;
 }
 template <typename PtrType>
 void PROCESS_INFORMATION_IMPL<PtrType>::dwProcessId(uint32_t dwProcessId) {
-    buffer_->dwProcessId = dwProcessId;
+    ptr_->dwProcessId = dwProcessId;
 }
 
 template <typename PtrType>
 uint32_t PROCESS_INFORMATION_IMPL<PtrType>::dwThreadId() const {
-    return buffer_->dwThreadId;
+    return ptr_->dwThreadId;
 }
 template <typename PtrType>
 void PROCESS_INFORMATION_IMPL<PtrType>::dwThreadId(uint32_t dwThreadId) {
-    buffer_->dwThreadId = dwThreadId;
+    ptr_->dwThreadId = dwThreadId;
 }
 
 template <typename PtrType>
-GuestVirtualAddress PROCESS_INFORMATION_IMPL<PtrType>::address() const {
-    return gva_;
+guest_ptr<void> PROCESS_INFORMATION_IMPL<PtrType>::address() const {
+    return ptr_;
 }
 
 template <typename PtrType>
-PROCESS_INFORMATION_IMPL<PtrType>::PROCESS_INFORMATION_IMPL(const GuestVirtualAddress& gva)
-    : gva_(gva), buffer_(gva_) {}
+PROCESS_INFORMATION_IMPL<PtrType>::PROCESS_INFORMATION_IMPL(const guest_ptr<void>& ptr)
+    : ptr_(ptr) {}
 
-std::unique_ptr<PROCESS_INFORMATION>
-PROCESS_INFORMATION::make_unique(const GuestVirtualAddress& gva) {
-    auto& event = ThreadLocalEvent::get();
-    auto& vcpu = event.vcpu();
-
-    if (vcpu.long_mode() && !vcpu.long_compatibility_mode()) {
-        return std::make_unique<PROCESS_INFORMATION_IMPL<uint64_t>>(gva);
+std::shared_ptr<PROCESS_INFORMATION> PROCESS_INFORMATION::make_shared(const guest_ptr<void>& ptr,
+                                                                      bool x64) {
+    if (x64) {
+        return std::make_shared<PROCESS_INFORMATION_IMPL<uint64_t>>(ptr);
     } else {
-        return std::make_unique<PROCESS_INFORMATION_IMPL<uint32_t>>(gva);
+        return std::make_shared<PROCESS_INFORMATION_IMPL<uint32_t>>(ptr);
     }
 }
 
@@ -98,7 +95,7 @@ GuestAllocation<windows::kernel32::PROCESS_INFORMATION>::GuestAllocation() {
 
     auto& domain = Domain::thread_local_domain();
     auto* guest = static_cast<windows::WindowsGuest*>(domain.guest());
-    assert(guest != nullptr);
+    introvirt_assert(guest != nullptr, "");
 
     bool x64 = (guest->x64());
 
@@ -116,13 +113,14 @@ GuestAllocation<windows::kernel32::PROCESS_INFORMATION>::GuestAllocation() {
                                         : sizeof(structs::_PROCESS_INFORMATION<uint32_t>);
 
     // Allocate memory for the size of the structure plus the size of the string
-    buffer_.emplace(structure_size);
+    allocation_.emplace(structure_size);
+    auto& ptr = allocation_->ptr();
 
     // Zero it
-    memset(buffer_->get(), 0, structure_size);
+    memset(ptr.get(), 0, structure_size);
 
     // Create the structure
-    value_ = PROCESS_INFORMATION::make_unique(buffer_->address());
+    value_ = PROCESS_INFORMATION::make_shared(ptr, x64);
 }
 
 } // namespace inject

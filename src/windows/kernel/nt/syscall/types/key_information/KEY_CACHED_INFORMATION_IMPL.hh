@@ -42,36 +42,36 @@ static_assert(sizeof(_KEY_CACHED_INFORMATION) == 0x24);
 class KEY_CACHED_INFORMATION_IMPL final : public KEY_CACHED_INFORMATION {
   public:
     WindowsTime LastWriteTime() const override {
-        return WindowsTime::from_windows_time(data_->LastWriteTime);
+        return WindowsTime::from_windows_time(ptr_->LastWriteTime);
     }
-    void LastWriteTime(WindowsTime value) override { data_->LastWriteTime = value.windows_time(); }
+    void LastWriteTime(WindowsTime value) override { ptr_->LastWriteTime = value.windows_time(); }
 
-    uint32_t TitleIndex() const override { return data_->TitleIndex; }
-    void TitleIndex(uint32_t value) override { data_->TitleIndex = value; }
+    uint32_t TitleIndex() const override { return ptr_->TitleIndex; }
+    void TitleIndex(uint32_t value) override { ptr_->TitleIndex = value; }
 
-    uint32_t SubKeyCount() const override { return data_->SubKeyCount; }
-    void SubKeyCount(uint32_t value) override { data_->SubKeyCount = value; }
+    uint32_t SubKeyCount() const override { return ptr_->SubKeyCount; }
+    void SubKeyCount(uint32_t value) override { ptr_->SubKeyCount = value; }
 
-    uint32_t MaxNameLen() const override { return data_->MaxNameLen; }
-    void MaxNameLen(uint32_t value) override { data_->MaxNameLen = value; }
+    uint32_t MaxNameLen() const override { return ptr_->MaxNameLen; }
+    void MaxNameLen(uint32_t value) override { ptr_->MaxNameLen = value; }
 
-    uint32_t ValueCount() const override { return data_->ValueCount; }
-    void ValueCount(uint32_t value) override { data_->ValueCount = value; }
+    uint32_t ValueCount() const override { return ptr_->ValueCount; }
+    void ValueCount(uint32_t value) override { ptr_->ValueCount = value; }
 
-    uint32_t MaxValueNameLen() const override { return data_->MaxValueNameLen; }
-    void MaxValueNameLen(uint32_t value) override { data_->MaxValueDataLen = value; }
+    uint32_t MaxValueNameLen() const override { return ptr_->MaxValueNameLen; }
+    void MaxValueNameLen(uint32_t value) override { ptr_->MaxValueDataLen = value; }
 
-    uint32_t MaxValueDataLen() const override { return data_->MaxValueDataLen; }
-    void MaxValueDataLen(uint32_t value) override { data_->MaxValueDataLen = value; }
+    uint32_t MaxValueDataLen() const override { return ptr_->MaxValueDataLen; }
+    void MaxValueDataLen(uint32_t value) override { ptr_->MaxValueDataLen = value; }
 
-    uint32_t NameLen() const override { return data_->NameLength; }
-    void NameLen(uint32_t value) override { data_->NameLength = value; }
+    uint32_t NameLen() const override { return ptr_->NameLength; }
+    void NameLen(uint32_t value) override { ptr_->NameLength = value; }
 
     KEY_INFORMATION_CLASS KeyInformationClass() const override {
         return KEY_INFORMATION_CLASS::KeyCachedInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -79,12 +79,11 @@ class KEY_CACHED_INFORMATION_IMPL final : public KEY_CACHED_INFORMATION {
 
     Json::Value json() const override;
 
-    KEY_CACHED_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    KEY_CACHED_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_KEY_CACHED_INFORMATION> data_;
+    guest_ptr<structs::_KEY_CACHED_INFORMATION> ptr_;
 };
 
 } // namespace nt

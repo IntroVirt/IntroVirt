@@ -34,7 +34,7 @@ struct _SOCKADDR_IN {
             uint16_t sin_port;
             uint8_t sin_addr[4];
         };
-        char sa_data[14];
+        uint8_t sa_data[14];
     };
 };
 
@@ -42,30 +42,17 @@ struct _SOCKADDR_IN {
 
 class SOCKADDR_IN_IMPL final : public SOCKADDR_IN {
   public:
-    uint16_t sa_family() const override { return data_->sa_family; }
-    void sa_family(uint16_t sa_family) override { data_->sa_family = sa_family; }
+    uint16_t sa_family() const override { return ptr_->sa_family; }
+    void sa_family(uint16_t sa_family) override { ptr_->sa_family = sa_family; }
 
-    std::array<char, 14> sa_data() const override {
-        std::array<char, 14> result;
-        std::copy_n(data_->sa_data, sizeof(data_->sa_data), result.data());
-        return result;
-    }
-    void sa_data(const std::array<char, 14>& sa_data) override {
-        std::copy_n(sa_data.data(), sizeof(data_->sa_data), data_->sa_data);
-    }
+    uint16_t sin_port() const override { return ntohs(ptr_->sin_port); }
+    void sin_port(uint16_t sin_port) override { ptr_->sin_port = htons(sin_port); }
 
-    uint16_t sin_port() const override { return ntohs(data_->sin_port); }
-    void sin_port(uint16_t sin_port) override { data_->sin_port = htons(sin_port); }
+    guest_ptr<const uint8_t[]> sin_addr() const override { return sin_addr_; }
+    guest_ptr<uint8_t[]> sin_addr() override { return sin_addr_; }
 
-    std::array<uint8_t, 4> sin_addr() const override {
-        std::array<uint8_t, 4> result;
-        std::copy_n(data_->sin_addr, sizeof(data_->sin_addr), result.data());
-        return result;
-    }
-
-    void sin_addr(const std::array<uint8_t, 4>& sin_addr) override {
-        std::copy_n(sin_addr.data(), sizeof(data_->sin_addr), data_->sin_addr);
-    }
+    guest_ptr<const char[]> sa_data() const override { return sa_data_; }
+    guest_ptr<char[]> sa_data() override { return sa_data_; }
 
     // Helper functions
     /**
@@ -73,16 +60,21 @@ class SOCKADDR_IN_IMPL final : public SOCKADDR_IN {
      */
     std::string inet_ntoa() const override {
         static char ip[32];
-        snprintf(ip, sizeof(ip), "%d.%d.%d.%d", data_->sin_addr[0], data_->sin_addr[1],
-                 data_->sin_addr[2], data_->sin_addr[3]);
+        snprintf(ip, sizeof(ip), "%d.%d.%d.%d", ptr_->sin_addr[0], ptr_->sin_addr[1],
+                 ptr_->sin_addr[2], ptr_->sin_addr[3]);
         return std::string(ip);
     }
 
-    SOCKADDR_IN_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    SOCKADDR_IN_IMPL(const guest_ptr<void>& ptr)
+        : ptr_(ptr),
+          sin_addr_(ptr + offsetof(_SOCKADDR_IN, sin_addr), sizeof(_SOCKADDR_IN::sin_addr)),
+          sa_data_(ptr + offsetof(_SOCKADDR_IN, sa_data), sizeof(_SOCKADDR_IN::sa_data)) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_SOCKADDR_IN> data_;
+    using _SOCKADDR_IN = structs::_SOCKADDR_IN;
+    guest_ptr<_SOCKADDR_IN> ptr_;
+    guest_ptr<uint8_t[]> sin_addr_;
+    guest_ptr<char[]> sa_data_;
 };
 
 } // namespace ws2_32

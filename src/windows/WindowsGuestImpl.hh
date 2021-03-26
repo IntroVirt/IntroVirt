@@ -36,7 +36,7 @@ class WindowsGuestImpl final : public WindowsGuest, public GuestImpl {
 
     bool x64() const override;
 
-    GuestPageFaultResult handle_page_fault(const GuestVirtualAddress& gva,
+    GuestPageFaultResult handle_page_fault(uint64_t virtual_address, uint64_t page_directory,
                                            uint64_t& pte) const override;
 
     const SystemCallConverter& syscalls() const override;
@@ -54,8 +54,8 @@ class WindowsGuestImpl final : public WindowsGuest, public GuestImpl {
 
     void enable_category(const std::string& category, SystemCallFilter& filter) const override;
 
-    GuestVirtualAddress allocate(size_t& region_size, bool executable = false) override;
-    void guest_free(GuestVirtualAddress& gva, size_t region_size) override;
+    guest_ptr<void> allocate(size_t& region_size, bool executable = false) override;
+    void guest_free(const guest_ptr<void>& ptr, size_t region_size) override;
 
     GuestImpl& impl() override { return *this; }
     const GuestImpl& impl() const override { return *this; }
@@ -71,15 +71,16 @@ class WindowsGuestImpl final : public WindowsGuest, public GuestImpl {
     static constexpr bool is64Bit() { return sizeof(PtrType) == sizeof(uint64_t); }
 
     template <typename PteType>
-    GuestPageFaultResult handle_page_fault_internal(const GuestVirtualAddress& gva,
-                                                    PteType& pte) const;
+    GuestPageFaultResult handle_page_fault_internal(uint64_t virtual_address,
+                                                    uint64_t page_directory, PteType& pte) const;
 
     template <typename PteType>
-    GuestPageFaultResult handle_page_fault_mmvad(const GuestVirtualAddress& gva,
+    GuestPageFaultResult handle_page_fault_mmvad(uint64_t virtual_address, uint64_t page_directory,
                                                  PteType& pte) const;
 
     template <typename PteType>
-    GuestPageFaultResult handle_prototype_pte(const GuestVirtualAddress& gva, PteType& pte) const;
+    GuestPageFaultResult handle_prototype_pte(uint64_t prototype_address, uint64_t page_directory,
+                                              PteType& pte) const;
 
     const nt::structs::MMPTE_HARDWARE* mmpte_hardware_ = nullptr;
     const nt::structs::MMPTE_PROTOTYPE* mmpte_prototype_ = nullptr;

@@ -26,8 +26,8 @@ namespace nt {
 
 class LUID {
   public:
-    virtual uint64_t value() const = 0;
-    virtual void value(uint64_t value) = 0;
+    virtual uint64_t Value() const = 0;
+    virtual void Value(uint64_t value) = 0;
 
     virtual uint32_t LowPart() const = 0;
     virtual void LowPart(uint32_t lowPart) = 0;

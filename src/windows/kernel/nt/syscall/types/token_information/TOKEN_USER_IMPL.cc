@@ -33,7 +33,7 @@ const SID_AND_ATTRIBUTES& TOKEN_USER_IMPL<PtrType>::User() const {
     {
         std::lock_guard lock(UserInit_);
         if (!User_)
-            User_.emplace(this->gva_);
+            User_.emplace(this->ptr_);
     }
     return *User_;
 }
@@ -53,8 +53,8 @@ Json::Value TOKEN_USER_IMPL<PtrType>::json() const {
 }
 
 template <typename PtrType>
-TOKEN_USER_IMPL<PtrType>::TOKEN_USER_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
-    : TOKEN_USER_IMPL_BASE(TOKEN_INFORMATION_CLASS::TokenUser, gva, buffer_size) {}
+TOKEN_USER_IMPL<PtrType>::TOKEN_USER_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
+    : TOKEN_USER_IMPL_BASE(TOKEN_INFORMATION_CLASS::TokenUser, ptr, buffer_size) {}
 
 template class TOKEN_USER_IMPL<uint32_t>;
 template class TOKEN_USER_IMPL<uint64_t>;

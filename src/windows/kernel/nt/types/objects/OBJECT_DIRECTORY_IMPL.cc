@@ -42,14 +42,14 @@ std::vector<std::shared_ptr<OBJECT>>& OBJECT_DIRECTORY_IMPL<PtrType>::objects() 
 
 template <typename PtrType>
 void OBJECT_DIRECTORY_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel,
-                                          const GuestVirtualAddress& gva) {
+                                          const guest_ptr<void>& ptr) {
 
     const structs::OBJECT_DIRECTORY* object_directory;
     const structs::OBJECT_DIRECTORY_ENTRY* object_directory_entry;
 
     object_directory = LoadOffsets<structs::OBJECT_DIRECTORY>(kernel);
     object_directory_entry = LoadOffsets<structs::OBJECT_DIRECTORY_ENTRY>(kernel);
-    buffer_.reset(gva, object_directory->size());
+    buffer_.reset(ptr, object_directory->size());
 
     static const size_t HashBucketCount = object_directory->HashBuckets.size() / sizeof(PtrType);
 
@@ -62,7 +62,7 @@ void OBJECT_DIRECTORY_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel,
         if (entryAddress) {
             do {
                 try {
-                    guest_ptr<char[]> entry_buffer(gva.create(entryAddress),
+                    guest_ptr<char[]> entry_buffer(ptr.clone(entryAddress),
                                                    object_directory_entry->size());
                     const PtrType pObject =
                         object_directory_entry->Object.get<PtrType>(entry_buffer);
@@ -70,7 +70,7 @@ void OBJECT_DIRECTORY_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel,
                         LOG4CXX_TRACE(logger,
                                       "OBJECT_DIRECTORY Entry: pObject: 0x" << std::hex << pObject);
                         try {
-                            auto object = OBJECT::make_shared(kernel, gva.create(pObject));
+                            auto object = OBJECT::make_shared(kernel, ptr.clone(pObject));
                             if (object)
                                 objects_.push_back(std::move(object));
                         } catch (TraceableException& ex) {
@@ -94,10 +94,10 @@ void OBJECT_DIRECTORY_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel,
 
 template <typename PtrType>
 OBJECT_DIRECTORY_IMPL<PtrType>::OBJECT_DIRECTORY_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                                      const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, OBJECT_DIRECTORY>(kernel, gva, ObjectType::Directory) {
+                                                      const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, OBJECT_DIRECTORY>(kernel, ptr, ObjectType::Directory) {
 
-    init(kernel, gva);
+    init(kernel, ptr);
 }
 
 template <typename PtrType>
@@ -105,17 +105,17 @@ OBJECT_DIRECTORY_IMPL<PtrType>::OBJECT_DIRECTORY_IMPL(
     const NtKernelImpl<PtrType>& kernel, std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& objHeader)
     : OBJECT_IMPL<PtrType, OBJECT_DIRECTORY>(kernel, std::move(objHeader), ObjectType::Directory) {
 
-    init(kernel, OBJECT_IMPL<PtrType, OBJECT_DIRECTORY>::address());
+    init(kernel, this->ptr_);
 }
 
 std::shared_ptr<OBJECT_DIRECTORY> OBJECT_DIRECTORY::make_shared(const NtKernel& kernel,
-                                                                const GuestVirtualAddress& gva) {
+                                                                const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<OBJECT_DIRECTORY_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<OBJECT_DIRECTORY_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<OBJECT_DIRECTORY>

@@ -26,11 +26,11 @@ static constexpr uint16_t IMAGE_NT_OPTIONAL_HDR32_MAGIC = 0x10b;
 static constexpr uint16_t IMAGE_NT_OPTIONAL_HDR64_MAGIC = 0x20b;
 
 std::unique_ptr<IMAGE_OPTIONAL_HEADER>
-IMAGE_OPTIONAL_HEADER::make_unique(const GuestVirtualAddress& image_base,
+IMAGE_OPTIONAL_HEADER::make_unique(const guest_ptr<void>& image_base,
                                    const IMAGE_FILE_HEADER& file_header) {
 
-    const GuestVirtualAddress poptional_header =
-        static_cast<const IMAGE_FILE_HEADER_IMPL&>(file_header).address() +
+    const guest_ptr<void> poptional_header =
+        static_cast<const IMAGE_FILE_HEADER_IMPL&>(file_header).ptr() +
         sizeof(structs::_IMAGE_FILE_HEADER);
 
     // Read the magic bytes at the start of the optional header to determine the type

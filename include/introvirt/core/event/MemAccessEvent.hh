@@ -54,7 +54,7 @@ class MemAccessEvent {
      *
      * @return The faulting guest physical address
      */
-    virtual GuestPhysicalAddress physical_address() const = 0;
+    virtual guest_phys_ptr<void> physical_address() const = 0;
 
     virtual ~MemAccessEvent() = default;
 };

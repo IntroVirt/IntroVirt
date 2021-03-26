@@ -1,0 +1,8 @@
+{
+    "library_name": "ncrypt",
+    "namespaces": [
+        "introvirt",
+        "windows",
+        "ncrypt"
+    ]
+}

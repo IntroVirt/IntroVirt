@@ -30,25 +30,27 @@ namespace structs {
 template <typename PtrType>
 struct _CRYPTOAPI_BLOB {
     uint32_t cbData;
-    PtrType pbData;
+    guest_member_ptr<void, PtrType> pbData;
 };
+
+static_assert(sizeof(_CRYPTOAPI_BLOB<uint32_t>) == 8, "Invalid size for _CRYPTOAPI_BLOB");
+static_assert(sizeof(_CRYPTOAPI_BLOB<uint64_t>) == 16, "Invalid size for _CRYPTOAPI_BLOB");
 
 } // namespace structs
 
 template <typename PtrType>
 class CRYPTOAPI_BLOB_IMPL final : public CRYPTOAPI_BLOB {
   public:
-    uint32_t cbData() const override { return data_->cbData; }
-    void cbData(uint32_t cbData) override { data_->cbData = cbData; }
+    uint32_t cbData() const override { return ptr_->cbData; }
+    void cbData(uint32_t cbData) override { ptr_->cbData = cbData; }
 
-    GuestVirtualAddress pbData() const override { return gva_.create(data_->pbData); }
-    void pbData(const GuestVirtualAddress& gva) override { data_->pbData = gva.virtual_address(); }
+    guest_ptr<void> pbData() const override { return ptr_->pbData.get(ptr_); }
+    void pbData(const guest_ptr<void>& ptr) override { ptr_->pbData.set(ptr); }
 
-    CRYPTOAPI_BLOB_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    CRYPTOAPI_BLOB_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_CRYPTOAPI_BLOB<PtrType>> data_;
+    guest_ptr<structs::_CRYPTOAPI_BLOB<PtrType>> ptr_;
 };
 
 } // namespace crypt32

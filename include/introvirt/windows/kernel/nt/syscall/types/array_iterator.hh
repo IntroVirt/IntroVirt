@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/compiler.hh>
 
 #include <cassert>
@@ -56,7 +56,7 @@ class array_iterator {
     reference operator[](difference_type offset) const { return container_[index_ + offset]; }
 
     array_iterator& operator+=(difference_type offset) {
-        assert((index_ + offset) <= container_->size());
+        introvirt_assert((index_ + offset) <= container_->size(), "");
         index_ += offset;
         return *this;
     }
@@ -68,7 +68,7 @@ class array_iterator {
     }
 
     array_iterator& operator-=(difference_type offset) {
-        assert((index_ - offset) >= 0);
+        introvirt_assert((index_ - offset) >= 0, "");
         index_ -= offset;
         return *this;
     }
@@ -82,7 +82,7 @@ class array_iterator {
     // Prefix increment operator
     array_iterator& operator++() {
         // Check if we're already at the end
-        assert(index_ < container_.length());
+        introvirt_assert(index_ < container_.length(), "");
         ++index_;
         return *this;
     }
@@ -97,7 +97,7 @@ class array_iterator {
     // Prefix decrement operator
     array_iterator& operator--() {
         // Check if we're at the start
-        assert(index_ > 0);
+        introvirt_assert(index_ > 0, "");
         --index_;
         return *this;
     }

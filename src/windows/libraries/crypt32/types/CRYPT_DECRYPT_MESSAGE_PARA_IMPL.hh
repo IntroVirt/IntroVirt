@@ -32,7 +32,7 @@ struct _CRYPT_DECRYPT_MESSAGE_PARA {
     uint32_t cbSize;
     uint32_t dwMsgAndCertEncodingType;
     uint32_t cCertStore;
-    PtrType prghCertStore;
+    guest_member_ptr<void, PtrType> prghCertStore;
     uint32_t dwFlags;
 };
 
@@ -41,30 +41,27 @@ struct _CRYPT_DECRYPT_MESSAGE_PARA {
 template <typename PtrType>
 class CRYPT_DECRYPT_MESSAGE_PARA_IMPL final : public CRYPT_DECRYPT_MESSAGE_PARA {
   public:
-    uint32_t cbSize() const override { return data_->cbSize; }
-    void cbSize(uint32_t cbSize) override {}
+    uint32_t cbSize() const override { return ptr_->cbSize; }
+    void cbSize(uint32_t cbSize) override { ptr_->cbSize = cbSize; }
 
-    uint32_t dwMsgAndCertEncodingType() const override { return data_->dwMsgAndCertEncodingType; }
+    uint32_t dwMsgAndCertEncodingType() const override { return ptr_->dwMsgAndCertEncodingType; }
     void dwMsgAndCertEncodingType(uint32_t dwMsgAndCertEncodingType) override {
-        data_->dwMsgAndCertEncodingType = dwMsgAndCertEncodingType;
+        ptr_->dwMsgAndCertEncodingType = dwMsgAndCertEncodingType;
     }
 
-    uint32_t cCertStore() const override { return data_->cCertStore; }
-    void cCertStore(uint32_t cCertStore) override { data_->cCertStore = cCertStore; }
+    uint32_t cCertStore() const override { return ptr_->cCertStore; }
+    void cCertStore(uint32_t cCertStore) override { ptr_->cCertStore = cCertStore; }
 
-    GuestVirtualAddress prghCertStore() const override { return gva_.create(data_->prghCertStore); }
-    void prghCertStore(const GuestVirtualAddress& gva) override {
-        data_->prghCertStore = gva.virtual_address();
-    }
+    guest_ptr<void> prghCertStore() const override { return ptr_->prghCertStore.get(ptr_); }
+    void prghCertStore(const guest_ptr<void>& ptr) override { ptr_->prghCertStore.set(ptr); }
 
-    uint32_t dwFlags() const override { return data_->dwFlags; }
-    void dwFlags(uint32_t dwFlags) override { data_->dwFlags = dwFlags; }
+    uint32_t dwFlags() const override { return ptr_->dwFlags; }
+    void dwFlags(uint32_t dwFlags) override { ptr_->dwFlags = dwFlags; }
 
-    CRYPT_DECRYPT_MESSAGE_PARA_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    CRYPT_DECRYPT_MESSAGE_PARA_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_CRYPT_DECRYPT_MESSAGE_PARA<PtrType>> data_;
+    guest_ptr<structs::_CRYPT_DECRYPT_MESSAGE_PARA<PtrType>> ptr_;
 };
 
 } // namespace crypt32

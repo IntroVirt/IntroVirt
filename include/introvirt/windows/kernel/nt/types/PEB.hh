@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <cstdint>
@@ -33,7 +33,7 @@ class PEB {
     /**
      * @returns The base address of the executable image
      */
-    virtual GuestVirtualAddress ImageBaseAddress() const = 0;
+    virtual guest_ptr<void> ImageBaseAddress() const = 0;
 
     /**
      * @returns The PEB_LDR_DATA, containing information about loaded libraries and the exe itself
@@ -90,7 +90,7 @@ class PEB {
     /**
      * @returns The virtual address of the PEB in-guest
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     /**
      * @returns The value of the BeingDebugged field

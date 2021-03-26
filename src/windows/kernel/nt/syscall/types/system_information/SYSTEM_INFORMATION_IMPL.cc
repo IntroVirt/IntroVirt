@@ -29,37 +29,37 @@ namespace nt {
 
 template <typename PtrType>
 static std::unique_ptr<SYSTEM_INFORMATION>
-make_unique_impl(SYSTEM_INFORMATION_CLASS information_class, const GuestVirtualAddress& gva,
+make_unique_impl(SYSTEM_INFORMATION_CLASS information_class, const guest_ptr<void>& ptr,
                  uint32_t buffer_size) {
 
     switch (information_class) {
     case SYSTEM_INFORMATION_CLASS::SystemBasicInformation:
-        return std::make_unique<SYSTEM_BASIC_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<SYSTEM_BASIC_INFORMATION_IMPL>(ptr, buffer_size);
     case SYSTEM_INFORMATION_CLASS::SystemBasicPerformanceInformation:
-        return std::make_unique<SYSTEM_BASIC_PERFORMANCE_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<SYSTEM_BASIC_PERFORMANCE_INFORMATION_IMPL>(ptr, buffer_size);
     case SYSTEM_INFORMATION_CLASS::SystemPerformanceInformation:
-        return std::make_unique<SYSTEM_PERFORMANCE_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<SYSTEM_PERFORMANCE_INFORMATION_IMPL>(ptr, buffer_size);
     case SYSTEM_INFORMATION_CLASS::SystemProcessorInformation:
-        return std::make_unique<SYSTEM_PROCESSOR_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<SYSTEM_PROCESSOR_INFORMATION_IMPL>(ptr, buffer_size);
     case SYSTEM_INFORMATION_CLASS::SystemProcessInformation:
-        return std::make_unique<SYSTEM_PROCESS_INFORMATION_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<SYSTEM_PROCESS_INFORMATION_IMPL<PtrType>>(ptr, buffer_size);
     case SYSTEM_INFORMATION_CLASS::SystemTimeOfDayInformation:
-        return std::make_unique<SYSTEM_TIMEOFDAY_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<SYSTEM_TIMEOFDAY_INFORMATION_IMPL>(ptr, buffer_size);
     }
 
-    return std::make_unique<SYSTEM_INFORMATION_IMPL<>>(information_class, gva, buffer_size);
+    return std::make_unique<SYSTEM_INFORMATION_IMPL<>>(information_class, ptr, buffer_size);
 }
 
 std::unique_ptr<SYSTEM_INFORMATION>
 SYSTEM_INFORMATION::make_unique(const NtKernel& kernel, SYSTEM_INFORMATION_CLASS information_class,
-                                const GuestVirtualAddress& gva, uint32_t buffer_size) {
+                                const guest_ptr<void>& ptr, uint32_t buffer_size) {
     if (unlikely(buffer_size == 0))
         return nullptr;
 
     if (kernel.x64()) {
-        return make_unique_impl<uint64_t>(information_class, gva, buffer_size);
+        return make_unique_impl<uint64_t>(information_class, ptr, buffer_size);
     } else {
-        return make_unique_impl<uint32_t>(information_class, gva, buffer_size);
+        return make_unique_impl<uint32_t>(information_class, ptr, buffer_size);
     }
 }
 

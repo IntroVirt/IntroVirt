@@ -36,8 +36,8 @@ uint64_t SEGMENT_IMPL<PtrType>::SizeOfSegment() const {
 template <typename PtrType>
 const CONTROL_AREA* SEGMENT_IMPL<PtrType>::ControlArea() const {
     if (control_area_ == nullptr) {
-        const GuestVirtualAddress pControlArea =
-            gva_.create(segment_->ControlArea.get<PtrType>(buffer_));
+        const guest_ptr<void> pControlArea =
+            buffer_.clone(segment_->ControlArea.get<PtrType>(buffer_));
         if (pControlArea) {
             allocated_control_area_ =
                 std::make_unique<CONTROL_AREA_IMPL<PtrType>>(kernel_, pControlArea);
@@ -50,17 +50,16 @@ const CONTROL_AREA* SEGMENT_IMPL<PtrType>::ControlArea() const {
 // TODO: Allow a CONTROL_AREA to pass itself in as parent and verify the address matches what we
 // expect
 template <typename PtrType>
-SEGMENT_IMPL<PtrType>::SEGMENT_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                    const GuestVirtualAddress& gva,
+SEGMENT_IMPL<PtrType>::SEGMENT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr,
                                     const CONTROL_AREA_IMPL<PtrType>* control_area)
-    : kernel_(kernel), gva_(gva.create(gva.virtual_address() & 0xFFFFFFFFFFFFFFF8)),
-      control_area_(control_area) {
+    : kernel_(kernel), control_area_(control_area) {
 
     // Load our structure offsets
     segment_ = LoadOffsets<structs::SEGMENT>(kernel);
 
     // Map in the structure. Doing one mapping is a lot cheaper than mapping every field.
-    buffer_.reset(gva_, segment_->size());
+    buffer_.reset(ptr.domain(), ptr.address() & 0xFFFFFFFFFFFFFFF8, ptr.page_directory(),
+                  segment_->size());
 }
 
 template class SEGMENT_IMPL<uint32_t>;

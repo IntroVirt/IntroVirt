@@ -65,31 +65,31 @@ class PE_IMPL final : public PE {
         return *pdb_;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     const std::vector<std::unique_ptr<const IMAGE_SECTION_HEADER>>& sections() const override {
         if (section_headers_.empty()) {
-            GuestVirtualAddress section_headers_ptr =
-                optional_header_->address() + file_header_->SizeOfOptionalHeader();
+            guest_ptr<void> section_headers_ptr =
+                optional_header_->ptr() + file_header_->SizeOfOptionalHeader();
 
             const uint16_t section_count = file_header_->NumberOfSections();
             for (uint16_t i = 0; i < section_count; ++i) {
                 section_headers_.push_back(
-                    std::make_unique<IMAGE_SECTION_HEADER_IMPL>(gva_, section_headers_ptr));
+                    std::make_unique<IMAGE_SECTION_HEADER_IMPL>(ptr_, section_headers_ptr));
                 section_headers_ptr += sizeof(structs::_IMAGE_SECTION_HEADER);
             }
         }
         return section_headers_;
     }
 
-    PE_IMPL(const GuestVirtualAddress& gva) : gva_(gva) {
-        dos_header_.emplace(gva_);
-        file_header_.emplace(gva_, *dos_header_);
-        optional_header_ = IMAGE_OPTIONAL_HEADER::make_unique(gva_, *file_header_);
+    PE_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {
+        dos_header_.emplace(ptr);
+        file_header_.emplace(ptr, *dos_header_);
+        optional_header_ = IMAGE_OPTIONAL_HEADER::make_unique(ptr, *file_header_);
     }
 
   private:
-    GuestVirtualAddress gva_;
+    guest_ptr<void> ptr_;
     std::optional<DOS_HEADER_IMPL> dos_header_;
     std::optional<IMAGE_FILE_HEADER_IMPL> file_header_;
     std::unique_ptr<IMAGE_OPTIONAL_HEADER> optional_header_;

@@ -56,22 +56,22 @@ Json::Value KEY_FULL_INFORMATION_IMPL::json() const {
     return result;
 }
 
-KEY_FULL_INFORMATION_IMPL::KEY_FULL_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+KEY_FULL_INFORMATION_IMPL::KEY_FULL_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                      uint32_t buffer_size)
-    : gva_(gva), buffer_size_(buffer_size) {
+    : buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_KEY_FULL_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_KEY_FULL_INFORMATION), buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 
-    if (data_->ClassOffset && data_->ClassLen) {
-        const auto pClass = gva_ + data_->ClassOffset;
-        const uint32_t class_buffer_len = (gva_ + buffer_size) - pClass;
-        const uint32_t class_length = std::min(data_->ClassLen, class_buffer_len);
-        ClassName_.emplace(pClass, class_length, class_buffer_len);
+    if (ptr_->ClassOffset && ptr_->ClassLen) {
+        const auto pClass = ptr + ptr_->ClassOffset;
+        const uint32_t class_buffer_len = (ptr + buffer_size) - pClass;
+        const uint32_t class_length = std::min(ptr_->ClassLen, class_buffer_len);
+        ClassName_.emplace(pClass, class_buffer_len, class_length);
     } else {
-        ClassName_.emplace(NullGuestAddress(), 0, 0);
+        ClassName_.emplace(nullptr, 0, 0);
     }
 }
 

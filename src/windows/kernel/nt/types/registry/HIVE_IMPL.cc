@@ -20,20 +20,15 @@
 
 #include <introvirt/windows/exception/InvalidStructureException.hh>
 
-#include <log4cxx/logger.h>
-
 namespace introvirt {
 namespace windows {
 namespace nt {
-
-static log4cxx::LoggerPtr
-    logger(log4cxx::Logger::getLogger("introvirt.windows.kernel.nt.registry.HIVE"));
 
 template <typename PtrType>
 const HIVE* HIVE_IMPL<PtrType>::PreviousHive() const {
     if (!PreviousHive_.get()) {
         try {
-            const GuestVirtualAddress pPreviousHive = gva_.create(
+            const guest_ptr<void> pPreviousHive = ptr_.clone(
                 cmhive_->HiveList.Blink.get<PtrType>(cmhive_buffer_) - cmhive_->HiveList.offset());
             PreviousHive_ = std::make_unique<HIVE_IMPL<PtrType>>(kernel_, pPreviousHive);
         } catch (TraceableException& ex) {
@@ -48,7 +43,7 @@ template <typename PtrType>
 const HIVE* HIVE_IMPL<PtrType>::NextHive() const {
     if (!NextHive_.get()) {
         try {
-            const GuestVirtualAddress pNextHive = gva_.create(
+            const guest_ptr<void> pNextHive = ptr_.clone(
                 cmhive_->HiveList.Flink.get<PtrType>(cmhive_buffer_) - cmhive_->HiveList.offset());
             NextHive_ = std::make_unique<HIVE_IMPL<PtrType>>(kernel_, pNextHive);
         } catch (TraceableException& ex) {
@@ -62,7 +57,7 @@ const HIVE* HIVE_IMPL<PtrType>::NextHive() const {
 template <typename PtrType>
 const std::string& HIVE_IMPL<PtrType>::FileFullPath() const {
     if (FileFullPath_.empty()) {
-        const GuestVirtualAddress addr = gva_ + cmhive_->FileFullPath.offset();
+        const guest_ptr<void> addr = ptr_ + cmhive_->FileFullPath.offset();
         FileFullPath_ = UNICODE_STRING_IMPL<PtrType>(addr).utf8();
     }
     return FileFullPath_;
@@ -71,8 +66,7 @@ const std::string& HIVE_IMPL<PtrType>::FileFullPath() const {
 template <typename PtrType>
 const std::string& HIVE_IMPL<PtrType>::FileUserName() const {
     if (FileUserName_.empty()) {
-        const GuestVirtualAddress addr = gva_ + cmhive_->FileUserName.offset();
-        FileUserName_ = UNICODE_STRING_IMPL<PtrType>(addr).utf8();
+        FileUserName_ = UNICODE_STRING_IMPL<PtrType>(ptr_ + cmhive_->FileUserName.offset()).utf8();
     }
     return FileUserName_;
 }
@@ -81,8 +75,8 @@ template <typename PtrType>
 const std::string& HIVE_IMPL<PtrType>::HiveRootPath() const {
     if (HiveRootPath_.empty()) {
         if (cmhive_->HiveRootPath.exists()) {
-            const GuestVirtualAddress addr = gva_ + cmhive_->HiveRootPath.offset();
-            HiveRootPath_ = UNICODE_STRING_IMPL<PtrType>(addr).utf8();
+            HiveRootPath_ =
+                UNICODE_STRING_IMPL<PtrType>(ptr_ + cmhive_->HiveRootPath.offset()).utf8();
         }
     }
     return HiveRootPath_;
@@ -91,17 +85,12 @@ const std::string& HIVE_IMPL<PtrType>::HiveRootPath() const {
 template <typename PtrType>
 const HBASE_BLOCK& HIVE_IMPL<PtrType>::BaseBlock() const {
     if (!BaseBlock_) {
-        const GuestVirtualAddress pBaseBlock =
-            gva_.create(cmhive_->Hive.BaseBlock.get<PtrType>(cmhive_buffer_));
+        const guest_ptr<void> pBaseBlock =
+            ptr_.clone(cmhive_->Hive.BaseBlock.get<PtrType>(cmhive_buffer_));
         LOG4CXX_DEBUG(logger, "BaseBlock: " << pBaseBlock);
         BaseBlock_.emplace(kernel_, pBaseBlock);
     }
     return *BaseBlock_;
-}
-
-template <typename PtrType>
-GuestVirtualAddress HIVE_IMPL<PtrType>::address() const {
-    return gva_;
 }
 
 template <typename PtrType>
@@ -125,7 +114,7 @@ const CM_KEY_NODE* HIVE_IMPL<PtrType>::KeyNode(uint32_t KeyIndex) const {
     if (iter != KeyIndexNodeMap_.end())
         return iter->second.get();
 
-    const GuestVirtualAddress pCell = CellAddress(KeyIndex);
+    const guest_ptr<void> pCell = CellAddress(KeyIndex);
     if (!pCell)
         return nullptr;
 
@@ -141,7 +130,7 @@ uint32_t HIVE_IMPL<PtrType>::HiveFlags() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress HIVE_IMPL<PtrType>::CellAddress(uint32_t KeyIndex) const {
+guest_ptr<void> HIVE_IMPL<PtrType>::CellAddress(uint32_t KeyIndex) const {
     union KeyIndexBits {
         struct {
             uint32_t Offset : 12;
@@ -157,64 +146,64 @@ GuestVirtualAddress HIVE_IMPL<PtrType>::CellAddress(uint32_t KeyIndex) const {
     try {
         const uint32_t topTableOffset =
             cmhive_->Hive.Storage.offset() + (dual_->size() * bits.Volatile);
-        guest_ptr<char[]> topTableBuffer(gva_ + topTableOffset, dual_->size());
-        const GuestVirtualAddress pDirectory = gva_.create(dual_->Map.get<PtrType>(topTableBuffer));
+        guest_ptr<char[]> topTableBuffer(ptr_ + topTableOffset, dual_->size());
+        const guest_ptr<void> pDirectory = ptr_.clone(dual_->Map.get<PtrType>(topTableBuffer));
 
         /* Offset into the directory, which is an array of pointers, to get the HMAP_TABLE
          * pointer */
-        const GuestVirtualAddress ppTable = pDirectory + (sizeof(PtrType) * bits.Table);
-        const GuestVirtualAddress pTable = gva_.create(*guest_ptr<PtrType>(ppTable));
+        const guest_ptr<void> ppTable = pDirectory + (sizeof(PtrType) * bits.Table);
+        const guest_ptr<void> pTable = ptr_.clone(*guest_ptr<PtrType>(ppTable));
 
         /* Offset into the table, which is an array of _HMAP_ENTRYs, to get the specific entry
          */
-        const GuestVirtualAddress pEntry = pTable + (hmap_entry_->size() * bits.Entry);
-        const GuestVirtualAddress BlockAddress = getBlockAddress(pEntry);
+        const guest_ptr<void> pEntry = pTable + (hmap_entry_->size() * bits.Entry);
+        const guest_ptr<void> BlockAddress = getBlockAddress(pEntry);
 
         if (!BlockAddress) {
-            return GuestVirtualAddress();
+            return guest_ptr<void>();
         }
 
         /* Offset from the table BlockAddress by Offset + 0x4 (First there's a ULONG for size)
          * to get the CM_KEY_NODE */
-        const GuestVirtualAddress pNodeAddress = BlockAddress + bits.Offset + 0x4;
+        const guest_ptr<void> pNodeAddress = BlockAddress + bits.Offset + 0x4;
         return pNodeAddress;
-    } catch (GuestVirtualAddress& ex) {
+    } catch (TraceableException& ex) {
         /* Sometimes the data isn't available */
         LOG4CXX_WARN(logger, "Exception in CellAddress(): " << ex);
     }
 
-    return GuestVirtualAddress();
+    return guest_ptr<void>();
 }
 
 template <typename PtrType>
-GuestVirtualAddress HIVE_IMPL<PtrType>::getBlockAddress(GuestVirtualAddress pEntry) const {
+guest_ptr<void> HIVE_IMPL<PtrType>::getBlockAddress(const guest_ptr<void>& pEntry) const {
     guest_ptr<char[]> hmap_entry_buffer(pEntry, hmap_entry_->size());
     if (hmap_entry_->PermanentBinAddress.exists()) {
         // Win10+
-        return pEntry.create(hmap_entry_->PermanentBinAddress.get<PtrType>(hmap_entry_buffer) &
-                             0xfffffffffffffff0LL);
+        return pEntry.clone(hmap_entry_->PermanentBinAddress.get<PtrType>(hmap_entry_buffer) &
+                            0xfffffffffffffff0LL);
     } else {
         // Older versions
-        return pEntry.create(hmap_entry_->BlockAddress.get<PtrType>(hmap_entry_buffer));
+        return pEntry.clone(hmap_entry_->BlockAddress.get<PtrType>(hmap_entry_buffer));
     }
 }
 
 template <typename PtrType>
-HIVE_IMPL<PtrType>::HIVE_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva)
-    : kernel_(kernel), gva_(gva) {
+HIVE_IMPL<PtrType>::HIVE_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
+    : kernel_(kernel), ptr_(ptr) {
 
     cmhive_ = LoadOffsets<structs::CMHIVE>(kernel);
     dual_ = LoadOffsets<structs::DUAL>(kernel);
     hmap_entry_ = LoadOffsets<structs::HMAP_ENTRY>(kernel);
 
-    cmhive_buffer_.reset(gva_, cmhive_->size());
+    cmhive_buffer_.reset(ptr, cmhive_->size());
 
     // Verify the signature
     const uint32_t Signature = cmhive_->Hive.Signature.get<uint32_t>(cmhive_buffer_);
     if (unlikely(Signature != 0xbee0bee0)) {
         throw InvalidStructureException("Invalid HIVE signature");
     }
-    LOG4CXX_DEBUG(logger, "Parsed HIVE " << gva_);
+    LOG4CXX_DEBUG(logger, "Parsed HIVE " << ptr);
 }
 
 template <typename PtrType>

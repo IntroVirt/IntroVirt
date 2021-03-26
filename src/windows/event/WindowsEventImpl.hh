@@ -67,7 +67,7 @@ class WindowsEventImpl final : public EventImplTpl<WindowsEvent> {
         return *syscall_;
     }
 
-    uint64_t thread_id() const override { return task().pcr().CurrentThread().address().value(); }
+    uint64_t thread_id() const override { return task().pcr().CurrentThread().ptr().address(); }
 
     WindowsEventImpl(WindowsGuest& guest, std::unique_ptr<HypervisorEvent>&& hypervisor_event)
         : EventImplTpl<WindowsEvent>(std::move(hypervisor_event)), guest_(guest),

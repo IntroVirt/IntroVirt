@@ -1,0 +1,8 @@
+{
+    "library_name": "secur32",
+    "namespaces": [
+        "introvirt",
+        "windows",
+        "secur32"
+    ]
+}

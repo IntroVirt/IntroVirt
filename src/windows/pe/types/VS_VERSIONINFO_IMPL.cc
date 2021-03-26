@@ -20,8 +20,8 @@ namespace introvirt {
 namespace windows {
 namespace pe {
 
-std::unique_ptr<VS_VERSIONINFO> VS_VERSIONINFO::make_unique(const GuestVirtualAddress& gva) {
-    return std::make_unique<VS_VERSIONINFO_IMPL>(gva);
+std::unique_ptr<VS_VERSIONINFO> VS_VERSIONINFO::make_unique(const guest_ptr<void>& ptr) {
+    return std::make_unique<VS_VERSIONINFO_IMPL>(ptr);
 }
 
 } // namespace pe

@@ -65,21 +65,19 @@ VadStructure MMVAD_IMPL<PtrType>::structure() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress MMVAD_IMPL<PtrType>::FirstPrototypePte() const {
+uint64_t MMVAD_IMPL<PtrType>::FirstPrototypePte() const {
     if (structure() == VadStructure::MMVAD) {
-        return gva_.create(mmvad_->FirstPrototypePte.get<PtrType>(buffer_));
-    } else {
-        return GuestVirtualAddress();
+        return mmvad_->FirstPrototypePte.get<PtrType>(ptr_);
     }
+    return 0;
 }
 
 template <typename PtrType>
-GuestVirtualAddress MMVAD_IMPL<PtrType>::LastContiguousPte() const {
+uint64_t MMVAD_IMPL<PtrType>::LastContiguousPte() const {
     if (structure() == VadStructure::MMVAD) {
-        return gva_.create(mmvad_->LastContiguousPte.get<PtrType>(buffer_));
-    } else {
-        return GuestVirtualAddress();
+        return mmvad_->LastContiguousPte.get<PtrType>(ptr_);
     }
+    return 0;
 }
 
 template <typename PtrType>
@@ -94,32 +92,32 @@ template <typename PtrType>
 uint64_t MMVAD_IMPL<PtrType>::StartingVpn() const {
     const uint64_t StartingVpnHigh =
         (mmvad_short_->StartingVpnHigh.exists())
-            ? (static_cast<uint64_t>(mmvad_short_->StartingVpnHigh.get<uint8_t>(buffer_)) << 32)
+            ? (static_cast<uint64_t>(mmvad_short_->StartingVpnHigh.get<uint8_t>(ptr_)) << 32)
             : 0;
-    return (StartingVpnHigh | mmvad_short_->StartingVpn.get<uint32_t>(buffer_));
+    return (StartingVpnHigh | mmvad_short_->StartingVpn.get<uint32_t>(ptr_));
 }
 
 template <typename PtrType>
 uint64_t MMVAD_IMPL<PtrType>::EndingVpn() const {
     const uint64_t EndingVpnHigh =
         (mmvad_short_->EndingVpnHigh.exists())
-            ? (static_cast<uint64_t>(mmvad_short_->EndingVpnHigh.get<uint8_t>(buffer_)) << 32)
+            ? (static_cast<uint64_t>(mmvad_short_->EndingVpnHigh.get<uint8_t>(ptr_)) << 32)
             : 0;
-    return (EndingVpnHigh | mmvad_short_->EndingVpn.get<uint32_t>(buffer_));
+    return (EndingVpnHigh | mmvad_short_->EndingVpn.get<uint32_t>(ptr_));
 }
 
 template <typename PtrType>
 uint64_t MMVAD_IMPL<PtrType>::CommitCharge() const {
     const uint64_t CommitChargeHigh =
         (mmvad_short_->CommitChargeHigh.exists())
-            ? (static_cast<uint64_t>(mmvad_short_->CommitChargeHigh.get<uint8_t>(buffer_)) << 32)
+            ? (static_cast<uint64_t>(mmvad_short_->CommitChargeHigh.get<uint8_t>(ptr_)) << 32)
             : 0;
-    return (CommitChargeHigh | mmvad_short_->CommitCharge.get<uint32_t>(buffer_));
+    return (CommitChargeHigh | mmvad_short_->CommitCharge.get<uint32_t>(ptr_));
 }
 
 template <typename PtrType>
 bool MMVAD_IMPL<PtrType>::MemCommit() const {
-    return mmvad_short_->MemCommit.get<uint8_t>(buffer_);
+    return mmvad_short_->MemCommit.get<uint8_t>(ptr_);
 }
 
 template <typename PtrType>
@@ -129,7 +127,7 @@ MMVAD::VadType MMVAD_IMPL<PtrType>::Type() const {
 
 template <typename PtrType>
 PAGE_PROTECTION MMVAD_IMPL<PtrType>::Protection() const {
-    return PAGE_PROTECTION::fromVadProtection(mmvad_short_->Protection.get<uint32_t>(buffer_));
+    return PAGE_PROTECTION::fromVadProtection(mmvad_short_->Protection.get<uint32_t>(ptr_));
 }
 
 template <typename PtrType>
@@ -154,12 +152,12 @@ const FILE_OBJECT* MMVAD_IMPL<PtrType>::FileObject() const {
 
 template <typename PtrType>
 bool MMVAD_IMPL<PtrType>::Private() const {
-    return mmvad_short_->PrivateMemory.get<uint64_t>(buffer_);
+    return mmvad_short_->PrivateMemory.get<uint64_t>(ptr_);
 }
 
 template <typename PtrType>
 bool MMVAD_IMPL<PtrType>::locked() const {
-    return mmvad_short_->PushLock.Locked.get_bitfield<uint8_t>(buffer_);
+    return mmvad_short_->PushLock.Locked.get_bitfield<uint8_t>(ptr_);
 }
 
 template <typename PtrType>
@@ -189,7 +187,7 @@ const CONTROL_AREA* MMVAD_IMPL<PtrType>::ControlArea() const {
     std::lock_guard lock(mtx_);
 
     if (!control_area_ && !Private()) {
-        const GuestVirtualAddress pControlArea = ControlAreaPtr();
+        const guest_ptr<void> pControlArea = ControlAreaPtr();
         if (pControlArea)
             control_area_.emplace(kernel_, pControlArea);
         else
@@ -199,71 +197,72 @@ const CONTROL_AREA* MMVAD_IMPL<PtrType>::ControlArea() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress MMVAD_IMPL<PtrType>::address() const {
-    return gva_;
+guest_ptr<void> MMVAD_IMPL<PtrType>::ptr() const {
+    return ptr_;
 }
 
 template <typename PtrType>
 std::string MMVAD_IMPL<PtrType>::tag() const {
     if constexpr (std::is_same_v<PtrType, uint64_t>) {
         // 64-bit
-        return std::string(guest_ptr<char[]>(gva_ - 0xC, 4).get(), 4);
+        guest_ptr<void> pTag(ptr_.clone(ptr_.address() - 0xC));
+        return std::string(guest_ptr<char[]>(pTag, 4));
     } else {
         // 32-bit
-        return std::string(guest_ptr<char[]>(gva_ - 0x4, 4).get(), 4);
+        guest_ptr<void> pTag(ptr_.clone(ptr_.address() - 0x4));
+        return std::string(guest_ptr<char[]>(pTag, 4));
     }
 };
 
 template <typename PtrType>
-GuestVirtualAddress MMVAD_IMPL<PtrType>::ControlAreaPtr() const {
+guest_ptr<void> MMVAD_IMPL<PtrType>::ControlAreaPtr() const {
     // Map in the full version of MMVAD
     // TODO: This is kind of weird but we don't know if we can do this directly.
     //       Not sure why MMVAD_SHORT exists.
-    guest_ptr<char[]> mmvad_buffer(gva_, mmvad_->size());
+    guest_ptr<char[]> mmvad_buffer(ptr_, mmvad_->size());
 
     if (mmvad_->Subsection.exists()) {
         // Vista+
         // Map in the SUBSECTION structure the MMVAD points to
-        const GuestVirtualAddress pSubsection =
-            gva_.create(mmvad_->Subsection.get<PtrType>(mmvad_buffer));
-        if (!pSubsection)
-            return GuestVirtualAddress();
+        const guest_ptr<char[]> pSubSection(
+            ptr_.clone(mmvad_->Subsection.get<PtrType>(mmvad_buffer)), subsection_->size());
+        if (!pSubSection)
+            return guest_ptr<void>();
 
-        guest_ptr<char[]> subsection_buffer(pSubsection, subsection_->size());
-        return gva_.create(subsection_->ControlArea.get<PtrType>(subsection_buffer));
+        return ptr_.clone(subsection_->ControlArea.get<PtrType>(pSubSection));
     } else {
         // XP
         // The MMVAD structure directly points to the CONTROL_AREA pointer
-        return gva_.create(mmvad_->ControlArea.get<PtrType>(mmvad_buffer));
+        return ptr_.clone(mmvad_->ControlArea.get<PtrType>(mmvad_buffer));
     }
 }
 
 template <typename PtrType>
-inline GuestVirtualAddress MMVAD_IMPL<PtrType>::LeftChildPtr() const {
-    return gva_.create(mmvad_short_->LeftChild.get<PtrType>(buffer_));
+inline guest_ptr<void> MMVAD_IMPL<PtrType>::LeftChildPtr() const {
+    return ptr_.clone(mmvad_short_->LeftChild.get<PtrType>(ptr_));
 }
 
 template <typename PtrType>
-inline GuestVirtualAddress MMVAD_IMPL<PtrType>::RightChildPtr() const {
-    return gva_.create(mmvad_short_->RightChild.get<PtrType>(buffer_));
+inline guest_ptr<void> MMVAD_IMPL<PtrType>::RightChildPtr() const {
+    return ptr_.clone(mmvad_short_->RightChild.get<PtrType>(ptr_));
 }
 
 template <typename PtrType>
-MMVAD_IMPL<PtrType>::MMVAD_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva)
-    : kernel_(kernel), gva_(gva) {
+MMVAD_IMPL<PtrType>::MMVAD_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
+    : kernel_(kernel) {
 
     // Load our structure offsets
     mmvad_short_ = LoadOffsets<structs::MMVAD_SHORT>(kernel);
     mmvad_ = LoadOffsets<structs::MMVAD>(kernel);
     subsection_ = LoadOffsets<structs::SUBSECTION>(kernel);
 
-    // Map in the structure. Doing one mapping is a lot cheaper than mapping every field.
-    buffer_.reset(gva, mmvad_short_->size());
+    // Map in the structure.
+    ptr_.reset(ptr, mmvad_short_->size());
 
     // Set the type field
     if (mmvad_short_->VadType.exists()) {
         // Vista and up, it's just a field we can read
-        type_ = static_cast<MMVAD::VadType>(mmvad_short_->VadType.get<uint32_t>(buffer_));
+        type_ = static_cast<MMVAD::VadType>(mmvad_short_->VadType.get<uint32_t>(ptr_));
 
         // Set some flags based on the type
         switch (type_) {
@@ -292,9 +291,9 @@ MMVAD_IMPL<PtrType>::MMVAD_IMPL(const NtKernelImpl<PtrType>& kernel, const Guest
         }
     } else {
         // XP, there's no type field, so we figure it out based on the flags
-        if (mmvad_short_->ImageMap.get<uint8_t>(buffer_)) {
+        if (mmvad_short_->ImageMap.get<uint8_t>(ptr_)) {
             type_ = MMVAD::VadImageMap;
-        } else if (mmvad_short_->PhysicalMapping.get<uint8_t>(buffer_)) {
+        } else if (mmvad_short_->PhysicalMapping.get<uint8_t>(ptr_)) {
             type_ = MMVAD::VadDevicePhysicalMemory;
         }
     }
@@ -306,26 +305,26 @@ uint64_t MMVAD_IMPL<PtrType>::RegionSize() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress MMVAD_IMPL<PtrType>::StartingAddress() const {
-    return address().create(StartingVpn() << 12ull);
+uint64_t MMVAD_IMPL<PtrType>::StartingAddress() const {
+    return StartingVpn() << PageDirectory::PAGE_SHIFT;
 }
 
 template <typename PtrType>
-GuestVirtualAddress MMVAD_IMPL<PtrType>::EndingAddress() const {
-    return address().create((EndingVpn() << 12ull) | 0xFFF);
+uint64_t MMVAD_IMPL<PtrType>::EndingAddress() const {
+    return (EndingVpn() << PageDirectory::PAGE_SHIFT) | 0xFFF;
 }
 
 template <typename PtrType>
-std::shared_ptr<const MMVAD> MMVAD_IMPL<PtrType>::search(const GuestVirtualAddress& gva) const {
+std::shared_ptr<const MMVAD> MMVAD_IMPL<PtrType>::search(uint64_t virtual_address) const {
     std::set<uint64_t> seen;
-    return search(gva, seen);
+    return search(virtual_address, seen);
 }
 
 template <typename PtrType>
-std::shared_ptr<const MMVAD> MMVAD_IMPL<PtrType>::search(const GuestVirtualAddress& gva,
+std::shared_ptr<const MMVAD> MMVAD_IMPL<PtrType>::search(uint64_t virtual_address,
                                                          std::set<uint64_t>& seen) const {
     // Make sure we weren't already at this node
-    const uint64_t my_addr = address().virtual_address();
+    const uint64_t my_addr = ptr_.address();
     if (seen.count(my_addr)) {
         // Been here
         return nullptr;
@@ -334,7 +333,7 @@ std::shared_ptr<const MMVAD> MMVAD_IMPL<PtrType>::search(const GuestVirtualAddre
     seen.insert(my_addr);
 
     // Convert the address to a virtual page number
-    const uint64_t vpn = gva.page_number();
+    const uint64_t vpn = virtual_address >> PageDirectory::PAGE_SHIFT;
 
     // Is it a lower range? Go left.
     if (vpn < StartingVpn()) {
@@ -342,7 +341,7 @@ std::shared_ptr<const MMVAD> MMVAD_IMPL<PtrType>::search(const GuestVirtualAddre
         if (left == nullptr) {
             return nullptr; // No lower addresses
         }
-        return left->search(gva, seen);
+        return left->search(virtual_address, seen);
     }
 
     // Is it a higher range? Go right.
@@ -351,7 +350,7 @@ std::shared_ptr<const MMVAD> MMVAD_IMPL<PtrType>::search(const GuestVirtualAddre
         if (right == nullptr) {
             return nullptr; // No higher addresses
         }
-        return right->search(gva, seen);
+        return right->search(virtual_address, seen);
     }
 
     // Neither lower nor higher, must be a match

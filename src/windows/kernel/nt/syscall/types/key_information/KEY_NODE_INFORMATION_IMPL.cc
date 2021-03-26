@@ -43,27 +43,27 @@ Json::Value KEY_NODE_INFORMATION_IMPL::json() const {
     return result;
 }
 
-KEY_NODE_INFORMATION_IMPL::KEY_NODE_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+KEY_NODE_INFORMATION_IMPL::KEY_NODE_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                      uint32_t buffer_size)
-    : gva_(gva), buffer_size_(buffer_size) {
+    : buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_KEY_NODE_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_KEY_NODE_INFORMATION), buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 
-    const auto pName = gva_ + offsetof(structs::_KEY_NODE_INFORMATION, Name);
-    const uint32_t name_buffer_len = (gva_ + data_->ClassOffset) - pName;
-    const uint32_t name_length = std::min(data_->NameLength, name_buffer_len);
-    Name_.emplace(pName, name_length, name_buffer_len);
+    const auto pName = ptr + offsetof(structs::_KEY_NODE_INFORMATION, Name);
+    const uint32_t name_buffer_len = (ptr + ptr_->ClassOffset) - pName;
+    const uint32_t name_length = std::min(ptr_->NameLength, name_buffer_len);
+    Name_.emplace(pName, name_buffer_len, name_length);
 
-    if (data_->ClassOffset && data_->ClassLength) {
-        const auto pClass = gva_ + data_->ClassOffset;
-        const uint32_t class_buffer_len = (gva_ + buffer_size) - pClass;
-        const uint32_t class_length = std::min(data_->ClassLength, class_buffer_len);
-        ClassName_.emplace(pClass, class_length, class_buffer_len);
+    if (ptr_->ClassOffset && ptr_->ClassLength) {
+        const auto pClass = ptr + ptr_->ClassOffset;
+        const uint32_t class_buffer_len = (ptr + buffer_size) - pClass;
+        const uint32_t class_length = std::min(ptr_->ClassLength, class_buffer_len);
+        ClassName_.emplace(pClass, class_buffer_len, class_length);
     } else {
-        ClassName_.emplace(NullGuestAddress(), 0, 0);
+        ClassName_.emplace(nullptr, 0, 0);
     }
 }
 

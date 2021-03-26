@@ -43,30 +43,30 @@ using SYSTEM_BASIC_PERFORMANCE_INFORMATION_IMPL_BASE =
 class SYSTEM_BASIC_PERFORMANCE_INFORMATION_IMPL final
     : public SYSTEM_BASIC_PERFORMANCE_INFORMATION_IMPL_BASE {
   public:
-    uint32_t AvailablePages() const override { return this->data_->AvailablePages; }
+    uint32_t AvailablePages() const override { return this->ptr_->AvailablePages; }
     void AvailablePages(uint32_t AvailablePages) override {
-        this->data_->AvailablePages = AvailablePages;
+        this->ptr_->AvailablePages = AvailablePages;
     }
 
-    uint32_t CommittedPages() const override { return this->data_->CommittedPages; }
+    uint32_t CommittedPages() const override { return this->ptr_->CommittedPages; }
     void CommittedPages(uint32_t CommittedPages) override {
-        this->data_->CommittedPages = CommittedPages;
+        this->ptr_->CommittedPages = CommittedPages;
     }
 
-    uint32_t CommitLimit() const override { return this->data_->CommitLimit; }
-    void CommitLimit(uint32_t CommitLimit) override { this->data_->CommitLimit = CommitLimit; }
+    uint32_t CommitLimit() const override { return this->ptr_->CommitLimit; }
+    void CommitLimit(uint32_t CommitLimit) override { this->ptr_->CommitLimit = CommitLimit; }
 
-    uint32_t PeakCommitment() const override { return this->data_->PeakCommitment; }
+    uint32_t PeakCommitment() const override { return this->ptr_->PeakCommitment; }
     void PeakCommitment(uint32_t PeakCommitment) override {
-        this->data_->PeakCommitment = PeakCommitment;
+        this->ptr_->PeakCommitment = PeakCommitment;
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    SYSTEM_BASIC_PERFORMANCE_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    SYSTEM_BASIC_PERFORMANCE_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : SYSTEM_BASIC_PERFORMANCE_INFORMATION_IMPL_BASE(
-              SYSTEM_INFORMATION_CLASS::SystemBasicPerformanceInformation, gva, buffer_size) {}
+              SYSTEM_INFORMATION_CLASS::SystemBasicPerformanceInformation, ptr, buffer_size) {}
 };
 
 } // namespace nt

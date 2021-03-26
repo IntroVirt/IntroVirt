@@ -32,14 +32,14 @@ struct _FILE_END_OF_FILE_INFORMATION {
 
 class FILE_END_OF_FILE_INFORMATION_IMPL final : public FILE_END_OF_FILE_INFORMATION {
   public:
-    uint64_t EndOfFile() const override { return data_->EndOfFile; }
-    void EndOfFile(uint64_t value) override { data_->EndOfFile = value; }
+    uint64_t EndOfFile() const override { return ptr_->EndOfFile; }
+    void EndOfFile(uint64_t value) override { ptr_->EndOfFile = value; }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileEndOfFileInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -47,12 +47,11 @@ class FILE_END_OF_FILE_INFORMATION_IMPL final : public FILE_END_OF_FILE_INFORMAT
 
     Json::Value json() const override;
 
-    FILE_END_OF_FILE_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_END_OF_FILE_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
+    guest_ptr<structs::_FILE_END_OF_FILE_INFORMATION> ptr_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_END_OF_FILE_INFORMATION> data_;
 };
 
 } // namespace nt

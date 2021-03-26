@@ -35,23 +35,19 @@ struct _SOCKADDR {
 
 class SOCKADDR_IMPL final : public SOCKADDR {
   public:
-    uint16_t sa_family() const override { return data_->sa_family; }
-    void sa_family(uint16_t sa_family) override { data_->sa_family = sa_family; }
+    uint16_t sa_family() const override { return ptr_->sa_family; }
+    void sa_family(uint16_t sa_family) override { ptr_->sa_family = sa_family; }
 
-    std::array<char, 14> sa_data() const override {
-        std::array<char, 14> result;
-        std::copy_n(data_->sa_data, sizeof(data_->sa_data), result.data());
-        return result;
-    }
-    void sa_data(const std::array<char, 14>& sa_data) override {
-        std::copy_n(sa_data.data(), sizeof(data_->sa_data), data_->sa_data);
-    }
+    guest_ptr<const char[]> sa_data() const override { return sa_data_; }
+    guest_ptr<char[]> sa_data() override { return sa_data_; }
 
-    SOCKADDR_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    SOCKADDR_IMPL(const guest_ptr<void>& ptr)
+        : ptr_(ptr), sa_data_(ptr + offsetof(_SOCKADDR, sa_data), sizeof(_SOCKADDR::sa_data)) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_SOCKADDR> data_;
+    using _SOCKADDR = structs::_SOCKADDR;
+    guest_ptr<_SOCKADDR> ptr_;
+    guest_ptr<char[]> sa_data_;
 };
 
 } // namespace ws2_32

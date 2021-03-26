@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 #include <memory>
@@ -35,7 +35,7 @@ class Tss final {
      *
      * @return the esp0 or rsp0 task state segment value
      */
-    GuestVirtualAddress sp0() const;
+    guest_ptr<void> sp0() const;
 
     /**
      * @brief Construct a new Tss object

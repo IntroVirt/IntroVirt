@@ -36,24 +36,24 @@ union _UnwindCode {
 
 class UnwindCodeImpl final : public UnwindCode {
   public:
-    uint8_t CodeOffset() const override { return data_->CodeOffset; }
-    UNWIND_OP UnwindOp() const override { return static_cast<UNWIND_OP>(data_->UnwindOp); }
-    uint8_t OpInfo() const override { return data_->OpInfo; }
-    uint16_t FrameOffset() const override { return data_->FrameOffset; }
+    uint8_t CodeOffset() const override { return ptr_->CodeOffset; }
+    UNWIND_OP UnwindOp() const override { return static_cast<UNWIND_OP>(ptr_->UnwindOp); }
+    uint8_t OpInfo() const override { return ptr_->OpInfo; }
+    uint16_t FrameOffset() const override { return ptr_->FrameOffset; }
     uint8_t CodeCount() const override { return CodeCount_; }
     uint32_t LargeAllocSize() const override { return LargeAllocSize_; }
 
-    UnwindCodeImpl(const GuestVirtualAddress& gva) : data_(gva), CodeCount_(1), LargeAllocSize_(0) {
-        switch (data_->UnwindOp) {
+    UnwindCodeImpl(const guest_ptr<void>& ptr) : ptr_(ptr), CodeCount_(1), LargeAllocSize_(0) {
+        switch (ptr_->UnwindOp) {
         case UNWIND_OP::UWOP_ALLOC_LARGE: {
             ++CodeCount_;
 
-            if (data_->OpInfo != 0u) {
-                guest_ptr<uint32_t> next(gva + sizeof(structs::_UnwindCode));
+            if (ptr_->OpInfo != 0u) {
+                guest_ptr<uint32_t> next(ptr + sizeof(structs::_UnwindCode));
                 LargeAllocSize_ = *next;
                 ++CodeCount_;
             } else {
-                guest_ptr<uint16_t> next(gva + sizeof(structs::_UnwindCode));
+                guest_ptr<uint16_t> next(ptr + sizeof(structs::_UnwindCode));
                 LargeAllocSize_ = *next;
             }
             break;
@@ -74,7 +74,7 @@ class UnwindCodeImpl final : public UnwindCode {
     }
 
   private:
-    guest_ptr<structs::_UnwindCode> data_;
+    guest_ptr<structs::_UnwindCode> ptr_;
     uint32_t CodeCount_;
     uint32_t LargeAllocSize_;
 };

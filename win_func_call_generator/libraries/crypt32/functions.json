@@ -1,0 +1,429 @@
+{
+    "CryptDecodeMessage": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptdecodemessage",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "name": "dwMsgTypeFlags"
+            },
+            {
+                "type": "CRYPT_DECRYPT_MESSAGE_PARA",
+                "name": "DecryptPara",
+                "pointer": true
+            },
+            {
+                "type": "CRYPT_VERIFY_MESSAGE_PARA",
+                "name": "VerifyPara",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwSignerIndex"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bEncodedBlob",
+                "pointer": true,
+                "length": "cbEncodedBlob()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbEncodedBlob"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwPrevInnerContentType"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwMsgType",
+                "pointer": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwInnerContentType",
+                "pointer": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bDecoded",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "optional": true,
+                "length": "*pcbDecoded()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbDecoded",
+                "pointer": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "CERT_CONTEXT",
+                "name": "XchgCert",
+                "ppointer": true
+            },
+            {
+                "type": "CERT_CONTEXT",
+                "name": "SignerCert",
+                "ppointer": true
+            }
+        ]
+    },
+    "CryptDecodeObjectEx": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptdecodeobjectex",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "name": "dwCertEncodingType"
+            },
+            {
+                "type": "cstring",
+                "name": "szStructType",
+                "pointer": true
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bEncoded",
+                "pointer": true,
+                "length": "cbEncoded()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbEncoded"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            },
+            {
+                "type": "CRYPT_DECODE_PARA",
+                "name": "DecodePara",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "vStructInfo",
+                "pointer": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbStructInfo",
+                "pointer": true,
+                "in": false,
+                "out": true
+            }
+        ]
+    },
+    "CryptDecryptMessage": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptdecryptmessage",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "CRYPT_DECRYPT_MESSAGE_PARA",
+                "name": "DecryptPara",
+                "pointer": true
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bEncryptedBlob",
+                "pointer": true,
+                "length": "cbEncryptedBlob()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbEncryptedBlob"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bDecrypted",
+                "pointer": true,
+                "length": "*pcbDecrypted()",
+                "in": false,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbDecrypted",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "CERT_CONTEXT",
+                "name": "XchgCert",
+                "ppointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "CryptEncryptMessage": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptencryptmessage",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "CRYPT_ENCRYPT_MESSAGE_PARA",
+                "name": "EncryptPara",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "cRecipientCert"
+            },
+            {
+                "type": "CryptEncryptMessageCerts",
+                "name": "RecipientCert",
+                "pointer": true,
+                "array": true
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bToBeEncrypted",
+                "pointer": true,
+                "length": "cbToBeEncrypted()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbToBeEncrypted"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bEncryptedBlob",
+                "pointer": true,
+                "optional": true,
+                "length": "*pcbEncryptedBlob()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbEncryptedBlob",
+                "pointer": true,
+                "in": true,
+                "out": true
+            }
+        ]
+    },
+    "CryptHashMessage": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-crypthashmessage",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "CRYPT_HASH_MESSAGE_PARA",
+                "name": "HashPara",
+                "pointer": true
+            },
+            {
+                "type": "bool",
+                "name": "fDetachedHash"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cToBeHashed"
+            },
+            {
+                "type": "guest_ptr<guest_ptr_t[]>",
+                "name": "pbToBeHashed",
+                "pointer": true,
+                "array": true,
+                "length": "cToBeHashed()"
+            },
+            {
+                "type": "guest_ptr<uint32_t[]>",
+                "name": "cbToBeHashed",
+                "pointer": true,
+                "array": true,
+                "length": "cToBeHashed()"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bHashedBlob",
+                "length": "*pcbHashedBlob()",
+                "pointer": true,
+                "optional": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbHashedBlob",
+                "pointer": true
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bComputedHash",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "optional": true,
+                "length": "*pcbComputedHash()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbComputedHash",
+                "pointer": true,
+                "in": false,
+                "out": true
+            }
+        ]
+    },
+    "CryptProtectData": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "CRYPTOAPI_BLOB",
+                "name": "DataIn",
+                "pointer": true
+            },
+            {
+                "type": "cstring",
+                "name": "szDataDescr",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "CRYPTOAPI_BLOB",
+                "name": "OptionalEntropy",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "void",
+                "name": "vReserved",
+                "pointer": true
+            },
+            {
+                "type": "CRYPTPROTECT_PROMPTSTRUCT",
+                "name": "PromptStruct",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            },
+            {
+                "type": "CRYPTOAPI_BLOB",
+                "name": "DataOut",
+                "pointer": true,
+                "in": false,
+                "out": true
+            }
+        ]
+    },
+    "CryptProtectMemory": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectmemory",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "DataIn",
+                "pointer": true,
+                "length": "cbDataIn()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbDataIn"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            }
+        ]
+    },
+    "CryptUnprotectData": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptunprotectdata",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "CRYPTOAPI_BLOB",
+                "name": "DataIn",
+                "pointer": true
+            },
+            {
+                "type": "cstring",
+                "name": "szDataDescr",
+                "ppointer": true,
+                "in": false,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "CRYPTOAPI_BLOB",
+                "name": "OptionalEntropy",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "void",
+                "name": "vReserved",
+                "pointer": true
+            },
+            {
+                "type": "CRYPTPROTECT_PROMPTSTRUCT",
+                "name": "PromptStruct",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            },
+            {
+                "type": "CRYPTOAPI_BLOB",
+                "name": "DataOut",
+                "pointer": true,
+                "in": false,
+                "out": true
+            }
+        ]
+    },
+    "CryptUnprotectMemory": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptunprotectmemory",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "DataIn",
+                "pointer": true,
+                "length": "cbDataIn()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "cbDataIn"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            }
+        ]
+    }
+}

@@ -37,7 +37,7 @@ class PROCESS_IMAGE_FILE_NAME_INFORMATION : public PROCESS_INFORMATION {
 namespace inject {
 
 template <>
-class GuestAllocation<windows::nt::PROCESS_IMAGE_FILE_NAME_INFORMATION>
+class GuestAllocation<windows::nt::PROCESS_IMAGE_FILE_NAME_INFORMATION> final
     : public GuestAllocationComplexBase<windows::nt::PROCESS_IMAGE_FILE_NAME_INFORMATION> {
   public:
     explicit GuestAllocation(uint16_t string_buffer_size = 256);
@@ -45,8 +45,6 @@ class GuestAllocation<windows::nt::PROCESS_IMAGE_FILE_NAME_INFORMATION>
   private:
     template <typename PtrType>
     void init(uint16_t string_buffer_size);
-
-    std::optional<GuestAllocation<uint8_t[]>> buffer_;
 };
 
 } /* namespace inject */

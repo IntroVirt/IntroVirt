@@ -27,7 +27,7 @@
 #include <introvirt/windows/pe.hh>
 
 #include <introvirt/core/domain/Vcpu.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/compiler.hh>
 #include <introvirt/util/json/json.hh>
 
@@ -74,7 +74,7 @@ uint32_t SystemCallConverter::native(SystemCallIndex index) const {
 
 uint32_t SystemCallConverter::count() const { return to_native_.size(); }
 
-static bool parse_service_table(const ServiceTable& table, const GuestVirtualAddress& base_address,
+static bool parse_service_table(const ServiceTable& table, const guest_ptr<void>& base_address,
                                 const mspdb::PDB& pdb, std::vector<SystemCallIndex>& to_normalized,
                                 std::unordered_map<SystemCallIndex, uint32_t>& to_native,
                                 uint32_t offset) {
@@ -90,7 +90,7 @@ static bool parse_service_table(const ServiceTable& table, const GuestVirtualAdd
 
         // Look it up in the PDB
         const mspdb::Symbol* symbol;
-        symbol = pdb.rva_to_symbol(address - base_address);
+        symbol = pdb.rva_to_symbol(address.address() - base_address.address());
         if (!symbol)
             continue;
 
@@ -239,8 +239,7 @@ SystemCallConverter::SystemCallConverter(const WindowsGuest& guest) {
     // Find Nt system calls
     //
     bool save_json;
-    save_json =
-        parse_service_table(nt_calls, kernel.base_address(), pdb, to_normalized_nt_, to_native_, 0);
+    save_json = parse_service_table(nt_calls, kernel.ptr(), pdb, to_normalized_nt_, to_native_, 0);
 
     LOG4CXX_DEBUG(logger, "Detected " << to_normalized_nt_.size() << " NT system calls");
     if (to_normalized_nt_.empty())
@@ -251,14 +250,13 @@ SystemCallConverter::SystemCallConverter(const WindowsGuest& guest) {
     //
 
     // First get the address of the win32k module
-    GuestVirtualAddress pWin32k;
+    guest_ptr<void> pWin32k;
     for (auto& module : kernel.PsLoadedModuleList()) {
         if (module->BaseDllName() == "win32k.sys") {
-            pWin32k = module->DllBase();
+            pWin32k = kernel.ptr().clone(module->DllBase());
             break;
         }
     }
-
     if (unlikely(!pWin32k)) {
         throw GuestDetectionException(guest.domain(), "Failed to find Win32k kernel module");
     }
@@ -275,9 +273,10 @@ SystemCallConverter::SystemCallConverter(const WindowsGuest& guest) {
             auto process = kernel.process(header->Body());
             if (process->Win32Process()) {
                 try {
-                    pWin32k.page_directory(process->DirectoryTableBase());
-                    auto win32k = pe::PE::make_unique(pWin32k);
-                    save_json |= parse_service_table(win32k_calls, pWin32k, win32k->pdb(),
+                    guest_ptr<void> pWin32kCtx(pWin32k.domain(), pWin32k.address(),
+                                               process->DirectoryTableBase());
+                    auto win32k = pe::PE::make_unique(pWin32kCtx);
+                    save_json |= parse_service_table(win32k_calls, pWin32kCtx, win32k->pdb(),
                                                      to_normalized_win32k_, to_native_, 0x1000);
 
                     break;

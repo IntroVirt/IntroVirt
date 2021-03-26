@@ -18,7 +18,6 @@
 #include "Segment.hh"
 
 #include <introvirt/core/fwd.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
@@ -60,15 +59,14 @@ class SegmentDescriptorTable final {
     /**
      * @brief Construct a new Gdt object
      *
-     * @param base The base address of the table
+     * @param ptr The base address of the table
      * @param limit The size of the table
      */
-    SegmentDescriptorTable(const GuestVirtualAddress& base, uint32_t limit);
+    SegmentDescriptorTable(const guest_ptr<void>& ptr, uint32_t limit);
 
   private:
-    const GuestVirtualAddress base_;
+    guest_ptr<char[]> ptr_;
     const uint32_t limit_;
-    guest_ptr<char[]> mapping_;
 };
 
 } // namespace x86

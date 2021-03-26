@@ -1,0 +1,134 @@
+{
+    "CreateProcessA": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "cstring",
+                "name": "ApplicationName",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "cstring",
+                "name": "CommandLine",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "SECURITY_ATTRIBUTES",
+                "name": "ProcessAttributes",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "SECURITY_ATTRIBUTES",
+                "name": "ThreadAttributes",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "bool",
+                "name": "bInheritHandles"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwCreationFlags"
+            },
+            {
+                "type": "void",
+                "name": "Environment",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "cstring",
+                "name": "CurrentDirectory",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "STARTUPINFOA",
+                "name": "StartupInfo",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "PROCESS_INFORMATION",
+                "name": "ProcessInformation",
+                "pointer": true,
+                "optional": true,
+                "in": false,
+                "out": true
+            }
+        ]
+    },
+    "CreateProcessW": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "wstring",
+                "name": "ApplicationName",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "wstring",
+                "name": "CommandLine",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "SECURITY_ATTRIBUTES",
+                "name": "ProcessAttributes",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "SECURITY_ATTRIBUTES",
+                "name": "ThreadAttributes",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "bool",
+                "name": "bInheritHandles"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwCreationFlags"
+            },
+            {
+                "type": "void",
+                "name": "Environment",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "wstring",
+                "name": "CurrentDirectory",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "STARTUPINFOW",
+                "name": "StartupInfo",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "PROCESS_INFORMATION",
+                "name": "ProcessInformation",
+                "pointer": true,
+                "optional": true,
+                "in": false,
+                "out": true
+            }
+        ]
+    }
+}

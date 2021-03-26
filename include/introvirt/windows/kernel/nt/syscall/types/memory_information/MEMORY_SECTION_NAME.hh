@@ -34,7 +34,7 @@ class MEMORY_SECTION_NAME : public MEMORY_INFORMATION {
     virtual void SectionFileName(const std::string& value) = 0;
 
     static std::unique_ptr<MEMORY_SECTION_NAME>
-    make_unique(const NtKernel& kernel, const GuestVirtualAddress& gva, uint32_t buffer_size);
+    make_unique(const NtKernel& kernel, const guest_ptr<void>& ptr, uint32_t buffer_size);
 };
 
 } // namespace nt
@@ -43,13 +43,10 @@ class MEMORY_SECTION_NAME : public MEMORY_INFORMATION {
 namespace inject {
 
 template <>
-class GuestAllocation<windows::nt::MEMORY_SECTION_NAME>
+class GuestAllocation<windows::nt::MEMORY_SECTION_NAME> final
     : public GuestAllocationComplexBase<windows::nt::MEMORY_SECTION_NAME> {
   public:
-    explicit GuestAllocation();
-
-  private:
-    std::optional<GuestAllocation<uint8_t[]>> buffer_;
+    GuestAllocation();
 };
 
 } // namespace inject

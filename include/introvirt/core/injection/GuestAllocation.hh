@@ -19,7 +19,6 @@
 #include <introvirt/core/memory/guest_ptr.hh>
 
 #include <algorithm>
-#include <cassert>
 #include <string_view>
 #include <type_traits>
 
@@ -29,63 +28,32 @@ namespace inject {
 // GuestAllocation for single objects
 template <typename _Tp>
 class GuestAllocation {
+    using pointer_type = typename guest_ptr<_Tp>::pointer_type;
+
   public:
     static_assert(std::is_pod_v<_Tp>, "GuestAllocation types must be POD if not specialized");
 
     /**
-     * @brief Get the address of the buffer
+     * @brief Get the underlying address
+     */
+    uint64_t address() const { return ptr_.address(); }
+
+    /**
+     * @brief Transparently decay into a guest_ptr<_Tp>
+     */
+    operator const guest_ptr<_Tp>&() const { return ptr_; }
+
+    /**
+     * @brief Transparently decay into a guest_ptr<void>
+     */
+    operator guest_ptr<void>() const { return ptr_; }
+
+    /**
+     * @brief Get a copy of the underlying pointer
      *
-     * @return A pointer to the first element in the array
+     * @return guest_ptr<_Tp>
      */
-    _Tp* get() { return ptr_.get(); }
-
-    /**
-     * @copydoc GuestAllocation<T>::get()
-     */
-    const _Tp* get() const { return ptr_.get(); }
-
-    /**
-     * @brief Dereference the first element in the array
-     *
-     * @return The dereferenced value
-     */
-    _Tp& operator*() { return *ptr_; }
-
-    /**
-     * @copydoc GuestAllocation<T>::operator*()
-     */
-    const _Tp& operator*() const { return *ptr_; }
-
-    /**
-     * @brief Overload for accessing the allocation like a pointer
-     *
-     * @return A pointer to the first element in the array
-     */
-    _Tp* operator->() { return ptr_; }
-
-    /**
-     * @copydoc GuestAllocation<T>::operator->()
-     */
-    const _Tp* operator->() const { return ptr_; }
-
-    /**
-     * @brief Implicit conversion to pointer type
-     */
-    operator _Tp*() { return ptr_.get(); }
-
-    /**
-     * @copydoc GuestAllocation<T>::operator _Tp*()
-     */
-    operator const _Tp*() const { return ptr_.get(); }
-
-    /**
-     * @brief Transparently decay into a GuestVirtualAddress
-     *
-     * @return GuestVirtualAddress
-     */
-    operator GuestVirtualAddress() const { return base_address_; }
-
-    GuestVirtualAddress address() const { return base_address_; }
+    const guest_ptr<_Tp>& ptr() const { return ptr_; }
 
     /**
      * @brief Release this memory from management
@@ -94,322 +62,140 @@ class GuestAllocation {
      * You are essentially causing a memory leak in the guest
      * process by calling this, so be careful.
      *
-     * @return guest_ptr<T[]> containing the mapping
+     * @return guest_ptr<_Tp> containing the mapping
      */
     guest_ptr<_Tp> release() {
-        base_address_ = GuestVirtualAddress();
-        region_size_ = 0;
-
-        guest_ptr<_Tp> result = ptr_;
+        guest_ptr<_Tp> result(ptr_);
         ptr_.reset();
-        return result;
-    }
-
-    template <typename... _Args>
-    explicit GuestAllocation(_Args&&... __args) {
-        auto& domain = Domain::thread_local_domain();
-
-        guest_ = domain.guest();
-        assert(guest_ != nullptr);
-
-        region_size_ = sizeof(_Tp);
-
-        // This will round up region_size_
-        base_address_ = guest_->allocate(region_size_);
-
-        // Map it in
-        ptr_.reset(base_address_);
-
-        // Assign the value to the value
-        *ptr_ = _Tp(std::forward<_Args>(__args)...);
-    }
-
-    ~GuestAllocation() {
-        if (likely(region_size_ != 0))
-            guest_->guest_free(base_address_, region_size_);
-    }
-
-    GuestAllocation(const GuestAllocation&) = delete;
-    GuestAllocation& operator=(const GuestAllocation&) = delete;
-
-    GuestAllocation(GuestAllocation&& src) noexcept {
-        guest_ = src.guest_;
-        ptr_ = std::move(src.ptr_);
-        base_address_ = std::move(src.base_address_);
-        region_size_ = src.region_size_;
-
-        src.array_.reset();
-        src.base_address_ = NullGuestAddress();
-        src.region_size_ = 0;
-    }
-
-    GuestAllocation& operator=(GuestAllocation&& src) noexcept {
-        guest_ = src.guest_;
-        ptr_ = std::move(src.ptr_);
-        base_address_ = std::move(src.base_address_);
-        region_size_ = src.region_size_;
-
-        src.array_.reset();
-        src.base_address_ = NullGuestAddress();
-        src.region_size_ = 0;
-        return *this;
-    }
-
-  protected:
-    Guest* guest_;
-    guest_ptr<_Tp> ptr_;
-    GuestVirtualAddress base_address_;
-    size_t region_size_;
-};
-
-// GuestAllocation for array with a runtime length
-template <typename _Tp>
-class GuestAllocation<_Tp[]> {
-  public:
-    static_assert(std::is_pod_v<_Tp>, "GuestAllocation types must be POD if not specialized");
-
-    /**
-     * @brief Get the begin iterator
-     *
-     * This is for using c++11-style for-loops over the array
-     *
-     * @return The beginning iterator of the array
-     */
-    inline _Tp* begin() { return array_.begin(); }
-
-    /**
-     * @brief Get the begin iterator
-     *
-     * This is for using c++11-style for-loops over the array
-     *
-     * @return The beginning iterator of the array
-     */
-    inline const _Tp* begin() const { return array_.begin(); }
-
-    /**
-     * @brief Get the end iterator for the array
-     *
-     * This is for using c++11-style for-loops over the array
-     *
-     * @return The end iterator of the array
-     */
-    inline _Tp* end() { return array_.end(); }
-
-    /**
-     * @brief Get the end iterator for the array
-     *
-     * This is for using c++11-style for-loops over the array
-     *
-     * @return The end iterator of the array
-     */
-    inline const _Tp* end() const { return array_.end(); }
-
-    /**
-     * @brief Get the address of the buffer
-     *
-     * @return A pointer to the first element in the array
-     */
-    _Tp* get() { return array_.get(); }
-
-    /**
-     * @copydoc GuestAllocation<T>::get()
-     */
-    const _Tp* get() const { return array_.get(); }
-
-    /**
-     * @brief Accessor for an element at a specific position in the array
-     *
-     * @param index The index into the array
-     * @return The element at the specified index
-     */
-    _Tp& at(size_t index) { return array_.at(index); }
-
-    /**
-     * @copydoc GuestAllocation<T>::at(size_t)
-     */
-    const _Tp& at(size_t index) const { return array_.at(index); }
-
-    /**
-     * @brief Accessor for an element at a specific position in the array
-     *
-     * @param index The index into the array
-     * @return The element at the specified index
-     */
-    _Tp& operator[](size_t index) { return array_[index]; }
-
-    /**
-     * @copydoc GuestAllocation<T>::operator[](size_t)
-     */
-    const _Tp& operator[](size_t index) const { return array_[index]; }
-
-    /**
-     * @brief Release this memory from management
-     *
-     * This can be used to keep memory in the guest permanently.
-     * You are essentially causing a memory leak in the guest
-     * process by calling this, so be careful.
-     *
-     * @return guest_ptr<T[]> containing the mapping
-     */
-    guest_ptr<_Tp[]> release() {
-        base_address_ = GuestVirtualAddress();
         region_size_ = 0;
-
-        guest_ptr<_Tp[]> result = array_;
-        array_.reset();
         return result;
     }
 
     /**
      * @brief GuestAllocation array constructor
      *
-     * @param count The number of elements in the array
+     * @param length The number of elements in the array
      */
-    explicit GuestAllocation(size_t count) {
+    template <typename Tp = _Tp, typename std::enable_if_t<std::is_array_v<Tp>>* dummy = nullptr>
+    explicit GuestAllocation(size_t length) {
+        static_assert(_is_array(), "Only array types require a runtime length");
+
         auto& domain = Domain::thread_local_domain();
-
         guest_ = domain.guest();
-        assert(guest_ != nullptr);
+        introvirt_assert(guest_ != nullptr, "");
+        region_size_ = sizeof(std::remove_all_extents_t<_Tp>) * length;
 
-        region_size_ = sizeof(_Tp) * count;
+        // allocate will round up region_size_
+        ptr_.reset(guest_->allocate(region_size_), length);
+    }
 
-        // This will round up region_size_
-        base_address_ = guest_->allocate(region_size_);
+    template <typename... _Args, typename Tp = _Tp,
+              typename std::enable_if_t<!std::is_array_v<Tp>>* dummy = nullptr>
+    explicit GuestAllocation(_Args&&... __args) {
+        static_assert(!_is_array(), "Array types require a runtime length");
 
-        // Map it in
-        array_.reset(base_address_, count);
+        auto& domain = Domain::thread_local_domain();
+        guest_ = domain.guest();
+        introvirt_assert(guest_ != nullptr, "");
+        region_size_ = sizeof(_Tp);
+
+        // allocate will round up region_size_
+        ptr_.reset(guest_->allocate(region_size_));
+
+        // Assign the value to the pointer
+        *ptr_ = _Tp(std::forward<_Args>(__args)...);
     }
 
     ~GuestAllocation() {
-        if (likely(region_size_ != 0))
-            guest_->guest_free(base_address_, region_size_);
+        if (region_size_ != 0) {
+            guest_->guest_free(ptr_, region_size_);
+        }
     }
-
-    /**
-     * @brief Implicit conversion to pointer type
-     */
-    operator _Tp*() { return array_.get(); }
-
-    /**
-     * @copydoc GuestAllocation<T[_Size]>::operator _Tp*()
-     */
-    operator const _Tp*() const { return array_.get(); }
-
-    /**
-     * @brief Transparently decay into a GuestVirtualAddress
-     *
-     * @return GuestVirtualAddress
-     */
-    operator GuestVirtualAddress() const { return base_address_; }
-
-    GuestVirtualAddress address() const { return base_address_; }
 
     GuestAllocation(const GuestAllocation&) = delete;
     GuestAllocation& operator=(const GuestAllocation&) = delete;
 
-    GuestAllocation(GuestAllocation&& src) noexcept {
-        guest_ = src.guest_;
-        array_ = std::move(src.array_);
-        base_address_ = std::move(src.base_address_);
-        region_size_ = src.region_size_;
+    GuestAllocation(GuestAllocation&& src) noexcept
+        : guest_(src.guest_), ptr_(std::move(src.ptr_)), region_size_(src.region_size_) {
 
-        src.array_.reset();
-        src.base_address_ = NullGuestAddress();
         src.region_size_ = 0;
     }
     GuestAllocation& operator=(GuestAllocation&& src) noexcept {
         guest_ = src.guest_;
-        array_ = std::move(src.array_);
-        base_address_ = std::move(src.base_address_);
+        ptr_ = std::move(src.ptr_);
         region_size_ = src.region_size_;
 
-        src.array_.reset();
-        src.base_address_ = NullGuestAddress();
         src.region_size_ = 0;
-        return *this;
     }
 
   protected:
+    static constexpr bool _is_array() { return std::is_array_v<_Tp>; }
+
     Guest* guest_;
-    guest_ptr<_Tp[]> array_;
-    GuestVirtualAddress base_address_;
+    guest_ptr<_Tp> ptr_;
     size_t region_size_;
-};
-
-// GuestAllocation for array with a compile time length
-template <typename _Tp, size_t _Count>
-class GuestAllocation<_Tp[_Count]> : public GuestAllocation<_Tp[]> {
-  public:
-    explicit GuestAllocation() : GuestAllocation<_Tp[]>(_Count) {}
-};
-
-template <typename _Tp>
-struct _GuestAllocate {
-    typedef GuestAllocation<_Tp> __single_object;
-};
-
-template <typename _Tp>
-struct _GuestAllocate<_Tp[]> {
-    typedef GuestAllocation<_Tp[]> __array;
-};
-
-template <typename _Tp, size_t _Bound>
-struct _GuestAllocate<_Tp[_Bound]> {
-    struct __invalid_type {};
 };
 
 // allocate for single objects
 template <typename _Tp, typename... _Args>
-inline typename _GuestAllocate<_Tp>::__single_object allocate(_Args&&... __args) {
-    return GuestAllocation<_Tp>(std::forward<_Args>(__args)...);
+inline GuestAllocation<_Tp> allocate(_Args&&... args) {
+    return GuestAllocation<_Tp>(std::forward<_Args>(args)...);
 }
 
-// allocate for arrays of unknown bound
+// allocate for arrays with runtime lengths
 template <typename _Tp>
-inline typename _GuestAllocate<_Tp>::__array allocate(size_t __num) {
-    return GuestAllocation<_Tp>(__num);
+inline GuestAllocation<_Tp> allocate(size_t num) {
+    return GuestAllocation<_Tp>(num);
 }
-
-// Disable allocate for arrays of known bound
-template <typename _Tp, typename... _Args>
-inline typename _GuestAllocate<_Tp>::__invalid_type allocate(_Args&&...) = delete;
 
 // Special wrapper for strings
 inline auto allocate(std::string_view str) {
     // Allocate length + 1 for the null terminator
     auto result = allocate<char[]>(str.length() + 1);
+    auto& ptr = result.ptr();
 
     // Copy the string and null terminate it
-    std::copy(str.begin(), str.end(), result.begin());
-    result[str.length()] = '\0';
+    std::copy(str.begin(), str.end(), ptr.begin());
+    ptr[str.length()] = '\0';
+
+    return result;
+}
+
+// Special wrapper for utf16 strings
+inline auto allocate(std::u16string_view str) {
+    // Allocate length + 1 for the null terminator
+    auto result = allocate<char16_t[]>(str.length() + 1);
+    auto& ptr = result.ptr();
+
+    // Copy the string and null terminate it
+    std::copy(str.begin(), str.end(), ptr.begin());
+    ptr[str.length()] = '\0';
 
     return result;
 }
 
 template <typename _Tp>
 class GuestAllocationComplexBase {
+    static_assert(!std::is_array_v<_Tp>, "Arrays of this type are not supported");
+
   public:
-    _Tp* get() { return value_.get(); }
-    const _Tp* get() const { return value_.get(); }
-
-    _Tp& operator*() { return *value_; }
-    const _Tp& operator*() const { return *value_; }
-
-    _Tp* operator->() { return value_.get(); }
-    const _Tp* operator->() const { return value_.get(); }
-
     operator _Tp*() { return value_.get(); }
-    operator const _Tp*() const { return value_.get(); }
+    _Tp& operator*() { return *value_; }
+    _Tp* get() { return value_.get(); }
+    _Tp* operator->() { return value_.get(); }
 
-    GuestVirtualAddress address() const { return value_->address(); }
-    operator GuestVirtualAddress() const { return value_->address(); }
+    uint64_t address() const { return ptr().address(); }
+
+    guest_ptr<void> ptr() const { return allocation_->ptr(); }
+    operator guest_ptr<void>() const { return allocation_->ptr(); }
 
     GuestAllocationComplexBase() = default;
     GuestAllocationComplexBase(const GuestAllocationComplexBase&) = delete;
     GuestAllocationComplexBase& operator=(const GuestAllocationComplexBase&) = delete;
 
   protected:
-    std::unique_ptr<_Tp> value_;
+    std::optional<GuestAllocation<uint8_t[]>> allocation_;
+    std::shared_ptr<_Tp> value_;
 };
 
 } // namespace inject

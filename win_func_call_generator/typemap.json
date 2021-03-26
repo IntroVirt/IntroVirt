@@ -1,0 +1,647 @@
+{
+    "cstring": {
+        "includes": [
+            "<introvirt/core/memory/guest_ptr.hh>"
+        ],
+        "ppointer_config": {
+            "variables": [
+                {
+                    "type": "guest_ptr<char*, guest_ptr_t>",
+                    "name": "pp{{ arg['name'] }}_"
+                },
+                {
+                    "type": "guest_ptr<char[]>",
+                    "name": "{{ arg['name'] }}_",
+                    "mutable": true
+                }
+            ],
+            "injection": {
+                "type": "const guest_ptr<void>&",
+                "name": "pp{{arg['name'] }}"
+            },
+            "initializer": [
+                "pp{{ arg['name'] }}_.reset(x64(), get_address_argument({{index}}));"
+            ],
+            "to_json": [
+                "{% if arg.get('in') and not arg.get('out') %}",
+                "{% set dir='\\\"in\\\"' %}",
+                "{% elif not arg.get('in') and arg.get('out') %}",
+                "{% set dir='\\\"out\\\"' %}",
+                "{% elif arg.get('in') and arg.get('out') %}",
+                "{% set dir='(returned()) ? \\\"in\\\" : \\\"out\\\"' %}",
+                "{% endif %}",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"ppointer\"] = pp{{ arg['name'] }}_.address();",
+                "if (pp{{ arg['name'] }}_ {{ '&& returned()' if not arg.get('in') and arg.get('out') }}) {",
+                "auto p{{ arg['name'] }} = pp{{ arg['name'] }}_.get();",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"pointer\"] = p{{ arg['name'] }}.address();",
+                "if (p{{ arg['name'] }}) {",
+                "  auto {{ arg['name'] }} = map_guest_{{ arg['type'] }}(p{{ arg['name'] }});",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][{{ dir }}] = std::string({{ arg['name'] }}.str());",
+                "}",
+                "}"
+            ],
+            "methods": [
+                {
+                    "name": "pp{{ arg['name'] }}",
+                    "result_type": "guest_ptr<char*, guest_ptr_t>",
+                    "code": [
+                        "return pp{{ arg['name'] }}_;"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "pp{{ arg['name'] }}",
+                    "arguments": [
+                        {
+                            "type": "guest_ptr<void>",
+                            "name": "pp{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "set_address_argument({{index}}, pp{{ arg['name'] }});",
+                        "pp{{ arg['name'] }}_.reset(pp{{ arg['name'] }});",
+                        "{{ arg['name'] }}_.reset();"
+                    ]
+                },
+                {
+                    "name": "{{ arg['name'] }}",
+                    "result_type": "guest_ptr<char[]>",
+                    "code": [
+                        "if (!{{ arg['name'] }}_ && pp{{ arg['name'] }}_) {",
+                        "  auto p{{ arg['name'] }} = pp{{ arg['name'] }}_.get();",
+                        "  {{ arg['name'] }}_ = map_guest_{{ arg['type'] }}(p{{ arg['name'] }});",
+                        "}",
+                        "return {{ arg['name'] }}_;"
+                    ],
+                    "const": "true"
+                }
+            ]
+        },
+        "pointer_config": {
+            "variables": [
+                {
+                    "type": "guest_ptr<char[]>",
+                    "name": "p{{ arg['name'] }}_"
+                }
+            ],
+            "injection": {
+                "type": "const guest_ptr<char[]>&",
+                "name": "p{{arg['name'] }}",
+                "result_type": "guest_ptr<char[]>",
+                "result_code": [
+                    "return handler.p{{ arg['name'] }}();"
+                ]
+            },
+            "initializer": [
+                "p{{ arg['name'] }}_ = map_guest_{{ arg['type'] }}(get_address_argument({{index}}));"
+            ],
+            "to_json": [
+                "{% if arg.get('in') and not arg.get('out') %}",
+                "{% set dir='\\\"in\\\"' %}",
+                "{% elif not arg.get('in') and arg.get('out') %}",
+                "{% set dir='\\\"out\\\"' %}",
+                "{% elif arg.get('in') and arg.get('out') %}",
+                "{% set dir='(returned()) ? \\\"in\\\" : \\\"out\\\"' %}",
+                "{% endif %}",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"pointer\"] = p{{ arg['name'] }}_.address();",
+                "{% if arg['type'] != 'void' %}",
+                "if(p{{ arg['name'] }}_ {{ '&& returned()' if not arg.get('in') and arg.get('out') }}) {",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][{{ dir }}] = std::string(p{{ arg['name'] }}_.str());",
+                "}",
+                "{% endif %}",
+                ""
+            ],
+            "methods": [
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "result_type": "guest_ptr<char[]>",
+                    "code": [
+                        "return p{{ arg['name'] }}_;"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "arguments": [
+                        {
+                            "type": "const guest_ptr<char[]>&",
+                            "name": "p{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "set_address_argument({{ index }}, p{{ arg['name'] }});",
+                        "p{{ arg['name'] }}_ = p{{ arg['name'] }};"
+                    ]
+                }
+            ]
+        }
+    },
+    "wstring": {
+        "includes": [
+            "<introvirt/core/memory/guest_ptr.hh>"
+        ],
+        "ppointer_config": {
+            "variables": [
+                {
+                    "type": "guest_ptr<char16_t*, guest_ptr_t>",
+                    "name": "pp{{ arg['name'] }}_"
+                },
+                {
+                    "type": "guest_ptr<char16[]>",
+                    "name": "{{ arg['name'] }}_",
+                    "mutable": true
+                }
+            ],
+            "injection": {
+                "type": "const guest_ptr<void>&",
+                "name": "pp{{arg['name'] }}"
+            },
+            "initializer": [
+                "pp{{ arg['name'] }}_.reset(x64(), get_address_argument({{index}}));"
+            ],
+            "to_json": [
+                "{% if arg.get('in') and not arg.get('out') %}",
+                "{% set dir='\\\"in\\\"' %}",
+                "{% elif not arg.get('in') and arg.get('out') %}",
+                "{% set dir='\\\"out\\\"' %}",
+                "{% elif arg.get('in') and arg.get('out') %}",
+                "{% set dir='(returned()) ? \\\"in\\\" : \\\"out\\\"' %}",
+                "{% endif %}",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"ppointer\"] = pp{{ arg['name'] }}_.address();",
+                "if (pp{{ arg['name'] }}_ {{ '&& returned()' if not arg.get('in') and arg.get('out') }}) {",
+                "auto p{{ arg['name'] }} = pp{{ arg['name'] }}_.get();",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"pointer\"] = p{{ arg['name'] }}.address();",
+                "if (p{{ arg['name'] }}) {",
+                "  auto {{ arg['name'] }} = map_guest_{{ arg['type'] }}(p{{ arg['name'] }});",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][{{ dir }}] = std::string({{ arg['name'] }}.str());",
+                "}",
+                "}"
+            ],
+            "methods": [
+                {
+                    "name": "pp{{ arg['name'] }}",
+                    "result_type": "guest_ptr<char16_t*, guest_ptr_t>",
+                    "code": [
+                        "return pp{{ arg['name'] }}_;"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "pp{{ arg['name'] }}",
+                    "arguments": [
+                        {
+                            "type": "guest_ptr<void>",
+                            "name": "pp{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "set_address_argument({{index}}, pp{{ arg['name'] }});",
+                        "pp{{ arg['name'] }}_ = pp{{ arg['name'] }};",
+                        "{{ arg['name'] }}_.reset();"
+                    ]
+                },
+                {
+                    "name": "{{ arg['name'] }}",
+                    "result_type": "guest_ptr<char16[]>",
+                    "code": [
+                        "if (!{{ arg['name'] }}_ && pp{{ arg['name'] }}_) {",
+                        "  auto p{{ arg['name'] }} = pp{{ arg['name'] }}_.get();",
+                        "  {{ arg['name'] }}_ = map_guest_{{ arg['type'] }}(p{{ arg['name'] }});",
+                        "}",
+                        "return {{ arg['name'] }}_;"
+                    ],
+                    "const": "true"
+                }
+            ]
+        },
+        "pointer_config": {
+            "variables": [
+                {
+                    "type": "guest_ptr<char16_t[]>",
+                    "name": "p{{ arg['name'] }}_"
+                }
+            ],
+            "injection": {
+                "type": "const guest_ptr<char16_t[]>&",
+                "name": "p{{arg['name'] }}",
+                "result_type": "guest_ptr<char16_t[]>",
+                "result_code": [
+                    "return handler.p{{ arg['name'] }}();"
+                ]
+            },
+            "initializer": [
+                "p{{ arg['name'] }}_ = map_guest_{{ arg['type'] }}(get_address_argument({{index}}));"
+            ],
+            "to_json": [
+                "{% if arg.get('in') and not arg.get('out') %}",
+                "{% set dir='\\\"in\\\"' %}",
+                "{% elif not arg.get('in') and arg.get('out') %}",
+                "{% set dir='\\\"out\\\"' %}",
+                "{% elif arg.get('in') and arg.get('out') %}",
+                "{% set dir='(returned()) ? \\\"in\\\" : \\\"out\\\"' %}",
+                "{% endif %}",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"pointer\"] = p{{ arg['name'] }}_.address();",
+                "{% if arg['type'] != 'void' %}",
+                "if(p{{ arg['name'] }}_ {{ '&& returned()' if not arg.get('in') and arg.get('out') }}) {",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][{{ dir }}] = std::string(p{{ arg['name'] }}_.str());",
+                "}",
+                "{% endif %}",
+                ""
+            ],
+            "methods": [
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "result_type": "guest_ptr<char16_t[]>",
+                    "code": [
+                        "return p{{ arg['name'] }}_;"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "arguments": [
+                        {
+                            "type": "const guest_ptr<char16_t[]>&",
+                            "name": "p{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "set_address_argument({{ index }}, p{{ arg['name'] }});",
+                        "p{{ arg['name'] }}_ = p{{ arg['name'] }};"
+                    ]
+                }
+            ]
+        }
+    },
+    "guest_ptr<uint8_t[]>": {
+        "includes": [
+            "<introvirt/core/memory/guest_ptr.hh>"
+        ],
+        "pointer_config": {
+            "pre": [
+                "{%if arg.get('array') %}{% set ptr_prefix = 'rg' %} {% else %} {% set ptr_prefix = 'p' %}{% endif %}",
+                "{%if arg['type'] == 'guest_ptr<guest_ptr_t[]>'  %}{% set size_t = True %}{% endif %}",
+                "{%if arg['type'] == 'guest_ptr<guest_size_t[]>' %}{% set size_t = True %}{% endif %}"
+            ],
+            "variables": [
+                {
+                    "type": "{{arg['type']}}",
+                    "name": "{{ptr_prefix}}{{ arg['name'] }}_"
+                }
+            ],
+            "injection": {
+                "type": "const {{arg['type']}}&",
+                "name": "p{{arg['name'] }}",
+                "result_type": "{{arg['type']}}",
+                "result_code": [
+                    "return handler.{{ptr_prefix}}{{ arg['name'] }}();"
+                ]
+            },
+            "initializer": [
+                "{{ptr_prefix}}{{ arg['name'] }}_.reset({{ 'x64(), ' if size_t }} get_address_argument({{index}}), {{ arg['length'] }});"
+            ],
+            "to_json": [
+                "{% if arg.get('in') and not arg.get('out') %}",
+                "{% set dir='\\\"in\\\"' %}",
+                "{% elif not arg.get('in') and arg.get('out') %}",
+                "{% set dir='\\\"out\\\"' %}",
+                "{% elif arg.get('in') and arg.get('out') %}",
+                "{% set dir='(returned()) ? \\\"in\\\" : \\\"out\\\"' %}",
+                "{% endif %}",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"pointer\"] = {{ptr_prefix}}{{ arg['name'] }}_.address();",
+                "if ({{ptr_prefix}}{{ arg['name'] }}_ {{ '&& returned()' if not arg.get('in') and arg.get('out') }}) {",
+                "  Json::Value data;",
+                "  for (unsigned int i = 0; i < {{ptr_prefix}}{{ arg['name'] }}_.length(); ++i) {",
+                "    data[i] = {{ptr_prefix}}{{ arg['name'] }}_[i];",
+                "  }",
+                "  {{ arg['json_map'] }}[\"{{ arg['name'] }}\"][{{ dir }}] = std::move(data);",
+                "}",
+                ""
+            ],
+            "methods": [
+                {
+                    "name": "{{ptr_prefix}}{{ arg['name'] }}",
+                    "result_type": "{{arg['type']}}",
+                    "code": [
+                        "return {{ptr_prefix}}{{ arg['name'] }}_;"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "{{ptr_prefix}}{{ arg['name'] }}",
+                    "result_type": "void",
+                    "arguments": [
+                        {
+                            "type": "const {{arg['type']}}&",
+                            "name": "{{ptr_prefix}}{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "set_address_argument({{ index }}, {{ptr_prefix}}{{ arg['name'] }});",
+                        "{{ptr_prefix}}{{ arg['name'] }}_ = {{ptr_prefix}}{{ arg['name'] }};"
+                    ]
+                }
+            ]
+        }
+    },
+    "guest_ptr<uint16_t[]>": {
+        "extends": "guest_ptr<uint8_t[]>"
+    },
+    "guest_ptr<uint32_t[]>": {
+        "extends": "guest_ptr<uint8_t[]>"
+    },
+    "guest_ptr<uint64_t[]>": {
+        "extends": "guest_ptr<uint8_t[]>"
+    },
+    "guest_ptr<guest_size_t[]>": {
+        "extends": "guest_ptr<uint8_t[]>"
+    },
+    "guest_ptr<guest_ptr_t[]>": {
+        "extends": "guest_ptr<uint8_t[]>"
+    },
+    "class_method_make_shared_64check": {
+        "includes": [
+            "<memory>"
+        ],
+        "ppointer_config": {
+            "variables": [
+                {
+                    "type": "guest_ptr<void*, guest_ptr_t>",
+                    "name": "pp{{ arg['name'] }}_"
+                },
+                {
+                    "type": "std::shared_ptr<{{arg['type']}}>",
+                    "name": "{{ arg['name'] }}_",
+                    "mutable": true
+                }
+            ],
+            "injection": {
+                "type": "const guest_ptr<void>&",
+                "name": "pp{{arg['name'] }}"
+            },
+            "initializer": [
+                "pp{{ arg['name'] }}_.reset(x64(), get_address_argument({{index}}));"
+            ],
+            "methods": [
+                {
+                    "name": "pp{{ arg['name'] }}",
+                    "result_type": "guest_ptr<void*, guest_ptr_t>",
+                    "code": [
+                        "return pp{{ arg['name'] }}_;"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "pp{{ arg['name'] }}",
+                    "result_type": "void",
+                    "arguments": [
+                        {
+                            "type": "const guest_ptr<void>&",
+                            "name": "pp{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "set_address_argument({{ index }}, pp{{ arg['name'] }});",
+                        "pp{{ arg['name'] }}_.reset(pp{{ arg['name'] }});",
+                        "{{ arg['name'] }}_.reset();"
+                    ]
+                },
+                {
+                    "name": "{{ arg['name'] }}",
+                    "result_type": "std::shared_ptr<{{arg['type']}}>",
+                    "code": [
+                        "if (!{{ arg['name'] }}_ && pp{{ arg['name'] }}_) {",
+                        "  auto p{{ arg['name'] }} = pp{{ arg['name'] }}_.get();",
+                        "  {{ arg['name'] }}_ = {{arg['type']}}::make_shared(p{{ arg['name'] }}, x64());",
+                        "}",
+                        "return {{ arg['name'] }}_;"
+                    ]
+                }
+            ]
+        },
+        "pointer_config": {
+            "variables": [
+                {
+                    "type": "guest_ptr<void>",
+                    "name": "p{{ arg['name'] }}_"
+                },
+                {
+                    "type": "std::shared_ptr<{{arg['type']}}>",
+                    "name": "{{ arg['name'] }}_",
+                    "mutable": true
+                }
+            ],
+            "injection": {
+                "type": "const guest_ptr<void>&",
+                "name": "p{{arg['name'] }}",
+                "result_type": "std::shared_ptr<{{arg['type']}}>",
+                "result_code": [
+                    "return handler.{{ arg['name'] }}();"
+                ]
+            },
+            "initializer": [
+                "p{{ arg['name'] }}_ = get_address_argument({{index}});"
+            ],
+            "methods": [
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "result_type": "guest_ptr<void>",
+                    "code": [
+                        "return p{{ arg['name'] }}_;"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "result_type": "void",
+                    "arguments": [
+                        {
+                            "type": "const guest_ptr<void>&",
+                            "name": "p{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "{%- if arg.get('result_parameter') -%}",
+                        "raw_return_value(p{{ arg['name'] }}.address());",
+                        "{%- else -%}",
+                        "set_address_argument({{ index }}, p{{ arg['name'] }});",
+                        "{%- endif -%}",
+                        "p{{ arg['name'] }}_ = p{{ arg['name'] }};",
+                        "{{ arg['name'] }}_.reset();"
+                    ]
+                },
+                {
+                    "name": "{{ arg['name'] }}",
+                    "result_type": "std::shared_ptr<{{arg['type']}}>",
+                    "code": [
+                        "if (!{{ arg['name'] }}_ && p{{ arg['name'] }}()) {",
+                        "  {{ arg['name'] }}_ = {{arg['type']}}::make_shared(p{{arg['name']}}(), x64());",
+                        "}",
+                        "return {{ arg['name'] }}_;"
+                    ]
+                }
+            ]
+        }
+    },
+    "builtin_type": {
+        "includes": [
+            "<introvirt/core/memory/guest_ptr.hh>"
+        ],
+        "direct_config": {
+            "result": {
+                "type": "{{arg['type']}}"
+            },
+            "variables": [
+                {
+                    "type": "{{arg['type']}}",
+                    "name": "{{ arg['name'] }}_",
+                    "skip_if_result": true
+                }
+            ],
+            "injection": {
+                "type": "{{ arg['type'] }}",
+                "name": "{{arg['name'] }}",
+                "result_type": "{{arg['type']}}",
+                "result_code": [
+                    "return handler.{{ arg['name'] }}();"
+                ]
+            },
+            "initializer": [
+                "{{ arg['name'] }}_ = static_cast<{{arg['type']}}>(get_argument({{ index }}));"
+            ],
+            "to_json": [
+                "{% if arg.get('result_parameter') %}",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"out\"] = static_cast<uint64_t>({{ arg['name'] }}());",
+                "{%- else -%}",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"in\"] = static_cast<uint64_t>({{ arg['name'] }}());",
+                "{%-endif-%}"
+            ],
+            "methods": [
+                {
+                    "name": "{{ arg['name'] }}",
+                    "result_type": "{{arg['type']}}",
+                    "code": [
+                        "{% if arg.get('result_parameter') %}",
+                        "return static_cast<{{arg['type']}}>(raw_return_value());",
+                        "{%- else -%}",
+                        "return {{ arg['name'] }}_;",
+                        "{%-endif-%}"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "{{ arg['name'] }}",
+                    "arguments": [
+                        {
+                            "type": "{{arg['type']}}",
+                            "name": "{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "{% if arg.get('result_parameter') %}",
+                        "raw_return_value(static_cast<uint64_t>({{ arg['name'] }}));",
+                        "{%- else -%}",
+                        "set_argument({{ index }}, {{ arg['name'] }});",
+                        "{{ arg['name'] }}_ = {{ arg['name'] }};",
+                        "{%-endif-%}"
+                    ]
+                }
+            ]
+        },
+        "pointer_config": {
+            "variables": [
+                {
+                    "type": "guest_ptr<{{arg['type']}}>",
+                    "name": "p{{ arg['name'] }}_",
+                    "mutable": true
+                }
+            ],
+            "injection": {
+                "type": "const guest_ptr<{{ arg['type'] }}>&",
+                "name": "p{{arg['name'] }}",
+                "result_type": "guest_ptr<{{ arg['type'] }}>",
+                "result_code": [
+                    "return handler.p{{ arg['name'] }}();"
+                ]
+            },
+            "initializer": [
+                "{% if size_t %}",
+                "p{{ arg['name'] }}_.reset(x64(), get_address_argument({{index}}));",
+                "{% else %}",
+                "p{{ arg['name'] }}_ = get_address_argument({{index}});",
+                "{% endif %}"
+            ],
+            "to_json": [
+                "{% if arg.get('in') and not arg.get('out') %}",
+                "{% set dir='\\\"in\\\"' %}",
+                "{% elif not arg.get('in') and arg.get('out') %}",
+                "{% set dir='\\\"out\\\"' %}",
+                "{% elif arg.get('in') and arg.get('out') %}",
+                "{% set dir='(returned()) ? \\\"in\\\" : \\\"out\\\"' %}",
+                "{% endif %}",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][\"pointer\"] = p{{ arg['name'] }}_.address();",
+                "{% if arg['type'] != 'void' %}",
+                "if(p{{ arg['name'] }}_ {{ '&& returned()' if not arg.get('in') and arg.get('out') }}) {",
+                "{{ arg['json_map'] }}[\"{{ arg['name'] }}\"][{{ dir }}] = *p{{ arg['name'] }}_;",
+                "}",
+                "{% endif %}",
+                ""
+            ],
+            "methods": [
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "result_type": "guest_ptr<{{arg['type']}}>",
+                    "code": [
+                        "return p{{ arg['name'] }}_;"
+                    ]
+                },
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "arguments": [
+                        {
+                            "type": "const guest_ptr<{{arg['type']}}>&",
+                            "name": "p{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "set_address_argument({{ index }}, p{{ arg['name'] }});",
+                        "p{{ arg['name'] }}_ = p{{ arg['name'] }};"
+                    ]
+                }
+            ]
+        }
+    },
+    "nt::NTSTATUS": {
+        "extends": "builtin_type"
+    },
+    "void": {
+        "extends": "builtin_type"
+    },
+    "bool": {
+        "extends": "builtin_type"
+    },
+    "int8_t": {
+        "extends": "builtin_type"
+    },
+    "int16_t": {
+        "extends": "builtin_type"
+    },
+    "int32_t": {
+        "extends": "builtin_type"
+    },
+    "int64_t": {
+        "extends": "builtin_type"
+    },
+    "uint8_t": {
+        "extends": "builtin_type"
+    },
+    "uint16_t": {
+        "extends": "builtin_type"
+    },
+    "uint32_t": {
+        "extends": "builtin_type"
+    },
+    "uint64_t": {
+        "extends": "builtin_type"
+    }
+}

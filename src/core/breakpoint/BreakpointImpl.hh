@@ -18,7 +18,7 @@
 #include "core/domain/DomainImpl.hh"
 
 #include <introvirt/core/breakpoint/Breakpoint.hh>
-#include <introvirt/core/memory/GuestPhysicalAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 #include <memory>
@@ -58,7 +58,7 @@ class BreakpointImpl final : public Breakpoint {
 
     void callback(std::function<void(Event&)> callback) override;
 
-    const GuestPhysicalAddress& address() const;
+    guest_phys_ptr<uint8_t> ptr() const;
 
     std::shared_ptr<BreakpointImplCallback> callback() { return cbdata_; }
 
@@ -68,12 +68,12 @@ class BreakpointImpl final : public Breakpoint {
 
     std::shared_ptr<InternalBreakpoint> internal_breakpoint() { return internal_breakpoint_; }
 
-    BreakpointImpl(const GuestAddress& address, std::function<void(Event&)> callback);
+    BreakpointImpl(const guest_phys_ptr<void>& ptr, std::function<void(Event&)> callback);
 
     ~BreakpointImpl() override;
 
   private:
-    const GuestPhysicalAddress address_;
+    const guest_phys_ptr<uint8_t> ptr_;
     std::shared_ptr<BreakpointImplCallback> cbdata_;
     std::shared_ptr<void> data_;
     std::shared_ptr<InternalBreakpoint> internal_breakpoint_;

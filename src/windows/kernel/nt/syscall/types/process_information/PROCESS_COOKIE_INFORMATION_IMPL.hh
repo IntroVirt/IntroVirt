@@ -36,14 +36,14 @@ using PROCESS_COOKIE_INFORMATION_IMPL_BASE =
 
 class PROCESS_COOKIE_INFORMATION_IMPL final : public PROCESS_COOKIE_INFORMATION_IMPL_BASE {
   public:
-    uint32_t Cookie() const override { return this->data_->Cookie; }
-    void Cookie(uint32_t Cookie) override { this->data_->Cookie = Cookie; }
+    uint32_t Cookie() const override { return this->ptr_->Cookie; }
+    void Cookie(uint32_t Cookie) override { this->ptr_->Cookie = Cookie; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    PROCESS_COOKIE_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
-        : PROCESS_COOKIE_INFORMATION_IMPL_BASE(PROCESS_INFORMATION_CLASS::ProcessCookie, gva,
+    PROCESS_COOKIE_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
+        : PROCESS_COOKIE_INFORMATION_IMPL_BASE(PROCESS_INFORMATION_CLASS::ProcessCookie, ptr,
                                                buffer_size) {}
 };
 

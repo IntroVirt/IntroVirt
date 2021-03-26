@@ -42,8 +42,8 @@ class SOCKADDR_IN : public SOCKADDR {
      *
      * @return std::array<uint8_t, 4>
      */
-    virtual std::array<uint8_t, 4> sin_addr() const = 0;
-    virtual void sin_addr(const std::array<uint8_t, 4>& sin_addr) = 0;
+    virtual guest_ptr<const uint8_t[]> sin_addr() const = 0;
+    virtual guest_ptr<uint8_t[]> sin_addr() = 0;
 
     // Helper functions
     /**

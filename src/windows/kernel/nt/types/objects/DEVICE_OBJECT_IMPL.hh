@@ -39,7 +39,7 @@ class DEVICE_OBJECT_IMPL final : public OBJECT_IMPL<PtrType, DEVICE_OBJECT> {
     std::string DeviceName() const override;
     const DRIVER_OBJECT& DriverObject() const override;
 
-    DEVICE_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    DEVICE_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     DEVICE_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel,
                        std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 

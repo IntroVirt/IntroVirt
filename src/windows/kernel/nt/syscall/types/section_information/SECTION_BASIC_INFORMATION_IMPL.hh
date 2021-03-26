@@ -42,23 +42,21 @@ using SECTION_BASIC_INFORMATION_IMPL_BASE =
 template <typename PtrType>
 class SECTION_BASIC_INFORMATION_IMPL final : public SECTION_BASIC_INFORMATION_IMPL_BASE<PtrType> {
   public:
-    uint64_t BaseAddress() const override { return this->data_->BaseAddress; }
-    void BaseAddress(uint64_t value) override { this->data_->BaseAddress = value; }
+    uint64_t BaseAddress() const override { return this->ptr_->BaseAddress; }
+    void BaseAddress(uint64_t value) override { this->ptr_->BaseAddress = value; }
 
-    uint32_t AllocationAttributes() const override { return this->data_->AllocationAttributes; }
-    void AllocationAttributes(uint32_t value) override {
-        this->data_->AllocationAttributes = value;
-    }
+    uint32_t AllocationAttributes() const override { return this->ptr_->AllocationAttributes; }
+    void AllocationAttributes(uint32_t value) override { this->ptr_->AllocationAttributes = value; }
 
-    uint64_t MaximumSize() const override { return this->data_->MaximumSize; }
-    void MaximumSize(uint64_t value) override { this->data_->MaximumSize = value; }
+    uint64_t MaximumSize() const override { return this->ptr_->MaximumSize; }
+    void MaximumSize(uint64_t value) override { this->ptr_->MaximumSize = value; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    SECTION_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    SECTION_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : SECTION_BASIC_INFORMATION_IMPL_BASE<PtrType>(
-              SECTION_INFORMATION_CLASS::SectionBasicInformation, gva, buffer_size) {}
+              SECTION_INFORMATION_CLASS::SectionBasicInformation, ptr, buffer_size) {}
 };
 
 } // namespace nt

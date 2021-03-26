@@ -46,15 +46,15 @@ class array_iterable : public _BaseClass {
     iterator end() override { return iterator(*this); }
 
     iterator erase(const const_iterator& position) override {
-        assert(position.index() < length());
+        introvirt_assert(position.index() < length(), "");
 
         const uint32_t index = position.index();
-        const GuestVirtualAddress gva = position->address();
-        const GuestVirtualAddress end_gva = first_entry_ + (length() * _EntrySize);
-        const size_t count = end_gva - gva;
+        const guest_ptr<void>& ptr = position->ptr();
+        const guest_ptr<void> end_ptr = first_entry_ + (length() * _EntrySize);
+        const size_t count = ptr.address() - ptr.address();
 
         // Map in the buffer
-        guest_ptr<char[]> buffer(gva, count);
+        guest_ptr<char[]> buffer(ptr, count);
 
         // Shift all of the data towards the start of the buffer
         std::memmove(buffer.get(), buffer.get() + _EntrySize, count - _EntrySize);
@@ -86,7 +86,7 @@ class array_iterable : public _BaseClass {
     }
 
     const _T& at(uint32_t index) const override {
-        assert(index < length());
+        introvirt_assert(index < length(), "");
 
         auto& entry = value_table_.at(index);
         if (!entry) {
@@ -98,7 +98,7 @@ class array_iterable : public _BaseClass {
     };
 
     template <typename... Args>
-    array_iterable(const GuestVirtualAddress& length_ptr, const GuestVirtualAddress& first_entry,
+    array_iterable(const guest_ptr<void>& length_ptr, const guest_ptr<void>& first_entry,
                    Args&&... args)
         : _BaseClass(std::forward<Args>(args)...), first_entry_(first_entry), length_(length_ptr) {
 
@@ -126,7 +126,7 @@ class array_iterable : public _BaseClass {
     }
 
   protected:
-    const GuestVirtualAddress first_entry_;
+    const guest_ptr<void> first_entry_;
     guest_ptr<_EntryCountType> length_; // May be in either "entries" or "bytes"
 
     mutable std::vector<std::shared_ptr<_T>> value_table_;

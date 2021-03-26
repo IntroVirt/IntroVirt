@@ -94,21 +94,23 @@ inline static uint64_t round_to_page_size(uint32_t value) {
 }
 
 void WatchpointManager::add_ref(WatchpointImpl& watchpoint) {
-    auto& domain = static_cast<DomainImpl&>(const_cast<Domain&>(watchpoint.address().domain()));
+    auto& domain = static_cast<DomainImpl&>(const_cast<Domain&>(watchpoint.ptr().domain()));
 
-    auto end_address = watchpoint.address().clone();
-    *end_address += (watchpoint.length() - 1);
-    const auto end_page = end_address->page_number();
+    guest_ptr<void> end_address = watchpoint.ptr();
+    end_address += (watchpoint.length() - 1);
+    const auto end_page = end_address.page_number();
 
     std::lock_guard<decltype(watchpoints_.mtx_)> watchpoint_lock(watchpoints_.mtx_);
 
     if (unlikely(interrupted_))
         return;
 
-    for (auto address = watchpoint.address().clone(); address->page_number() <= end_page;
-         *address += x86::PageDirectory::PAGE_SIZE) {
-        GuestPhysicalAddress physical_address(*address);
-        const uint64_t gfn = physical_address.page_number();
+    for (auto address = watchpoint.ptr(); address.page_number() <= end_page;
+         address += x86::PageDirectory::PAGE_SIZE) {
+
+        uint64_t physical_address =
+            domain.page_directory().translate(address.address(), address.page_directory());
+        const uint64_t gfn = physical_address >> PageDirectory::PAGE_SHIFT;
         auto iter = watchpoints_.map_.find(gfn);
         if (iter == watchpoints_.map_.end()) {
             // Create it
@@ -138,20 +140,22 @@ void WatchpointManager::add_ref(WatchpointImpl& watchpoint) {
 }
 void WatchpointManager::remove_ref(WatchpointImpl& watchpoint) {
     // Get a copy of the address starting at the beginning of the page
-    auto address = watchpoint.address().clone();
-    *address -= address->page_offset();
+    guest_ptr<uint8_t> address = watchpoint.ptr();
+    address -= address.page_offset();
+    const Domain& domain = address.domain();
 
     // Round up to full pages
     const uint64_t length = round_to_page_size(watchpoint.length());
-    const uint64_t end = address->value() + length;
+    const uint64_t end = address.address() + length;
 
     std::lock_guard<decltype(watchpoints_.mtx_)> watchpoint_lock(watchpoints_.mtx_);
     if (unlikely(interrupted_))
         return;
 
-    for (; address->value() < end; *address += x86::PageDirectory::PAGE_SIZE) {
-        GuestPhysicalAddress physical_address(*address);
-        const uint64_t gfn = physical_address.page_number();
+    for (; address.address() < end; address += x86::PageDirectory::PAGE_SIZE) {
+        const uint64_t physical_address =
+            domain.page_directory().translate(address.address(), address.page_directory());
+        const uint64_t gfn = physical_address >> PageDirectory::PAGE_SHIFT;
 
         LOG4CXX_DEBUG(logger, "Removing watchpoint for gfn 0x" << std::hex << gfn);
 
@@ -197,7 +201,8 @@ void WatchpointManager::remove_ref(WatchpointImpl& watchpoint) {
 
 bool WatchpointManager::deliver_watchpoint(Event& event) {
     auto& vcpu = event.vcpu();
-    const uint64_t gfn = event.mem_access().physical_address().page_number();
+    const uint64_t gfn =
+        event.mem_access().physical_address().address() >> PageDirectory::PAGE_SHIFT;
 
     // Find the watchpoint for the event
     std::lock_guard<decltype(watchpoints_.mtx_)> watchpoint_lock(watchpoints_.mtx_);

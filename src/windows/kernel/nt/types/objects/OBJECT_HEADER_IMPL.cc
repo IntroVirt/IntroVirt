@@ -56,8 +56,8 @@ enum OldHeaderObjectFlags {
 };
 
 template <typename PtrType>
-GuestVirtualAddress OBJECT_HEADER_IMPL<PtrType>::Body() const {
-    return gva_ + offsets_->Body.offset();
+guest_ptr<void> OBJECT_HEADER_IMPL<PtrType>::Body() const {
+    return ptr_ + offsets_->Body.offset();
 }
 
 template <typename PtrType>
@@ -131,8 +131,8 @@ bool OBJECT_HEADER_IMPL<PtrType>::has_quota_info() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress OBJECT_HEADER_IMPL<PtrType>::address() const {
-    return gva_;
+guest_ptr<void> OBJECT_HEADER_IMPL<PtrType>::ptr() const {
+    return ptr_;
 }
 
 template <typename PtrType>
@@ -147,21 +147,21 @@ uint8_t OBJECT_HEADER_IMPL<PtrType>::TypeIndex() const {
 
 template <typename PtrType>
 OBJECT_HEADER_IMPL<PtrType>::OBJECT_HEADER_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                                const GuestVirtualAddress& gva)
-    : kernel_(kernel), gva_(gva.domain(), (gva.virtual_address() & ~((sizeof(PtrType) * 2LL) - 1)),
-                            gva.page_directory()),
+                                                const guest_ptr<void>& ptr)
+    : kernel_(kernel),
+      ptr_(ptr.domain(), (ptr.address() & ~((sizeof(PtrType) * 2LL) - 1)), ptr.page_directory()),
       offsets_(LoadOffsets<structs::OBJECT_HEADER>(kernel)) {
 
     // Virtual address is aligned to 0x8 on 32-bit (0xFFFFFFF8) and 0x10 on 64-bit
     // (0xFFFFFFFFFFFFFFF0) (sizeof(uint32_t) * 2LL) == 0x8 (sizeof(uint64_t) * 2LL) == 0x10
 
     // Load offsets and map in the structure
-    buffer_.reset(gva_, offsets_->size());
+    buffer_.reset(ptr_, offsets_->size());
 
     if (offsets_->TypeIndex.exists()) {
         // 6.1+
         const uint8_t InfoMask = offsets_->InfoMask.get<uint8_t>(buffer_);
-        GuestVirtualAddress position = this->gva_;
+        guest_ptr<void> position = this->ptr_;
 
         // Prepare any optional structures
 
@@ -201,7 +201,7 @@ OBJECT_HEADER_IMPL<PtrType>::OBJECT_HEADER_IMPL(const NtKernelImpl<PtrType>& ker
         // Windows uses a weird Xor thing as a security feature.
         if (kernel.hasObHeaderCookie()) {
             const uint8_t ObHeaderCookie = kernel.ObHeaderCookie();
-            const PtrType key = (gva_.virtual_address() >> 8) & 0xFF;
+            const PtrType key = (ptr_.address() >> 8) & 0xFF;
             const uint32_t DecodedTypeIndex = (key ^ ObHeaderCookie ^ TypeIndex_);
             TypeIndex_ = DecodedTypeIndex;
         }
@@ -212,31 +212,31 @@ OBJECT_HEADER_IMPL<PtrType>::OBJECT_HEADER_IMPL(const NtKernelImpl<PtrType>& ker
         // XP
         const uint8_t NameInfoOffset = offsets_->NameInfoOffset.get<uint8_t>(buffer_);
         if (NameInfoOffset) {
-            pname_info_ = gva_ - NameInfoOffset;
+            pname_info_ = ptr_ - NameInfoOffset;
         }
 
         const uint8_t Flags = offsets_->Flags.get<uint8_t>(buffer_);
         if (Flags & OB_FLAG_CREATOR_INFO) {
             pcreator_info_ =
-                gva_ - LoadOffsets<structs::OBJECT_HEADER_CREATOR_INFO>(kernel)->size();
+                ptr_ - LoadOffsets<structs::OBJECT_HEADER_CREATOR_INFO>(kernel)->size();
         }
 
         // On XP, the Type field is a pointer to the OBJECT_TYPE for the Object.
         // TODO(papes) Finish this!
         const PtrType pType = offsets_->Type.get<PtrType>(buffer_);
-        type_ = kernel.types().normalize(gva_.create(pType));
+        type_ = kernel.types().normalize(ptr_.clone(pType));
         TypeIndex_ = kernel_.types().native(type_);
     }
 }
 
 std::unique_ptr<OBJECT_HEADER> OBJECT_HEADER::make_unique(const NtKernel& kernel,
-                                                          const GuestVirtualAddress& gva) {
+                                                          const guest_ptr<void>& ptr) {
     if (kernel.x64()) {
         return std::make_unique<OBJECT_HEADER_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     } else {
         return std::make_unique<OBJECT_HEADER_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
     }
 }
 

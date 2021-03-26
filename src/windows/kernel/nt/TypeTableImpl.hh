@@ -17,6 +17,8 @@
 
 #include <introvirt/windows/kernel/nt/TypeTable.hh>
 
+#include <log4cxx/logger.h>
+
 #include <array>
 #include <memory>
 
@@ -36,10 +38,13 @@ using ObTypeTable = std::array<std::shared_ptr<OBJECT_TYPE>, MaxTableSize>;
 
 template <typename PtrType>
 class TypeTableImpl final : public TypeTable {
+    static inline const log4cxx::LoggerPtr logger =
+        log4cxx::Logger::getLogger("introvirt.windows.kernel.nt.ObTypeIndexTable");
+
   public:
     ObjectType normalize(uint32_t type) const override;
 
-    ObjectType normalize(const GuestVirtualAddress& address) const override;
+    ObjectType normalize(const guest_ptr<void>& ptr) const override;
 
     uint32_t native(ObjectType type) const override;
 
@@ -53,7 +58,7 @@ class TypeTableImpl final : public TypeTable {
     bool load_from_json();
     void save_to_json() const;
 
-    int parseObjectTypeTable(const GuestVirtualAddress& pObTypeIndexTable);
+    int parseObjectTypeTable(const guest_ptr<void>& pObTypeIndexTable);
 
     const NtKernelImpl<PtrType>& kernel_;
     ToNativeTable to_native_;

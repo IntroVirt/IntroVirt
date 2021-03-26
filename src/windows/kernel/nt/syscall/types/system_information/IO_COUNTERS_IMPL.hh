@@ -39,23 +39,23 @@ struct _IO_COUNTERS {
 
 class IO_COUNTERS_IMPL final : public IO_COUNTERS {
   public:
-    uint64_t ReadOperationCount() const override { return data_->ReadOperationCount; }
-    void ReadOperationCount(uint64_t value) override { data_->ReadOperationCount = value; }
+    uint64_t ReadOperationCount() const override { return ptr_->ReadOperationCount; }
+    void ReadOperationCount(uint64_t value) override { ptr_->ReadOperationCount = value; }
 
-    uint64_t WriteOperationCount() const override { return data_->WriteOperationCount; }
-    void WriteOperationCount(uint64_t value) override { data_->WriteOperationCount = value; }
+    uint64_t WriteOperationCount() const override { return ptr_->WriteOperationCount; }
+    void WriteOperationCount(uint64_t value) override { ptr_->WriteOperationCount = value; }
 
-    uint64_t OtherOperationCount() const override { return data_->OtherOperationCount; }
-    void OtherOperationCount(uint64_t value) override { data_->OtherOperationCount = value; }
+    uint64_t OtherOperationCount() const override { return ptr_->OtherOperationCount; }
+    void OtherOperationCount(uint64_t value) override { ptr_->OtherOperationCount = value; }
 
-    uint64_t ReadTransferCount() const override { return data_->ReadTransferCount; }
-    void ReadTransferCount(uint64_t value) override { data_->ReadTransferCount = value; }
+    uint64_t ReadTransferCount() const override { return ptr_->ReadTransferCount; }
+    void ReadTransferCount(uint64_t value) override { ptr_->ReadTransferCount = value; }
 
-    uint64_t WriteTransferCount() const override { return data_->WriteTransferCount; }
-    void WriteTransferCount(uint64_t value) override { data_->WriteTransferCount = value; }
+    uint64_t WriteTransferCount() const override { return ptr_->WriteTransferCount; }
+    void WriteTransferCount(uint64_t value) override { ptr_->WriteTransferCount = value; }
 
-    uint64_t OtherTransferCount() const override { return data_->OtherTransferCount; }
-    void OtherTransferCount(uint64_t value) override { data_->OtherTransferCount = value; }
+    uint64_t OtherTransferCount() const override { return ptr_->OtherTransferCount; }
+    void OtherTransferCount(uint64_t value) override { ptr_->OtherTransferCount = value; }
 
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const override {
         boost::io::ios_flags_saver ifs(os);
@@ -79,13 +79,12 @@ class IO_COUNTERS_IMPL final : public IO_COUNTERS {
         return result;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    IO_COUNTERS_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva_) {}
+    IO_COUNTERS_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_IO_COUNTERS> data_;
+    guest_ptr<structs::_IO_COUNTERS> ptr_;
 };
 
 } // namespace nt

@@ -70,7 +70,7 @@ class ReadFileTool final : public EventCallback {
             FILE_SHARE_ACCESS(0),                                   // ShareAccess
             FILE_OPEN,                                              // CreateDisposition
             FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT, // CreateOptions
-            NullGuestAddress(),                                     // pEaBuffer
+            nullptr,                                                // pEaBuffer
             0                                                       // EaLength
         );
 
@@ -93,13 +93,13 @@ class ReadFileTool final : public EventCallback {
         // Read data into it until we hit EOF
         while (true) {
             // Read from the file into our buffer
-            result = inject::system_call<nt::NtReadFile>(src_file, 0, NullGuestAddress(),
-                                                         NullGuestAddress(), io_status_block,
-                                                         buffer, BUFFER_SIZE, nullptr, nullptr);
+            result =
+                inject::system_call<nt::NtReadFile>(src_file, 0, nullptr, nullptr, io_status_block,
+                                                    buffer, BUFFER_SIZE, nullptr, nullptr);
             if (result.NT_SUCCESS()) {
                 // The data was successfully read
                 // Transfer the buffer to our destination file
-                if (fwrite(buffer, 1, io_status_block->Information(), dst_file) < 0) {
+                if (fwrite(buffer.ptr().get(), 1, io_status_block->Information(), dst_file) < 0) {
                     std::cout << "Failed to write to destination file: " << strerror(errno) << '\n';
                     break;
                 }

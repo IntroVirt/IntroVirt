@@ -41,21 +41,20 @@ struct _RUNTIME_FUNCTION {
 
 class RUNTIME_FUNCTION_IMPL : public RUNTIME_FUNCTION {
   public:
-    uint32_t BeginAddress() const override { return data_->BeginAddress; }
-    uint32_t EndAddress() const override { return data_->EndAddress; }
+    uint32_t BeginAddress() const override { return ptr_->BeginAddress; }
+    uint32_t EndAddress() const override { return ptr_->EndAddress; }
 
     const UnwindInfo* UnwindData() const override;
-    bool is_chained() const override { return (data_->UnwindData & 0x01) == 0x01; }
+    bool is_chained() const override { return (ptr_->UnwindData & 0x01) == 0x01; }
 
     const RUNTIME_FUNCTION* chained_function() const override;
 
-    RUNTIME_FUNCTION_IMPL(const IMAGE_EXCEPTION_SECTION_IMPL* section,
-                          const GuestVirtualAddress& gva)
-        : section_(section), data_(gva), Chained_(nullptr) {}
+    RUNTIME_FUNCTION_IMPL(const IMAGE_EXCEPTION_SECTION_IMPL* section, const guest_ptr<void>& ptr)
+        : section_(section), ptr_(ptr), Chained_(nullptr) {}
 
   private:
     const IMAGE_EXCEPTION_SECTION_IMPL* section_; // TODO: Can this be a reference?
-    guest_ptr<structs::_RUNTIME_FUNCTION> data_;
+    guest_ptr<structs::_RUNTIME_FUNCTION> ptr_;
     mutable std::unique_ptr<UnwindInfo> UnwindData_;
     mutable const RUNTIME_FUNCTION* Chained_;
 };

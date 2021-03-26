@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/const/ObjectType.hh>
 #include <introvirt/windows/kernel/nt/types/objects/OBJECT.hh>
 
@@ -41,7 +41,7 @@ class OBJECT_TYPE : public OBJECT {
     virtual uint8_t Index() const = 0;
 
     static std::shared_ptr<OBJECT_TYPE> make_shared(const NtKernel& kernel,
-                                                    const GuestVirtualAddress& gva);
+                                                    const guest_ptr<void>& ptr);
 
     static std::shared_ptr<OBJECT_TYPE> make_shared(const NtKernel& kernel,
                                                     std::unique_ptr<OBJECT_HEADER>&& object_header);

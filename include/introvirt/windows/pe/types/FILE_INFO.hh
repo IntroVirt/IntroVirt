@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <introvirt/core/memory/guest_ptr.hh>
+
 #include <cstdint>
 #include <string>
 
@@ -32,7 +34,7 @@ class FILE_INFO {
     virtual uint16_t wValueLength() const = 0;
     virtual uint16_t wType() const = 0;
     virtual const std::string& szKey() const = 0;
-    virtual GuestVirtualAddress pChildren() const = 0;
+    virtual guest_ptr<void> pChildren() const = 0;
 
     virtual ~FILE_INFO() = default;
 };

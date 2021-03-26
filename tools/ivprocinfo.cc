@@ -39,7 +39,7 @@ void parse_program_options(int argc, char** argv, po::options_description& desc,
  */
 void print_process(const PROCESS& process) {
     std::cout << "PID " << process.UniqueProcessId() << ": " << process.ImageFileName() << '\n';
-    std::cout << "  EPROCESS: " << process.address() << '\n';
+    std::cout << "  EPROCESS: " << process.ptr() << '\n';
     std::cout << "  Parent: " << process.InheritedFromUniqueProcessId() << '\n';
     if (process.isWow64Process())
         std::cout << "  WoW64Process\n";
@@ -183,12 +183,15 @@ void print_peb(const PROCESS& process, bool WoW64Process) {
         } else {
             cout << "      < Name not readable >\n";
         }
-        cout << "        Base: " << entry->DllBase() << '\n';
+
+        cout << std::hex;
+        cout << "        Base: 0x" << entry->DllBase() << '\n';
+        cout << "        Entry Point: 0x" << entry->EntryPoint() << '\n';
+        cout << std::dec;
         cout << "        Size: " << entry->SizeOfImage() << " bytes\n";
-        cout << "        Entry Point: " << entry->EntryPoint() << '\n';
 
         try {
-            auto pe = PE::make_unique(entry->DllBase());
+            auto pe = PE::make_unique(entry->ptr().clone(entry->DllBase()));
             std::map<std::string, std::string> versionData;
             try {
                 getPEVersionData(*pe, versionData);
@@ -266,10 +269,10 @@ void print_environment(const PROCESS& process) {
     if (peb) {
         const RTL_USER_PROCESS_PARAMETERS* params = peb->ProcessParameters();
         if (params) {
-            const auto& envMap = params->Environment();
+            const auto& envMap = params->EnvironmentMap();
             for (auto iter : envMap) {
-                auto&& key = iter.first;
-                auto&& value = iter.second;
+                auto& key = iter.first;
+                auto& value = iter.second;
                 cout << "    " << key << "\n";
                 cout << "      " << value << "\n";
             }
@@ -296,7 +299,7 @@ void print_handles(const nt::NtKernel& kernel, const PROCESS& process) {
             try {
                 auto object = OBJECT::make_shared(kernel, entry->ObjectHeader());
                 std::cout << object->header().type();
-                std::cout << " [" << object->address() << "]";
+                std::cout << " [" << object->ptr() << "]";
             } catch (TraceableException& ex) {
                 std::cout << "Unable to read OBJECT_HEADER";
             }
@@ -323,7 +326,7 @@ void print_threads(const PROCESS& process) {
             cout << "      TEB:               ";
             const TEB* teb = thread->Teb();
             if (teb) {
-                cout << teb->address() << '\n';
+                cout << teb->ptr() << '\n';
 
                 cout << "        LastErrorValue:  " << teb->LastErrorValue() << '\n';
                 const NT_TIB& tib = teb->NtTib();
@@ -338,7 +341,7 @@ void print_threads(const PROCESS& process) {
                 cout << "      ETHREAD Object:    " << thread->header().Body() << '\n';
                 cout << "      Win32StartAddress: " << thread->Win32StartAddress();
                 // Determine which library the start address is in
-                const auto pWin32StartAddress = thread->Win32StartAddress();
+                const uint64_t pWin32StartAddress = thread->Win32StartAddress().address();
                 auto mmvad = thread->Process().VadRoot();
                 if (mmvad) {
                     auto entry = mmvad->search(pWin32StartAddress);

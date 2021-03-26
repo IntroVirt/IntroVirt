@@ -95,22 +95,22 @@ std::string OBJECT_ATTRIBUTES_IMPL<PtrType>::ObjectName() const {
 
 template <typename PtrType>
 uint64_t OBJECT_ATTRIBUTES_IMPL<PtrType>::RootDirectory() const {
-    return header_->RootDirectory;
+    return ptr_->RootDirectory;
 }
 
 template <typename PtrType>
 bool OBJECT_ATTRIBUTES_IMPL<PtrType>::isInheritable() const {
-    return (header_->Attributes & 0x00000002L);
+    return (ptr_->Attributes & 0x00000002L);
 }
 
 template <typename PtrType>
 HANDLE_ATTRIBUTES OBJECT_ATTRIBUTES_IMPL<PtrType>::Attributes() const {
-    return header_->Attributes;
+    return ptr_->Attributes;
 }
 
 template <typename PtrType>
 uint32_t OBJECT_ATTRIBUTES_IMPL<PtrType>::Length() const {
-    return header_->Length;
+    return ptr_->Length;
 }
 
 template <typename PtrType>
@@ -142,19 +142,19 @@ OBJECT_ATTRIBUTES_IMPL<PtrType>::SecurityQualityOfService() const {
 }
 
 template <typename PtrType>
-void OBJECT_ATTRIBUTES_IMPL<PtrType>::ObjectNamePtr(const GuestVirtualAddress& pUnicodeString) {
-    header_->ObjectName = pUnicodeString.virtual_address();
-    if (header_->ObjectName) {
+void OBJECT_ATTRIBUTES_IMPL<PtrType>::ObjectNamePtr(const guest_ptr<void>& pUnicodeString) {
+    ptr_->ObjectName.set(pUnicodeString);
+    if (ptr_->ObjectName) {
         ObjectName_.emplace(pUnicodeString);
     }
 }
 
 template <typename PtrType>
 void OBJECT_ATTRIBUTES_IMPL<PtrType>::SecurityQualityOfServicePtr(
-    uint64_t pSecurityQualityOfService) {
-    header_->SecurityQualityOfService = pSecurityQualityOfService;
-    if (header_->SecurityQualityOfService) {
-        SecurityQualityOfService_.emplace(gva_.create(header_->SecurityQualityOfService));
+    const guest_ptr<void>& pSecurityQualityOfService) {
+    ptr_->SecurityQualityOfService.set(pSecurityQualityOfService);
+    if (ptr_->SecurityQualityOfService) {
+        SecurityQualityOfService_.emplace(pSecurityQualityOfService);
     } else {
         SecurityQualityOfService_.reset();
     }
@@ -162,7 +162,7 @@ void OBJECT_ATTRIBUTES_IMPL<PtrType>::SecurityQualityOfServicePtr(
 
 template <typename PtrType>
 void OBJECT_ATTRIBUTES_IMPL<PtrType>::RootDirectory(uint64_t RootDirectory) {
-    header_->RootDirectory = RootDirectory;
+    ptr_->RootDirectory = RootDirectory;
 }
 
 template <typename PtrType>
@@ -175,46 +175,45 @@ void OBJECT_ATTRIBUTES_IMPL<PtrType>::ObjectName(const std::string& objectName) 
 template <typename PtrType>
 void OBJECT_ATTRIBUTES_IMPL<PtrType>::Inheritable(bool Inheritable) {
     if (Inheritable) {
-        header_->Attributes |= 0x00000002L;
+        ptr_->Attributes |= 0x00000002L;
     } else {
-        header_->Attributes &= ~0x00000002L;
+        ptr_->Attributes &= ~0x00000002L;
     }
 }
 
 template <typename PtrType>
 void OBJECT_ATTRIBUTES_IMPL<PtrType>::Attributes(HANDLE_ATTRIBUTES Attributes) {
-    header_->Attributes = Attributes;
+    ptr_->Attributes = Attributes;
 }
 
 // If 0xFFFFFFFF, set the correct length
 template <typename PtrType>
 void OBJECT_ATTRIBUTES_IMPL<PtrType>::Length(uint32_t Length) {
     if (Length == 0xFFFFFFFF) {
-        header_->Length = sizeof(structs::_OBJECT_ATTRIBUTES<PtrType>);
+        ptr_->Length = sizeof(structs::_OBJECT_ATTRIBUTES<PtrType>);
     } else {
-        header_->Length = Length;
+        ptr_->Length = Length;
     }
 }
 
 template <typename PtrType>
-GuestVirtualAddress OBJECT_ATTRIBUTES_IMPL<PtrType>::address() const {
-    return gva_;
+guest_ptr<void> OBJECT_ATTRIBUTES_IMPL<PtrType>::ptr() const {
+    return ptr_;
 }
 
 template <typename PtrType>
-OBJECT_ATTRIBUTES_IMPL<PtrType>::OBJECT_ATTRIBUTES_IMPL(const GuestVirtualAddress& gva)
-    : gva_(gva), header_(gva_) {
+OBJECT_ATTRIBUTES_IMPL<PtrType>::OBJECT_ATTRIBUTES_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {
 
-    if (header_->ObjectName) {
-        ObjectName_.emplace(gva_.create(header_->ObjectName));
+    if (ptr_->ObjectName) {
+        std::cerr << "pObjectName: " << ptr_->ObjectName.get(ptr_) << '\n';
+        std::cerr << "Length:" << ptr_->ObjectName.get(ptr_)->Length << '\n';
+        ObjectName_.emplace(ptr_->ObjectName.get(ptr_));
     }
-
-    if (header_->SecurityDescriptor) {
-        SecurityDescriptor_.emplace(gva_.create(header_->SecurityDescriptor));
+    if (ptr_->SecurityDescriptor) {
+        SecurityDescriptor_.emplace(ptr_->SecurityDescriptor.get(ptr_));
     }
-
-    if (header_->SecurityQualityOfService) {
-        SecurityQualityOfService_.emplace(gva_.create(header_->SecurityQualityOfService));
+    if (ptr_->SecurityQualityOfService) {
+        SecurityQualityOfService_.emplace(ptr_->SecurityQualityOfService.get(ptr_));
     }
 }
 
@@ -243,11 +242,11 @@ Json::Value OBJECT_ATTRIBUTES_IMPL<PtrType>::json() const {
 }
 
 std::unique_ptr<OBJECT_ATTRIBUTES> OBJECT_ATTRIBUTES::make_unique(const NtKernel& kernel,
-                                                                  const GuestVirtualAddress& gva) {
+                                                                  const guest_ptr<void>& ptr) {
     if (kernel.x64())
-        return std::make_unique<OBJECT_ATTRIBUTES_IMPL<uint64_t>>(gva);
+        return std::make_unique<OBJECT_ATTRIBUTES_IMPL<uint64_t>>(ptr);
     else
-        return std::make_unique<OBJECT_ATTRIBUTES_IMPL<uint32_t>>(gva);
+        return std::make_unique<OBJECT_ATTRIBUTES_IMPL<uint32_t>>(ptr);
 }
 
 template class OBJECT_ATTRIBUTES_IMPL<uint32_t>;
@@ -263,7 +262,7 @@ GuestAllocation<windows::nt::OBJECT_ATTRIBUTES>::GuestAllocation() {
 
     auto& domain = Domain::thread_local_domain();
     auto* guest = static_cast<windows::WindowsGuest*>(domain.guest());
-    assert(guest != nullptr);
+    introvirt_assert(guest != nullptr, "");
     auto& kernel = guest->kernel();
 
     // Get the size required for the structure
@@ -271,13 +270,14 @@ GuestAllocation<windows::nt::OBJECT_ATTRIBUTES>::GuestAllocation() {
                                                  : sizeof(structs::_OBJECT_ATTRIBUTES<uint32_t>);
 
     // Allocate memory for the size of the structure plus the size of the string
-    buffer_.emplace(structure_size);
+    allocation_.emplace(structure_size);
+    auto& ptr = allocation_->ptr();
 
     // Zero the buffer
-    memset(buffer_->get(), 0, structure_size);
+    memset(ptr.get(), 0, structure_size);
 
     // Create the string
-    value_ = OBJECT_ATTRIBUTES::make_unique(kernel, buffer_->address());
+    value_ = OBJECT_ATTRIBUTES::make_unique(kernel, ptr);
 
     // Properly initialize the length
     value_->Length(structure_size);

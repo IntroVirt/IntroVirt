@@ -1,0 +1,14 @@
+{
+    "SECURITY_STATUS": {
+        "includes": [
+            "<introvirt/windows/libraries/secur32/types/SECURITY_STATUS.hh>"
+        ],
+        "extends": "builtin_type"
+    },
+    "SecBufferDesc": {
+        "includes": [
+            "<introvirt/windows/libraries/secur32/types/SecBufferDesc.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    }
+}

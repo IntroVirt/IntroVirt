@@ -83,7 +83,7 @@ class FILE_ALL_INFORMATION_IMPL final : public FILE_ALL_INFORMATION {
         return FILE_INFORMATION_CLASS::FileAllInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -91,10 +91,10 @@ class FILE_ALL_INFORMATION_IMPL final : public FILE_ALL_INFORMATION {
 
     Json::Value json() const override;
 
-    FILE_ALL_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_ALL_INFORMATION_IMPL(guest_ptr<void> ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
+    const guest_ptr<void> ptr_;
     const uint32_t buffer_size_;
 
     std::optional<FILE_BASIC_INFORMATION_IMPL> BasicInformation_;

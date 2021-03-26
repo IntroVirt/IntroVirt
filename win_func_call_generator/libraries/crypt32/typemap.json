@@ -1,0 +1,175 @@
+{
+    "CERT_CONTEXT": {
+        "includes": [
+            "<introvirt/windows/libraries/crypt32/types/CERT_CONTEXT.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "CRYPT_DECRYPT_MESSAGE_PARA": {
+        "includes": [
+            "<introvirt/windows/libraries/crypt32/types/CRYPT_DECRYPT_MESSAGE_PARA.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "CRYPT_DECODE_PARA": {
+        "includes": [
+            "<introvirt/windows/libraries/crypt32/types/CRYPT_DECODE_PARA.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "CRYPT_ENCRYPT_MESSAGE_PARA": {
+        "TODO": "Implement this",
+        "redirect": "void"
+    },
+    "CRYPT_HASH_MESSAGE_PARA": {
+        "TODO": "Implement this",
+        "redirect": "void"
+    },
+    "CRYPT_VERIFY_MESSAGE_PARA": {
+        "includes": [
+            "<introvirt/windows/libraries/crypt32/types/CRYPT_VERIFY_MESSAGE_PARA.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "CRYPTOAPI_BLOB": {
+        "includes": [
+            "<introvirt/windows/libraries/crypt32/types/CRYPTOAPI_BLOB.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "CRYPTPROTECT_PROMPTSTRUCT": {
+        "includes": [
+            "<introvirt/windows/libraries/crypt32/types/CRYPTPROTECT_PROMPTSTRUCT.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "CryptHashMessageBuffer": {
+        "includes": [
+            "<introvirt/core/memory/guest_ptr.hh>",
+            "<vector>"
+        ],
+        "pointer_config": {
+            "variables": [
+                {
+                    "type": "guest_ptr<guest_ptr_t[]>",
+                    "name": "p{{ arg['name'] }}_"
+                },
+                {
+                    "type": "std::vector<guest_ptr<uint8_t[]>>",
+                    "name": "{{ arg['name'] }}_",
+                    "mutable": true
+                }
+            ],
+            "injection": {
+                "type": "const guest_ptr<void>&",
+                "name": "p{{arg['name'] }}"
+            },
+            "initializer": [
+                "p{{ arg['name'] }}_ = get_address_argument({{index}});"
+            ],
+            "methods": [
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "result_type": "guest_ptr<guest_ptr_t[]>",
+                    "code": [
+                        "return p{{ arg['name'] }}_;"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "p{{ arg['name'] }}",
+                    "arguments": [
+                        {
+                            "type": "const guest_ptr<guest_ptr_t[]>&",
+                            "name": "p{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "set_address_argument({{ index }}, p{{ arg['name'] }});",
+                        "p{{ arg['name'] }}_ = p{{ arg['name'] }};",
+                        "{{ arg['name'] }}_.reset();"
+                    ]
+                },
+                {
+                    "name": "{{ arg['name'] }}",
+                    "result_type": "std::vector<guest_ptr<uint8_t[]>>",
+                    "code": [
+                        "if ({{ arg['name'] }}_.empty()) {",
+                        "    guest_ptr<const uint32_t[]> lengths(cbToBeHashed());",
+                        "    guest_ptr<const guest_size_t> buffers(rgpbToBeHashed());",
+                        "    for (unsigned int i=0;i<lengths.length();++i) {",
+                        "        guest_ptr<const guest_size_t> pBuffer = buffers;",
+                        "        pBuffer.reset(*buffers);",
+                        "        {{ arg['name'] }}_.push_back(guest_ptr<uint8_t[]>(pBuffer, lengths[i]));",
+                        "        ++buffers;",
+                        "    }",
+                        "}",
+                        "return {{ arg['name'] }}_;"
+                    ]
+                }
+            ]
+        }
+    },
+    "CryptEncryptMessageCerts": {
+        "includes": [
+            "<introvirt/core/memory/guest_ptr.hh>",
+            "<introvirt/windows/libraries/crypt32/types/CERT_CONTEXT.hh>",
+            "<vector>"
+        ],
+        "pointer_config": {
+            "variables": [
+                {
+                    "type": "guest_ptr<void*[], guest_ptr_t>",
+                    "name": "rgp{{ arg['name'] }}_"
+                },
+                {
+                    "type": "std::vector<std::shared_ptr<CERT_CONTEXT>>",
+                    "name": "{{ arg['name'] }}_",
+                    "mutable": true
+                }
+            ],
+            "injection": {
+                "type": "const guest_ptr<void>&",
+                "name": "rgp{{arg['name'] }}"
+            },
+            "initializer": [
+                "rgp{{ arg['name'] }}_.reset(x64(), get_address_argument({{index}}), cRecipientCert());"
+            ],
+            "methods": [
+                {
+                    "name": "rgp{{ arg['name'] }}",
+                    "result_type": "guest_ptr<void*[], guest_ptr_t>",
+                    "code": [
+                        "return rgp{{ arg['name'] }}_;"
+                    ],
+                    "const": true
+                },
+                {
+                    "name": "rgp{{ arg['name'] }}",
+                    "arguments": [
+                        {
+                            "type": "const guest_ptr<void*[], guest_ptr_t>&",
+                            "name": "rgp{{ arg['name'] }}"
+                        }
+                    ],
+                    "code": [
+                        "set_address_argument({{ index }}, rgp{{ arg['name'] }});",
+                        "rgp{{ arg['name'] }}_.reset(rgp{{ arg['name'] }});"
+                    ]
+                },
+                {
+                    "name": "{{ arg['name'] }}",
+                    "result_type": "std::vector<std::shared_ptr<CERT_CONTEXT>>&",
+                    "code": [
+                        "if ({{ arg['name'] }}_.empty()) {",
+                        "    for (unsigned int i=0;i<cRecipientCert();++i) {",
+                        "        {{ arg['name'] }}_.push_back(CERT_CONTEXT::make_shared(rgp{{ arg['name'] }}_[i], x64()));",
+                        "    }",
+                        "}",
+                        "return {{ arg['name'] }}_;"
+                    ]
+                }
+            ]
+        }
+    }
+}

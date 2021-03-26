@@ -30,43 +30,43 @@ namespace structs {
 template <typename PtrType>
 struct _CERT_CONTEXT {
     uint32_t dwCertEncodingType;
-    PtrType pbCertEncoded;
+    guest_member_ptr<uint8_t[], PtrType> pbCertEncoded;
     uint32_t cbCertEncoded;
-    PtrType pCertInfo;
+    guest_member_ptr<void, PtrType> pCertInfo;
     PtrType hCertStore;
 };
+
+static_assert(sizeof(_CERT_CONTEXT<uint32_t>) == 20, "Invalid _CERT_CONTEXT size");
+static_assert(sizeof(_CERT_CONTEXT<uint64_t>) == 40, "Invalid _CERT_CONTEXT size");
 
 } // namespace structs
 
 template <typename PtrType>
 class CERT_CONTEXT_IMPL final : public CERT_CONTEXT {
   public:
-    uint32_t dwCertEncodingType() const override { return data_->dwCertEncodingType; }
+    uint32_t dwCertEncodingType() const override { return ptr_->dwCertEncodingType; }
     void dwCertEncodingType(uint32_t dwCertEncodingType) override {
-        data_->dwCertEncodingType = dwCertEncodingType;
+        ptr_->dwCertEncodingType = dwCertEncodingType;
     }
 
-    GuestVirtualAddress pbCertEncoded() const override { return gva_.create(data_->pbCertEncoded); }
-    void pbCertEncoded(const GuestVirtualAddress& gva) override {
-        data_->pbCertEncoded = gva.virtual_address();
+    guest_ptr<uint8_t[]> pbCertEncoded() const override {
+        return ptr_->pbCertEncoded.get(ptr_, cbCertEncoded());
     }
+    void pbCertEncoded(const guest_ptr<uint8_t[]>& ptr) override { ptr_->pbCertEncoded.set(ptr); }
 
-    uint32_t cbCertEncoded() const override { return data_->cbCertEncoded; }
-    void cbCertEncoded(uint32_t cbCertEncoded) override { data_->cbCertEncoded = cbCertEncoded; }
+    uint32_t cbCertEncoded() const override { return ptr_->cbCertEncoded; }
+    void cbCertEncoded(uint32_t cbCertEncoded) override { ptr_->cbCertEncoded = cbCertEncoded; }
 
-    GuestVirtualAddress pCertInfo() const override { return gva_.create(data_->pCertInfo); }
-    void pCertInfo(const GuestVirtualAddress& gva) override {
-        data_->pCertInfo = gva.virtual_address();
-    }
+    guest_ptr<void> pCertInfo() const override { return ptr_->pCertInfo.get(ptr_); }
+    void pCertInfo(const guest_ptr<void>& ptr) override { ptr_->pCertInfo.set(ptr); }
 
-    HCERTSTORE hCertStore() const override { return data_->hCertStore; }
-    void hCertStore(HCERTSTORE hCertStore) override { data_->hCertStore = hCertStore; }
+    HCERTSTORE hCertStore() const override { return ptr_->hCertStore; }
+    void hCertStore(HCERTSTORE hCertStore) override { ptr_->hCertStore = hCertStore; }
 
-    CERT_CONTEXT_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    CERT_CONTEXT_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_CERT_CONTEXT<PtrType>> data_;
+    const guest_ptr<structs::_CERT_CONTEXT<PtrType>> ptr_;
 };
 
 } // namespace crypt32

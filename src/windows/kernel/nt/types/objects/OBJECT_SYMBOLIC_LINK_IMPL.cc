@@ -33,8 +33,7 @@ std::string OBJECT_SYMBOLIC_LINK_IMPL<PtrType>::LinkTarget() const {
     // field isn't valid.
     std::lock_guard lock(mtx_);
     if (!LinkTarget_ && !(Flags() & 0x10)) {
-        GuestVirtualAddress pLinkTarget = this->address() + offsets_->LinkTarget.offset();
-        LinkTarget_.emplace(pLinkTarget);
+        LinkTarget_.emplace(this->ptr_ + offsets_->LinkTarget.offset());
         return LinkTarget_->utf8();
     }
     return "";
@@ -50,11 +49,11 @@ uint32_t OBJECT_SYMBOLIC_LINK_IMPL<PtrType>::Flags() const {
 
 template <typename PtrType>
 OBJECT_SYMBOLIC_LINK_IMPL<PtrType>::OBJECT_SYMBOLIC_LINK_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                                              const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, OBJECT_SYMBOLIC_LINK>(kernel, gva, ObjectType::SymbolicLink),
+                                                              const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, OBJECT_SYMBOLIC_LINK>(kernel, ptr, ObjectType::SymbolicLink),
       kernel_(kernel), offsets_(LoadOffsets<structs::OBJECT_SYMBOLIC_LINK>(kernel)) {
 
-    buffer.reset(gva, offsets_->size());
+    buffer.reset(ptr, offsets_->size());
 }
 
 template <typename PtrType>
@@ -65,17 +64,17 @@ OBJECT_SYMBOLIC_LINK_IMPL<PtrType>::OBJECT_SYMBOLIC_LINK_IMPL(
                                                  ObjectType::SymbolicLink),
       kernel_(kernel), offsets_(LoadOffsets<structs::OBJECT_SYMBOLIC_LINK>(kernel)) {
 
-    buffer.reset(OBJECT_IMPL<PtrType, OBJECT_SYMBOLIC_LINK>::address(), offsets_->size());
+    buffer.reset(this->ptr_, offsets_->size());
 }
 
 std::shared_ptr<OBJECT_SYMBOLIC_LINK>
-OBJECT_SYMBOLIC_LINK::make_shared(const NtKernel& kernel, const GuestVirtualAddress& gva) {
+OBJECT_SYMBOLIC_LINK::make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<OBJECT_SYMBOLIC_LINK_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<OBJECT_SYMBOLIC_LINK_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<OBJECT_SYMBOLIC_LINK>

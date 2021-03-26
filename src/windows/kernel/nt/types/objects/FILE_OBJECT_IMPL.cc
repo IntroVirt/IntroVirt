@@ -37,7 +37,7 @@ const DEVICE_OBJECT* FILE_OBJECT_IMPL<PtrType>::DeviceObject() const {
     std::lock_guard lock(mtx_);
     if (!DeviceObject_.has_value()) {
         const uint64_t pDeviceObject = offsets_->DeviceObject.get<PtrType>(buffer_);
-        DeviceObject_.emplace(kernel_, this->address().create(pDeviceObject));
+        DeviceObject_.emplace(kernel_, this->ptr_.clone(pDeviceObject));
     }
     return &(*DeviceObject_);
 }
@@ -46,7 +46,7 @@ template <typename PtrType>
 std::string FILE_OBJECT_IMPL<PtrType>::FileName() const {
     std::lock_guard lock(mtx_);
     if (!FileName_.has_value()) {
-        const GuestVirtualAddress pFileName = this->address() + offsets_->FileName.offset();
+        const guest_ptr<void> pFileName = this->ptr_ + offsets_->FileName.offset();
         try {
             FileName_.emplace(pFileName);
         } catch (VirtualAddressNotPresentException& ex) {
@@ -117,11 +117,11 @@ std::string FILE_OBJECT_IMPL<PtrType>::full_path() const {
 
 template <typename PtrType>
 FILE_OBJECT_IMPL<PtrType>::FILE_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                            const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, FILE_OBJECT>(kernel, gva, ObjectType::File), kernel_(kernel),
+                                            const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, FILE_OBJECT>(kernel, ptr, ObjectType::File), kernel_(kernel),
       offsets_(LoadOffsets<structs::FILE_OBJECT>(kernel)) {
 
-    buffer_.reset(gva, offsets_->size());
+    buffer_.reset(ptr, offsets_->size());
 }
 
 template <typename PtrType>
@@ -131,17 +131,17 @@ FILE_OBJECT_IMPL<PtrType>::FILE_OBJECT_IMPL(
     : OBJECT_IMPL<PtrType, FILE_OBJECT>(kernel, std::move(object_header), ObjectType::File),
       kernel_(kernel), offsets_(LoadOffsets<structs::FILE_OBJECT>(kernel)) {
 
-    buffer_.reset(OBJECT_IMPL<PtrType, FILE_OBJECT>::address(), offsets_->size());
+    buffer_.reset(this->ptr_, offsets_->size());
 }
 
 std::shared_ptr<FILE_OBJECT> FILE_OBJECT::make_shared(const NtKernel& kernel,
-                                                      const GuestVirtualAddress& gva) {
+                                                      const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<FILE_OBJECT_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<FILE_OBJECT_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<FILE_OBJECT>

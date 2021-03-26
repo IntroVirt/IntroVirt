@@ -43,12 +43,12 @@ struct _IMAGE_RESOURCE_DIRECTORY {
 
 class IMAGE_RESOURCE_DIRECTORY_IMPL final : public IMAGE_RESOURCE_DIRECTORY {
   public:
-    uint32_t Characteristics() const override { return data_->Characteristics; }
-    uint32_t TimeDateStamp() const override { return data_->TimeDateStamp; }
-    uint16_t MajorVersion() const override { return data_->MajorVersion; }
-    uint16_t MinorVersion() const override { return data_->MinorVersion; }
-    uint16_t NumberOfNamedEntries() const override { return data_->NumberOfNamedEntries; }
-    uint16_t NumberOfIdEntries() const override { return data_->NumberOfIdEntries; }
+    uint32_t Characteristics() const override { return ptr_->Characteristics; }
+    uint32_t TimeDateStamp() const override { return ptr_->TimeDateStamp; }
+    uint16_t MajorVersion() const override { return ptr_->MajorVersion; }
+    uint16_t MinorVersion() const override { return ptr_->MinorVersion; }
+    uint16_t NumberOfNamedEntries() const override { return ptr_->NumberOfNamedEntries; }
+    uint16_t NumberOfIdEntries() const override { return ptr_->NumberOfIdEntries; }
 
     const std::vector<std::unique_ptr<const IMAGE_RESOURCE_DIRECTORY_ENTRY>>&
     entries() const override {
@@ -63,12 +63,12 @@ class IMAGE_RESOURCE_DIRECTORY_IMPL final : public IMAGE_RESOURCE_DIRECTORY {
         return nullptr;
     }
 
-    IMAGE_RESOURCE_DIRECTORY_IMPL(const GuestVirtualAddress& pImageBase,
-                                  const GuestVirtualAddress& pResourceBase,
-                                  const GuestVirtualAddress& pResourceDirectory);
+    IMAGE_RESOURCE_DIRECTORY_IMPL(const guest_ptr<void>& pImageBase,
+                                  const guest_ptr<void>& pResourceBase,
+                                  const guest_ptr<void>& pResourceDirectory);
 
   private:
-    guest_ptr<structs::_IMAGE_RESOURCE_DIRECTORY> data_;
+    guest_ptr<structs::_IMAGE_RESOURCE_DIRECTORY> ptr_;
     std::vector<std::unique_ptr<const IMAGE_RESOURCE_DIRECTORY_ENTRY>> entries_;
     std::map<uint16_t, const IMAGE_RESOURCE_DIRECTORY_ENTRY*> id_to_entry_;
 };

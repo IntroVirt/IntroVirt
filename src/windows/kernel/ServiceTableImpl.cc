@@ -16,31 +16,5 @@
 #include "ServiceTableImpl.hh"
 
 namespace introvirt {
-namespace windows {
-
-template <typename PtrType>
-GuestVirtualAddress ServiceTableImpl<PtrType>::entry(unsigned int index) const {
-    if constexpr (std::is_same_v<uint64_t, PtrType>) {
-        // With 64-bit, the value is relative to the start of the table
-        return gva_ + (table_[index] >> 4);
-    } else {
-        // With 32-bit, the table directly holds the address
-        return gva_.create(table_[index]);
-    }
-}
-
-template <typename PtrType>
-unsigned int ServiceTableImpl<PtrType>::length() const {
-    return table_.length();
-}
-
-template <typename PtrType>
-ServiceTableImpl<PtrType>::ServiceTableImpl(const GuestVirtualAddress& gva, unsigned int length)
-    : gva_(gva), table_(gva, length) {}
-
-// Explicit template instantiation
-template class ServiceTableImpl<uint32_t>;
-template class ServiceTableImpl<uint64_t>;
-
-} // namespace windows
+namespace windows {} // namespace windows
 } // namespace introvirt

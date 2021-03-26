@@ -37,10 +37,9 @@ class OBJECT {
     /**
      * @returns The virtual address of this object
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
-    static std::shared_ptr<OBJECT> make_shared(const NtKernel& kernel,
-                                               const GuestVirtualAddress& gva);
+    static std::shared_ptr<OBJECT> make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr);
 
     static std::shared_ptr<OBJECT> make_shared(const NtKernel& kernel,
                                                std::unique_ptr<OBJECT_HEADER>&& object_header);

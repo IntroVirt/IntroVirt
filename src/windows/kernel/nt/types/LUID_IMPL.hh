@@ -15,7 +15,6 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/types/LUID.hh>
 
@@ -41,19 +40,19 @@ static_assert(sizeof(_LUID) == 0x8);
 
 class LUID_IMPL final : public LUID {
   public:
-    uint64_t value() const override;
-    void value(uint64_t value) override;
+    uint64_t Value() const override { return ptr_->Value; }
+    void Value(uint64_t value) override { ptr_->Value = value; }
 
-    uint32_t LowPart() const override;
-    void LowPart(uint32_t lowPart) override;
+    uint32_t LowPart() const override { return ptr_->LowPart; }
+    void LowPart(uint32_t lowPart) override { ptr_->LowPart = lowPart; }
 
-    int32_t HighPart() const override;
-    void HighPart(int32_t highPart) override;
+    int32_t HighPart() const override { return ptr_->HighPart; }
+    void HighPart(int32_t highPart) override { ptr_->HighPart = highPart; }
 
-    LUID_IMPL(const GuestVirtualAddress& address);
+    LUID_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    guest_ptr<structs::_LUID> luid_;
+    guest_ptr<structs::_LUID> ptr_;
 };
 
 } // namespace nt

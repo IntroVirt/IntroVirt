@@ -45,7 +45,7 @@ class HANDLE_TABLE_ENTRY {
     /**
      * @brief Get the address of the structure
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual ~HANDLE_TABLE_ENTRY() = default;
 };

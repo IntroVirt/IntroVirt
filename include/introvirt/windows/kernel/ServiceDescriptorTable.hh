@@ -18,6 +18,8 @@
 #include "ServiceTable.hh"
 #include "fwd.hh"
 
+#include <introvirt/core/memory/guest_ptr.hh>
+
 namespace introvirt {
 namespace windows {
 
@@ -50,11 +52,11 @@ class ServiceDescriptorTable {
      * @brief Create a new ServiceDescriptorTable instance
      *
      * @param kernel The guest kernel
-     * @param gva The address of the service table
+     * @param ptr The address of the service table
      * @return A service descriptor table instance
      */
     static std::unique_ptr<ServiceDescriptorTable> create(const nt::NtKernel& kernel,
-                                                          const GuestVirtualAddress& gva);
+                                                          const guest_ptr<void>& ptr);
 
     /**
      * @brief Destroy the instance

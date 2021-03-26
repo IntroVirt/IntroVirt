@@ -35,21 +35,21 @@ static log4cxx::LoggerPtr
     logger(log4cxx::Logger::getLogger("introvirt.breakpoint.BreakpointManager"));
 
 void InternalBreakpoint::watchpoint_event(Event& event) {
-    if (gpa_.value() != event.mem_access().physical_address().value()) {
+    if (mapping_.address() != event.mem_access().physical_address().address()) {
         LOG4CXX_WARN(logger,
                      "Incorrect physical address: " << event.mem_access().physical_address());
     }
 
     if (event.mem_access().read_violation()) {
-
         LOG4CXX_DEBUG(logger, event.task().process_name()
-                                  << ": Hiding breakpoint from guest at " << gpa_ << " RIP: 0x"
+                                  << ": Hiding breakpoint from guest at " << mapping_ << " RIP: 0x"
                                   << std::hex << event.vcpu().registers().rip());
     }
 
     if (event.mem_access().write_violation()) {
         LOG4CXX_DEBUG(logger, event.task().process_name()
-                                  << ": Guest attempted to write breakpoint memory at " << gpa_);
+                                  << ": Guest attempted to write breakpoint memory at "
+                                  << mapping_);
     }
 
     if (*mapping_ == 0xCC && !nested_bp()) {
@@ -118,8 +118,8 @@ bool InternalBreakpoint::remove_expired() {
     return false;
 }
 
-InternalBreakpoint::InternalBreakpoint(const GuestAddress& address)
-    : gpa_(address), mapping_(address), original_byte_(*mapping_) {
+InternalBreakpoint::InternalBreakpoint(const guest_phys_ptr<void>& address)
+    : mapping_(static_ptr_cast<uint8_t>(address)), original_byte_(*mapping_) {
 
     enable();
 
@@ -146,20 +146,21 @@ void BreakpointManager::add_ref(const std::shared_ptr<BreakpointImpl>& breakpoin
 
     std::shared_ptr<InternalBreakpoint> entry;
 
+    guest_phys_ptr<uint8_t> physical_address = breakpoint->ptr();
+
     // See if we can find it in the breakpoint map
-    const auto& address = breakpoint->address();
-    auto iter = breakpoints_.map_.find(address.physical_address());
+    auto iter = breakpoints_.map_.find(physical_address.address());
     if (iter == breakpoints_.map_.end()) {
         // Entry doesn't exist, create it
-        entry = std::make_shared<InternalBreakpoint>(address);
-        iter = breakpoints_.map_.emplace(address.physical_address(), std::move(entry)).first;
+        entry = std::make_shared<InternalBreakpoint>(physical_address);
+        iter = breakpoints_.map_.emplace(physical_address.address(), std::move(entry)).first;
     } else {
         // Entry exists, try to lock it
         entry = iter->second.lock();
         if (!entry) {
             // Entry has expired, recreate it
-            entry = std::make_shared<InternalBreakpoint>(address);
-            iter = breakpoints_.map_.emplace(address.physical_address(), std::move(entry)).first;
+            entry = std::make_shared<InternalBreakpoint>(physical_address);
+            iter = breakpoints_.map_.emplace(physical_address.address(), std::move(entry)).first;
         }
     }
 
@@ -178,15 +179,15 @@ void BreakpointManager::remove_ref(BreakpointImpl& breakpoint) {
     auto entry = breakpoint.internal_breakpoint();
     if (entry->remove_expired()) {
         // The internal breakpoint has no more callbacks and can be erased
-        breakpoints_.map_.erase(breakpoint.address().physical_address());
+        breakpoints_.map_.erase(breakpoint.ptr().address());
     }
 }
 
 bool BreakpointManager::handle_int3_event(Event& event, bool deliver_events) {
     auto& vcpu = event.vcpu();
     auto& regs = vcpu.registers();
-    GuestVirtualAddress rip(regs.rip());
-    const uint64_t physical_rip = rip.physical_address();
+    guest_ptr<uint8_t> rip(vcpu, regs.rip());
+    const uint64_t physical_rip = guest_phys_ptr<uint8_t>(rip).address();
 
     if (unlikely(interrupted_)) {
         return false;
@@ -243,7 +244,7 @@ bool BreakpointManager::handle_int3_event(Event& event, bool deliver_events) {
         }
 
         // Check if one of our callbacks changed RIP
-        if (regs.rip() != rip.value()) {
+        if (regs.rip() != rip.address()) {
             // A callback must have changed RIP, just turn the breakpoint back on
             active_breakpoint.reset();
             active_breakpoint->enable();

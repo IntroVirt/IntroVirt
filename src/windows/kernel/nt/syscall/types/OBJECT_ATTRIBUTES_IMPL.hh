@@ -36,10 +36,10 @@ template <typename PtrType>
 struct _OBJECT_ATTRIBUTES {
     uint32_t Length;
     PtrType RootDirectory;
-    PtrType ObjectName;
+    guest_member_ptr<_UNICODE_STRING<PtrType>, PtrType> ObjectName;
     uint32_t Attributes;
-    PtrType SecurityDescriptor;
-    PtrType SecurityQualityOfService;
+    guest_member_ptr<_SECURITY_DESCRIPTOR<PtrType>, PtrType> SecurityDescriptor;
+    guest_member_ptr<_SECURITY_QUALITY_OF_SERVICE, PtrType> SecurityQualityOfService;
 } __attribute__((aligned(sizeof(PtrType))));
 
 static_assert(sizeof(_OBJECT_ATTRIBUTES<uint32_t>) == 0x18);
@@ -76,29 +76,28 @@ class OBJECT_ATTRIBUTES_IMPL final : public OBJECT_ATTRIBUTES {
 
     void ObjectName(const std::string& ObjectName) override;
 
-    void ObjectNamePtr(const GuestVirtualAddress& pUnicodeString) override;
+    void ObjectNamePtr(const guest_ptr<void>& pUnicodeString) override;
 
     void Attributes(HANDLE_ATTRIBUTES Attributes) override;
 
     void Inheritable(bool Inheritable) override;
 
-    void SecurityQualityOfServicePtr(uint64_t pSecurityQualityOfService) override;
+    void SecurityQualityOfServicePtr(const guest_ptr<void>& pSecurityQualityOfService) override;
 
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override;
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
 
     Json::Value json() const override;
 
-    OBJECT_ATTRIBUTES_IMPL(const GuestVirtualAddress& gva);
+    OBJECT_ATTRIBUTES_IMPL(const guest_ptr<void>& ptr);
 
   private:
     void generateFullPathForKey(std::shared_ptr<const OBJECT>& object) const;
     void generateFullPathForFile(std::shared_ptr<const OBJECT>& object) const;
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_OBJECT_ATTRIBUTES<PtrType>> header_;
+    guest_ptr<structs::_OBJECT_ATTRIBUTES<PtrType>> ptr_;
     mutable std::optional<UNICODE_STRING_IMPL<PtrType>> ObjectName_;
     std::optional<SECURITY_DESCRIPTOR_IMPL<PtrType>> SecurityDescriptor_;
     std::optional<SECURITY_QUALITY_OF_SERVICE_IMPL> SecurityQualityOfService_;

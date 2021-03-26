@@ -63,14 +63,13 @@ class FILE_FULL_DIR_INFORMATION_ENTRY {
     virtual uint32_t EaSize() const = 0;
     virtual void EaSize(uint32_t EaSize) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
     virtual uint32_t buffer_size() const = 0;
 
     // Assign this entry the value of another one
     virtual FILE_FULL_DIR_INFORMATION_ENTRY& operator=(const FILE_FULL_DIR_INFORMATION_ENTRY&) = 0;
 
-    static std::shared_ptr<FILE_FULL_DIR_INFORMATION_ENTRY>
-    make_shared(const GuestVirtualAddress& gva);
+    static std::shared_ptr<FILE_FULL_DIR_INFORMATION_ENTRY> make_shared(const guest_ptr<void>& ptr);
 
     virtual ~FILE_FULL_DIR_INFORMATION_ENTRY() = default;
 };

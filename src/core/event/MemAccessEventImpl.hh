@@ -27,7 +27,7 @@ class MemAccessEventImpl : public MemAccessEvent {
     bool write_violation() const override { return hypervisor_event_.mem_access_write(); }
     bool execute_violation() const override { return hypervisor_event_.mem_access_execute(); }
 
-    GuestPhysicalAddress physical_address() const override {
+    guest_phys_ptr<void> physical_address() const override {
         return hypervisor_event_.mem_access_physical_address();
     }
 

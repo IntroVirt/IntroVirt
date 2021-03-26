@@ -33,9 +33,9 @@ Json::Value TOKEN_IS_APP_CONTAINER_IMPL::json() const {
     return result;
 }
 
-TOKEN_IS_APP_CONTAINER_IMPL::TOKEN_IS_APP_CONTAINER_IMPL(const GuestVirtualAddress& gva,
+TOKEN_IS_APP_CONTAINER_IMPL::TOKEN_IS_APP_CONTAINER_IMPL(const guest_ptr<void>& ptr,
                                                          uint32_t buffer_size)
-    : TOKEN_IS_APP_CONTAINER_IMPL_BASE(TOKEN_INFORMATION_CLASS::TokenIsAppContainer, gva,
+    : TOKEN_IS_APP_CONTAINER_IMPL_BASE(TOKEN_INFORMATION_CLASS::TokenIsAppContainer, ptr,
                                        buffer_size) {}
 
 } // namespace nt

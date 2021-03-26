@@ -33,11 +33,11 @@ ALG_ID BLOB::aiKeyAlg() const {
     return reinterpret_cast<const _BLOBHEADER*>(header_.get())->aiKeyAlg;
 }
 
-BLOB::BLOB(const GuestVirtualAddress& gva, uint32_t length) {
+BLOB::BLOB(const guest_ptr<void>& ptr, uint32_t length) {
     if (unlikely(length < sizeof(_BLOBHEADER)))
         throw BufferTooSmallException(sizeof(_BLOBHEADER), length);
 
-    header_.reset(gva, length);
+    header_.reset(ptr, length);
 }
 
 BLOB::~BLOB() = default;

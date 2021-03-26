@@ -38,11 +38,11 @@ class CONTROL_AREA_IMPL final : public CONTROL_AREA {
     const SEGMENT* Segment() const override;
     const FILE_OBJECT* FileObject() const override;
 
-    CONTROL_AREA_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    CONTROL_AREA_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
   private:
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
+    const guest_ptr<void> ptr_;
 
     const structs::CONTROL_AREA* control_area_;
     guest_ptr<char[]> buffer_;

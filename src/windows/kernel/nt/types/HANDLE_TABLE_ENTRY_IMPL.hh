@@ -48,24 +48,23 @@ class HANDLE_TABLE_ENTRY_IMPL final : public HANDLE_TABLE_ENTRY {
     /**
      * @brief Get the address of the structure
      */
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override { return buffer_; }
 
     /**
-     * @param vcpu The vcpu to use as context
-     * @param wincfg The wincfg object for guest information
-     * @param virtual_address address of the table entry
-     * @param handle The handle number being parsed.
-     * @param isPspCidTable True if the handle entry points directly to the object, rather than to
-     * the OBJECT_HEADER
+     * @brief Construct a new handle table entry impl object
+     *
+     * @param kernel
+     * @param ptr
+     * @param handle
+     * @param isPspCidTable
      */
-    HANDLE_TABLE_ENTRY_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva,
+    HANDLE_TABLE_ENTRY_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr,
                             uint64_t handle, bool isPspCidTable);
 
     ~HANDLE_TABLE_ENTRY_IMPL() override;
 
   private:
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
     const uint64_t handle;
     const bool isPspCidTable;
     const structs::HANDLE_TABLE_ENTRY* offsets_;

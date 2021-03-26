@@ -45,12 +45,12 @@ class TOKEN_IMPL final : public OBJECT_IMPL<PtrType, TOKEN> {
     uint64_t PrivilegesEnabled() const override;
     void PrivilegesEnabled(uint64_t Privileges) override;
 
-    TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel,
                std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 
   private:
-    void init(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    void init(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
     const NtKernelImpl<PtrType>& kernel_;
     const structs::TOKEN* token;

@@ -73,8 +73,8 @@ class SID_AND_ATTRIBUTES {
         uint32_t value_;
     };
 
-    virtual GuestVirtualAddress SidPtr() const = 0;
-    virtual void SidPtr(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> SidPtr() const = 0;
+    virtual void SidPtr(const guest_ptr<void>& ptr) = 0;
 
     virtual SidAttributeFlags Attributes() const = 0;
     virtual void Attributes(SidAttributeFlags Attributes) = 0;
@@ -83,10 +83,10 @@ class SID_AND_ATTRIBUTES {
 
     virtual Json::Value json() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     static std::shared_ptr<SID_AND_ATTRIBUTES> make_shared(const NtKernel& kernel,
-                                                           const GuestVirtualAddress& gva);
+                                                           const guest_ptr<void>& gva);
 
     virtual ~SID_AND_ATTRIBUTES() = default;
 };

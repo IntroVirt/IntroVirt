@@ -40,7 +40,7 @@ class OBJECT_TYPE_IMPL final : public OBJECT_IMPL<PtrType, OBJECT_TYPE> {
     uint32_t Key() const override;
     uint8_t Index() const override;
 
-    OBJECT_TYPE_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    OBJECT_TYPE_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     OBJECT_TYPE_IMPL(const NtKernelImpl<PtrType>& kernel,
                      std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 

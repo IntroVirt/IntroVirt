@@ -24,9 +24,8 @@ namespace windows {
 namespace nt {
 
 template <typename PtrType>
-KEVENT_IMPL<PtrType>::KEVENT_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                  const GuestVirtualAddress& gva)
-    : DISPATCHER_OBJECT_IMPL<PtrType, KEVENT>(kernel, gva, ObjectType::Event) {}
+KEVENT_IMPL<PtrType>::KEVENT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
+    : DISPATCHER_OBJECT_IMPL<PtrType, KEVENT>(kernel, ptr, ObjectType::Event) {}
 
 template <typename PtrType>
 KEVENT_IMPL<PtrType>::KEVENT_IMPL(const NtKernelImpl<PtrType>& kernel,
@@ -34,14 +33,13 @@ KEVENT_IMPL<PtrType>::KEVENT_IMPL(const NtKernelImpl<PtrType>& kernel,
     : DISPATCHER_OBJECT_IMPL<PtrType, KEVENT>(kernel, std::move(object_header), ObjectType::Event) {
 }
 
-std::shared_ptr<KEVENT> KEVENT::make_shared(const NtKernel& kernel,
-                                            const GuestVirtualAddress& gva) {
+std::shared_ptr<KEVENT> KEVENT::make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<KEVENT_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<KEVENT_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<KEVENT> KEVENT::make_shared(const NtKernel& kernel,

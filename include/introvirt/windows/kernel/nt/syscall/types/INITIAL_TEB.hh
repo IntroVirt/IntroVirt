@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/json/json.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
@@ -44,13 +44,13 @@ class INITIAL_TEB {
     virtual uint64_t StackReserved() const = 0;
     virtual void StackReserved(uint64_t StackReserved) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
     virtual Json::Value json() const = 0;
 
     static std::unique_ptr<INITIAL_TEB> make_unique(const NtKernel& kernel,
-                                                    const GuestVirtualAddress& gva);
+                                                    const guest_ptr<void>& ptr);
 
     virtual ~INITIAL_TEB() = default;
 };

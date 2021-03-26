@@ -46,7 +46,7 @@ class {{ className }} : public {{ parent_name }} {
      *
      * @return The {{ "value of the" if not arg.get('pointer') else "address pointed to by the the" }} {{ arg['functionName'] }} parameter
      */
-    virtual {{ arg['type'] if not arg.get('pointer') else 'GuestVirtualAddress' }} {{arg['functionName']}}() const = 0;
+    virtual {{ arg['type'] if not arg.get('pointer') else 'guest_ptr<void>' }} {{arg['functionName']}}() const = 0;
 {%- endfor %}
 {%- endblock %}
 {%- block setters %}
@@ -59,7 +59,7 @@ class {{ className }} : public {{ parent_name }} {
      *
      * @param {{arg['variableName']}} The {{ "value" if not arg.get('pointer') else "address" }} to set for the {{ arg['functionName'] }} parameter
      */
-    virtual void {{arg['functionName']}}({{ arg['type'] if not arg.get('pointer') else 'const GuestVirtualAddress&' }} {{arg['variableName']}}) = 0;
+    virtual void {{arg['functionName']}}({{ arg['type'] if not arg.get('pointer') else 'const guest_ptr<void>&' }} {{arg['variableName']}}) = 0;
 {%- endfor %}
 {%- endblock %}
 
@@ -107,13 +107,13 @@ class {{ className }} : public {{ parent_name }} {
     static {{ return_type }} inject({% for arg in signature %}
         {%- if arg.get('pointer') -%}
             {%- if arg.get('use_address_for_injection') -%}
-            const GuestVirtualAddress& {{ arg['variableName'] -}}
+            const guest_ptr<void>& {{ arg['variableName'] -}}
             {%- elif 'helper' in arg -%}
             {{ 'const ' if not arg.get('out') }}{{ arg['helper']['type'] }}{{'*' if arg.get('optional') else '&'}}
             {{- ' ' -}}
             {{ arg['name'] -}}
             {%- else -%}
-            const GuestVirtualAddress& {{ arg['variableName'] -}}
+            const guest_ptr<void>& {{ arg['variableName'] -}}
             {%- endif -%}
         {%- else -%}
             {%- if arg['type'] == 'VOID' %}

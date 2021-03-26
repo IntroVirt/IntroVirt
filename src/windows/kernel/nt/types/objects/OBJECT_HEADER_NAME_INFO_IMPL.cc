@@ -29,11 +29,11 @@ const std::string& OBJECT_HEADER_NAME_INFO_IMPL<PtrType>::Name() const {
 
 template <typename PtrType>
 OBJECT_HEADER_NAME_INFO_IMPL<PtrType>::OBJECT_HEADER_NAME_INFO_IMPL(
-    const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva)
+    const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
     : offsets_(LoadOffsets<structs::OBJECT_HEADER_NAME_INFO>(kernel)) {
 
-    buffer_ = guest_ptr<char[]>(gva, offsets_->size());
-    Name_.emplace(gva + offsets_->Name.offset());
+    buffer_ = guest_ptr<char[]>(ptr, offsets_->size());
+    Name_.emplace(ptr + offsets_->Name.offset());
 }
 
 template class OBJECT_HEADER_NAME_INFO_IMPL<uint32_t>;

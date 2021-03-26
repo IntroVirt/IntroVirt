@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <cstdint>
@@ -45,7 +45,8 @@ class CM_KEY_NODE {
     virtual const std::vector<std::unique_ptr<CM_KEY_NODE>>& StableSubKeys() const = 0;
     virtual const std::vector<std::unique_ptr<CM_KEY_NODE>>& VolatileSubKeys() const = 0;
     virtual const std::vector<std::unique_ptr<CM_KEY_VALUE>>& Values() const = 0;
-    virtual GuestVirtualAddress address() const = 0;
+
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual ~CM_KEY_NODE() = default;
 };

@@ -26,7 +26,7 @@
 #include <introvirt/core/domain/Vcpu.hh>
 #include <introvirt/core/exception/InvalidMethodException.hh>
 #include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/fwd.hh>
 #include <introvirt/windows/common/WinError.hh>
 #include <introvirt/windows/event/WindowsEvent.hh>
@@ -89,7 +89,7 @@ class FunctionInjector final {
         LOG4CXX_DEBUG(func_injector_logger, "Jumping RIP to " << target_function_);
 
         // Set RIP to the function address
-        regs.rip(target_function_.value());
+        regs.rip(target_function_.address());
 
         // Save the original LastErrorValue and LastStatusValue
         auto* teb = thread.Teb();
@@ -99,13 +99,13 @@ class FunctionInjector final {
         // Wait for the return event
         auto new_event = event_.impl().suspend([this](const introvirt::Event& event) {
             if (event.type() == EventType::EVENT_EXCEPTION &&
-                event.vcpu().registers().rip() == executable_page_.value()) {
+                event.vcpu().registers().rip() == executable_page_.address()) {
                 return WakeAction::ACCEPT;
             }
             return WakeAction::DROP;
         });
 
-        assert(event_.vcpu().id() == new_event->vcpu().id());
+        introvirt_assert(event_.vcpu().id() == new_event->vcpu().id(), "");
 
         // Update the injection lasterror/laststatus values
         LastErrorValueInject.emplace(teb->LastErrorValue());
@@ -134,7 +134,7 @@ class FunctionInjector final {
     }
 
     FunctionInjector(Event& event) : guard_(event.vcpu()), event_(event) {
-        assert(event.os_type() == OS::Windows);
+        introvirt_assert(event.os_type() == OS::Windows, "");
 
         guest_ = &(static_cast<WindowsEvent&>(event).guest());
 
@@ -258,7 +258,7 @@ class FunctionInjector final {
         auto& proc = static_cast<WindowsEvent&>(event_).task().pcr().CurrentThread().Process();
 
         // Find where the library is mapped in by walking the VaD
-        GuestVirtualAddress library_address;
+        uint64_t library_address = 0;
 
         auto mmvad = proc.VadRoot();
         for (const auto& entry : mmvad->VadTreeInOrder()) {
@@ -282,7 +282,8 @@ class FunctionInjector final {
             return false;
         }
 
-        pe = pe::PE::make_unique(library_address);
+        auto& vcpu = event_.vcpu();
+        pe = pe::PE::make_unique(guest_ptr<void>(vcpu, library_address));
         return true;
     }
 
@@ -297,7 +298,7 @@ class FunctionInjector final {
         // TODO: C++20 should let us pass the string_view directly
         auto iter = export_map.find(std::string(_WindowsFunctionCall::FunctionName));
         if (iter != export_map.end()) {
-            target_function_ = iter->second.address;
+            target_function_.reset(event_.vcpu(), iter->second.address.address());
         } else {
             LOG4CXX_WARN(func_injector_logger, "Failed to find '"
                                                    << _WindowsFunctionCall::FunctionName << "' in "
@@ -324,7 +325,8 @@ class FunctionInjector final {
         regs.rsp(regs.rsp() & ~0x7LL);
 
         // Set the return address
-        *guest_ptr<PtrType>(GuestVirtualAddress(regs.rsp())) = executable_page_.value();
+        guest_ptr<PtrType> pReturnAddress(vcpu, regs.rsp());
+        *pReturnAddress = executable_page_.address();
     }
 
     template <typename PtrType>
@@ -359,9 +361,9 @@ class FunctionInjector final {
     std::optional<introvirt::inject::RegisterGuard> guard_;
     Event& event_;
     WindowsGuest* guest_;
-    GuestVirtualAddress executable_page_;
-    GuestVirtualAddress data_page_;
-    GuestVirtualAddress target_function_;
+    guest_ptr<void> executable_page_;
+    guest_ptr<void> data_page_;
+    guest_ptr<void> target_function_;
     std::optional<x86::Segment> original_cs_;
 };
 

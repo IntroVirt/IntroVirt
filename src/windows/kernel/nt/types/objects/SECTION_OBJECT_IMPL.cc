@@ -40,13 +40,13 @@ uint64_t SECTION_OBJECT_IMPL<PtrType>::EndingVpn() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress SECTION_OBJECT_IMPL<PtrType>::StartingVa() const {
-    return this->address().create(section_->StartingVa.get<PtrType>(section_buffer_));
+guest_ptr<void> SECTION_OBJECT_IMPL<PtrType>::StartingVa() const {
+    return this->ptr_.clone(section_->StartingVa.get<PtrType>(section_buffer_));
 }
 
 template <typename PtrType>
-GuestVirtualAddress SECTION_OBJECT_IMPL<PtrType>::EndingVa() const {
-    return this->address().create(section_->EndingVa.get<PtrType>(section_buffer_));
+guest_ptr<void> SECTION_OBJECT_IMPL<PtrType>::EndingVa() const {
+    return this->ptr_.clone(section_->EndingVa.get<PtrType>(section_buffer_));
 }
 
 template <typename PtrType>
@@ -59,7 +59,7 @@ const CONTROL_AREA* SECTION_OBJECT_IMPL<PtrType>::ControlArea() const {
     std::lock_guard lock(mtx_);
     if (!ControlArea_) {
         const auto pControlArea =
-            this->address().create(segment_->ControlArea.get<PtrType>(segment_buffer_));
+            this->ptr_.clone(segment_->ControlArea.get<PtrType>(segment_buffer_));
         if (!pControlArea)
             return nullptr;
         ControlArea_.emplace(kernel_, pControlArea);
@@ -74,14 +74,14 @@ const FILE_OBJECT* SECTION_OBJECT_IMPL<PtrType>::FileObject() const {
 
 template <typename PtrType>
 SECTION_OBJECT_IMPL<PtrType>::SECTION_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                                  const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, SECTION>(kernel, gva, ObjectType::Section), kernel_(kernel) {
+                                                  const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, SECTION>(kernel, ptr, ObjectType::Section), kernel_(kernel) {
 
     section_ = LoadOffsets<structs::SECTION_OBJECT>(kernel);
     segment_ = LoadOffsets<structs::SEGMENT_OBJECT>(kernel);
-    section_buffer_.reset(gva, section_->size());
+    section_buffer_.reset(ptr, section_->size());
 
-    const auto pSegment = this->address().create(section_->Segment.get<PtrType>(section_buffer_));
+    const auto pSegment = this->ptr_.clone(section_->Segment.get<PtrType>(section_buffer_));
     segment_buffer_.reset(pSegment, segment_->size());
 }
 
@@ -94,9 +94,9 @@ SECTION_OBJECT_IMPL<PtrType>::SECTION_OBJECT_IMPL(
 
     section_ = LoadOffsets<structs::SECTION_OBJECT>(kernel);
     segment_ = LoadOffsets<structs::SEGMENT_OBJECT>(kernel);
-    section_buffer_.reset(OBJECT_IMPL<PtrType, SECTION>::address(), section_->size());
+    section_buffer_.reset(this->ptr_, section_->size());
 
-    const auto pSegment = this->address().create(section_->Segment.get<PtrType>(section_buffer_));
+    const auto pSegment = this->ptr_.clone(section_->Segment.get<PtrType>(section_buffer_));
     segment_buffer_.reset(pSegment, segment_->size());
 }
 

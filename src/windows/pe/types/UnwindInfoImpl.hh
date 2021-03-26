@@ -42,38 +42,38 @@ struct _UnwindInfo {
 
 class UnwindInfoImpl final : public UnwindInfo {
   public:
-    uint8_t Version() const override { return data_->Version; }
-    uint8_t Flags() const override { return data_->Flags; }
-    uint8_t SizeOfProlog() const override { return data_->SizeOfProlog; }
-    uint8_t CountOfCodes() const override { return data_->CountOfCodes; }
-    uint8_t FrameRegister() const override { return data_->FrameRegister; }
-    uint8_t FrameOffset() const override { return data_->FrameOffset; }
+    uint8_t Version() const override { return ptr_->Version; }
+    uint8_t Flags() const override { return ptr_->Flags; }
+    uint8_t SizeOfProlog() const override { return ptr_->SizeOfProlog; }
+    uint8_t CountOfCodes() const override { return ptr_->CountOfCodes; }
+    uint8_t FrameRegister() const override { return ptr_->FrameRegister; }
+    uint8_t FrameOffset() const override { return ptr_->FrameOffset; }
     const std::vector<std::unique_ptr<const UnwindCode>>& codes() const override { return codes_; }
 
     bool is_chained() const override {
-        return (data_->Flags & UNWIND_FLAGS::UNW_FLAG_CHAININFO) != 0;
+        return (ptr_->Flags & UNWIND_FLAGS::UNW_FLAG_CHAININFO) != 0;
     }
 
     uint32_t exception_handler_rva() const override { return exception_handler_rva_; };
 
-    UnwindInfoImpl(const GuestVirtualAddress& gva) : data_(gva) {
+    UnwindInfoImpl(const guest_ptr<void>& ptr) : ptr_(ptr) {
 
-        if ((data_->Flags & UNWIND_FLAGS::UNW_FLAG_EHANDLER) != 0) {
-            GuestVirtualAddress pRVA = gva + sizeof(structs::_UnwindInfo) +
-                                       (data_->CountOfCodes * sizeof(structs::_UnwindCode));
+        if ((ptr_->Flags & UNWIND_FLAGS::UNW_FLAG_EHANDLER) != 0) {
+            guest_ptr<void> pRVA = ptr + sizeof(structs::_UnwindInfo) +
+                                   (ptr_->CountOfCodes * sizeof(structs::_UnwindCode));
 
             // TODO(pape): Look into this, can we just mask off some bits?
-            if ((pRVA.virtual_address() % 4) != 0) {
+            if ((pRVA.address() % 4) != 0) {
                 // should only be off by 2, but let's be safe
-                pRVA += 4 - (pRVA.virtual_address() % 4);
+                pRVA += 4 - (pRVA.address() % 4);
             }
 
             exception_handler_rva_ = *guest_ptr<uint32_t>(pRVA);
         }
 
         int i = 0;
-        GuestVirtualAddress nextAddress = gva + sizeof(structs::_UnwindInfo);
-        while (i < data_->CountOfCodes) {
+        guest_ptr<void> nextAddress = ptr + sizeof(structs::_UnwindInfo);
+        while (i < ptr_->CountOfCodes) {
             auto code = std::make_unique<UnwindCodeImpl>(nextAddress);
             i += code->CodeCount();
             nextAddress += code->CodeCount() * sizeof(structs::_UnwindCode);
@@ -88,10 +88,10 @@ class UnwindInfoImpl final : public UnwindInfo {
     const RUNTIME_FUNCTION* chained_function(const IMAGE_EXCEPTION_SECTION_IMPL* pdata) const;
 
   private:
-    guest_ptr<structs::_UnwindInfo> data_;
+    guest_ptr<structs::_UnwindInfo> ptr_;
     uint32_t exception_handler_rva_;
     std::vector<std::unique_ptr<const UnwindCode>> codes_;
-    mutable GuestVirtualAddress pChained_;
+    mutable guest_ptr<void> pChained_;
     mutable std::unique_ptr<RUNTIME_FUNCTION> chained_function_;
 };
 

@@ -24,16 +24,14 @@ namespace windows {
 namespace nt {
 
 template <typename PtrType>
-GuestVirtualAddress TOKEN_OWNER_IMPL<PtrType>::OwnerPtr() const {
-    return this->gva_.create(this->data_->Owner);
+guest_ptr<void> TOKEN_OWNER_IMPL<PtrType>::OwnerPtr() const {
+    return this->ptr_->Owner.get(this->ptr_);
 }
 
 template <typename PtrType>
-void TOKEN_OWNER_IMPL<PtrType>::OwnerPtr(const GuestVirtualAddress& gva) {
-    this->data_->Owner = gva.value();
-    if (Owner_) {
-        Owner_.emplace(this->gva_.create(this->data_->Owner));
-    }
+void TOKEN_OWNER_IMPL<PtrType>::OwnerPtr(const guest_ptr<void>& ptr) {
+    this->ptr_->Owner.set(ptr);
+    Owner_.reset();
 }
 
 template <typename PtrType>
@@ -47,7 +45,7 @@ const SID* TOKEN_OWNER_IMPL<PtrType>::Owner() const {
     {
         std::lock_guard lock(owner_initialized_);
         if (!Owner_)
-            Owner_.emplace(this->gva_.create(this->data_->Owner));
+            Owner_.emplace(this->ptr_->Owner.get(this->ptr_));
     }
     if (Owner_)
         return (&*Owner_);
@@ -73,8 +71,8 @@ Json::Value TOKEN_OWNER_IMPL<PtrType>::json() const {
 }
 
 template <typename PtrType>
-TOKEN_OWNER_IMPL<PtrType>::TOKEN_OWNER_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
-    : TOKEN_OWNER_IMPL_BASE(TOKEN_INFORMATION_CLASS::TokenOwner, gva, buffer_size) {}
+TOKEN_OWNER_IMPL<PtrType>::TOKEN_OWNER_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
+    : TOKEN_OWNER_IMPL_BASE(TOKEN_INFORMATION_CLASS::TokenOwner, ptr, buffer_size) {}
 
 template class TOKEN_OWNER_IMPL<uint32_t>;
 template class TOKEN_OWNER_IMPL<uint64_t>;

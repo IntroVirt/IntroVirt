@@ -71,30 +71,29 @@ Json::Value FILE_FULL_DIR_INFORMATION_IMPL::json() const {
 FILE_FULL_DIR_INFORMATION_ENTRY_IMPL&
 FILE_FULL_DIR_INFORMATION_ENTRY_IMPL::operator=(const FILE_FULL_DIR_INFORMATION_ENTRY& src) {
     const auto& src_impl = static_cast<const FILE_FULL_DIR_INFORMATION_ENTRY_IMPL&>(src);
-    gva_ = src_impl.gva_;
-    *data_ = *(src_impl.data_);
-    FileName_ = WStr(gva_ + offsetof(structs::_FILE_FULL_DIR_INFORMATION, FileName),
-                     src_impl.FileName_.Length(), src_impl.FileName_.MaximumLength());
+    *ptr_ = *(src_impl.ptr_);
+    FileName_ = WStr(base_ + offsetof(structs::_FILE_FULL_DIR_INFORMATION, FileName),
+                     src_impl.FileName_.MaximumLength(), src_impl.FileName_.Length());
 
     FileName_.set(src_impl.FileName_.utf16());
     return *this;
 }
 
-FILE_FULL_DIR_INFORMATION_IMPL::FILE_FULL_DIR_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+FILE_FULL_DIR_INFORMATION_IMPL::FILE_FULL_DIR_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                                uint32_t buffer_size)
     : offset_iterable(
-          [](const GuestVirtualAddress& gva, uint32_t buffer_size) {
-              return std::make_shared<FILE_FULL_DIR_INFORMATION_ENTRY_IMPL>(gva);
+          [](const guest_ptr<void>& ptr, uint32_t buffer_size) {
+              return std::make_shared<FILE_FULL_DIR_INFORMATION_ENTRY_IMPL>(ptr);
           },
-          gva, buffer_size) {
+          ptr, buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_FILE_FULL_DIR_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_FILE_FULL_DIR_INFORMATION), buffer_size);
 }
 
 std::shared_ptr<FILE_FULL_DIR_INFORMATION_ENTRY>
-FILE_FULL_DIR_INFORMATION_ENTRY::make_shared(const GuestVirtualAddress& gva) {
-    return std::make_shared<FILE_FULL_DIR_INFORMATION_ENTRY_IMPL>(gva);
+FILE_FULL_DIR_INFORMATION_ENTRY::make_shared(const guest_ptr<void>& ptr) {
+    return std::make_shared<FILE_FULL_DIR_INFORMATION_ENTRY_IMPL>(ptr);
 }
 
 } // namespace nt

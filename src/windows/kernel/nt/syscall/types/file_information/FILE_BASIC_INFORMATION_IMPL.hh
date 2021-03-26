@@ -38,31 +38,31 @@ class FILE_BASIC_INFORMATION_IMPL final : public FILE_BASIC_INFORMATION {
   public:
     /* Getters */
     WindowsTime CreationTime() const override {
-        return WindowsTime::from_windows_time(data_->CreationTime);
+        return WindowsTime::from_windows_time(ptr_->CreationTime);
     }
     WindowsTime LastAccessTime() const override {
-        return WindowsTime::from_windows_time(data_->LastAccessTime);
+        return WindowsTime::from_windows_time(ptr_->LastAccessTime);
     }
     WindowsTime LastWriteTime() const override {
-        return WindowsTime::from_windows_time(data_->LastWriteTime);
+        return WindowsTime::from_windows_time(ptr_->LastWriteTime);
     }
     WindowsTime ChangeTime() const override {
-        return WindowsTime::from_windows_time(data_->ChangeTime);
+        return WindowsTime::from_windows_time(ptr_->ChangeTime);
     }
-    FILE_ATTRIBUTES FileAttributes() const override { return data_->FileAttributes; }
+    FILE_ATTRIBUTES FileAttributes() const override { return ptr_->FileAttributes; }
 
     /* Setters - These change the values in the guest! */
-    void CreationTime(WindowsTime time) override { data_->ChangeTime = time.windows_time(); }
-    void LastAccessTime(WindowsTime time) override { data_->LastAccessTime = time.windows_time(); }
-    void LastWriteTime(WindowsTime time) override { data_->LastWriteTime = time.windows_time(); }
-    void ChangeTime(WindowsTime time) override { data_->ChangeTime = time.windows_time(); }
-    void FileAttributes(FILE_ATTRIBUTES atts) override { data_->FileAttributes = atts; }
+    void CreationTime(WindowsTime time) override { ptr_->ChangeTime = time.windows_time(); }
+    void LastAccessTime(WindowsTime time) override { ptr_->LastAccessTime = time.windows_time(); }
+    void LastWriteTime(WindowsTime time) override { ptr_->LastWriteTime = time.windows_time(); }
+    void ChangeTime(WindowsTime time) override { ptr_->ChangeTime = time.windows_time(); }
+    void FileAttributes(FILE_ATTRIBUTES atts) override { ptr_->FileAttributes = atts; }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileBasicInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -70,13 +70,12 @@ class FILE_BASIC_INFORMATION_IMPL final : public FILE_BASIC_INFORMATION {
 
     Json::Value json() const override;
 
-    FILE_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva);
-    FILE_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr);
+    FILE_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
+    guest_ptr<structs::_FILE_BASIC_INFORMATION> ptr_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_BASIC_INFORMATION> data_;
 };
 
 } // namespace nt

@@ -28,6 +28,7 @@
 #include <introvirt/windows/kernel/nt/syscall/NtAllocateVirtualMemory.hh>
 #include <introvirt/windows/kernel/nt/syscall/NtClose.hh>
 #include <introvirt/windows/kernel/nt/syscall/NtFreeVirtualMemory.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtLockVirtualMemory.hh>
 #include <introvirt/windows/kernel/nt/syscall/NtOpenProcess.hh>
 #include <introvirt/windows/kernel/nt/syscall/NtReadVirtualMemory.hh>
 #include <introvirt/windows/kernel/nt/types/KPCR.hh>
@@ -79,18 +80,19 @@ WindowsGuestImpl<PtrType>::filter_event(std::unique_ptr<HypervisorEvent>&& hyper
 
 template <typename PtrType>
 template <typename PteType>
-GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_prototype_pte(const GuestVirtualAddress& gva,
+GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_prototype_pte(uint64_t prototype_address,
+                                                                     uint64_t page_directory,
                                                                      PteType& pte) const {
-    LOG4CXX_DEBUG(logger, "Following prototype PTE at " << gva);
+    LOG4CXX_DEBUG(logger, "Following prototype PTE at 0x" << std::hex << prototype_address);
     char* buffer = reinterpret_cast<char*>(&pte);
 
     constexpr int MM_DECOMMIT = 0x10;
 
     try {
         // Read the PTE
-        pte = *guest_ptr<PteType>(gva);
+        pte = *guest_ptr<PteType>(*domain_, prototype_address, page_directory);
     } catch (TraceableException& ex) {
-        LOG4CXX_WARN(logger, "Failed to read prototype PTE at " << gva);
+        LOG4CXX_WARN(logger, "Failed to read prototype PTE at 0x" << std::hex << prototype_address);
         return GuestPageFaultResult::FAILURE;
     }
 
@@ -142,13 +144,13 @@ GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_prototype_pte(const Guest
 
 template <typename PtrType>
 template <typename PteType>
-GuestPageFaultResult
-WindowsGuestImpl<PtrType>::handle_page_fault_mmvad(const GuestVirtualAddress& gva,
-                                                   PteType& pte) const {
+GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_page_fault_mmvad(uint64_t virtual_address,
+                                                                        uint64_t page_directory,
+                                                                        PteType& pte) const {
 
     // TODO: We really want the region of memory that the kernel address space starts at.
     // The kernel image isn't necessarly the start of the kernel memory region
-    if (gva > kernel().base_address()) {
+    if (virtual_address > kernel().ptr().address()) {
         return GuestPageFaultResult::FAILURE;
     }
 
@@ -166,7 +168,7 @@ WindowsGuestImpl<PtrType>::handle_page_fault_mmvad(const GuestVirtualAddress& gv
     }
 
     // Get the VaD entry for the address in question
-    auto vad = vadroot->search(gva);
+    auto vad = vadroot->search(virtual_address);
     if (!vad) {
         return GuestPageFaultResult::FAILURE;
     }
@@ -179,27 +181,27 @@ WindowsGuestImpl<PtrType>::handle_page_fault_mmvad(const GuestVirtualAddress& gv
     }
 
     // Offset into the region's PTEs
-    const uint64_t index = (gva - vad->StartingAddress()) >> PageDirectory::PAGE_SHIFT;
-    const GuestVirtualAddress ProtoAddress = FirstPrototypePte + (sizeof(PteType) * index);
+    const uint64_t index = (virtual_address - vad->StartingAddress()) >> PageDirectory::PAGE_SHIFT;
+    const uint64_t ProtoAddress = FirstPrototypePte + (sizeof(PteType) * index);
     if (ProtoAddress > vad->LastContiguousPte()) {
         // No PTE for this page
         return GuestPageFaultResult::FAILURE;
     }
 
-    return handle_prototype_pte<PteType>(ProtoAddress, pte);
+    return handle_prototype_pte<PteType>(ProtoAddress, page_directory, pte);
 }
 
 template <typename PtrType>
 template <typename PteType>
-GuestPageFaultResult
-WindowsGuestImpl<PtrType>::handle_page_fault_internal(const GuestVirtualAddress& gva,
-                                                      PteType& pte) const {
+GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_page_fault_internal(uint64_t virtual_address,
+                                                                           uint64_t page_directory,
+                                                                           PteType& pte) const {
 
     // If we're here, the main page directory code hit a not-present page.
     // See if we can fix that, here.
 
-    LOG4CXX_TRACE(logger,
-                  "Handling Windows PTE fault for " << gva << " Value : 0x" << std::hex << pte);
+    LOG4CXX_TRACE(logger, "Handling Windows PTE fault for 0x" << std::hex << virtual_address
+                                                              << " Value : 0x" << std::hex << pte);
 
     char* buffer = reinterpret_cast<char*>(&pte);
     const bool prototype = mmpte_transition_->Prototype.get_bitfield<PteType>(buffer);
@@ -252,10 +254,11 @@ WindowsGuestImpl<PtrType>::handle_page_fault_internal(const GuestVirtualAddress&
             if constexpr (is64Bit()) {
                 ProtoAddress |= 0xFFFF000000000000;
             }
-            result = handle_prototype_pte<PteType>(gva.create(ProtoAddress), pte);
+
+            result = handle_prototype_pte<PteType>(ProtoAddress, page_directory, pte);
         } else {
             // VaD lookup required
-            result = handle_page_fault_mmvad<PteType>(gva, pte);
+            result = handle_page_fault_mmvad<PteType>(virtual_address, page_directory, pte);
         }
     }
 
@@ -340,14 +343,16 @@ WindowsGuestImpl<PtrType>::handle_page_fault_internal(const GuestVirtualAddress&
 thread_local unsigned int PageFaultDepth = 0;
 
 template <typename PtrType>
-GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_page_fault(const GuestVirtualAddress& gva,
+GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_page_fault(uint64_t virtual_address,
+                                                                  uint64_t page_directory,
                                                                   uint64_t& pte) const {
 
     if (unlikely(!ThreadLocalEvent::active()))
         return GuestPageFaultResult::FAILURE;
 
     if (unlikely(PageFaultDepth > 50)) {
-        LOG4CXX_WARN(logger, "Max depth exceeded for handle_page_fault. Faulting address: " << gva);
+        LOG4CXX_WARN(logger, "Max depth exceeded for handle_page_fault. Faulting address: 0x"
+                                 << std::hex << virtual_address);
         return GuestPageFaultResult::FAILURE;
     }
 
@@ -356,10 +361,10 @@ GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_page_fault(const GuestVir
     try {
         GuestPageFaultResult result;
         if (mmpte_transition_->size() == 8) {
-            result = handle_page_fault_internal<uint64_t>(gva, pte);
+            result = handle_page_fault_internal<uint64_t>(virtual_address, page_directory, pte);
         } else {
             uint32_t pte32 = pte;
-            result = handle_page_fault_internal<uint32_t>(gva, pte32);
+            result = handle_page_fault_internal<uint32_t>(virtual_address, page_directory, pte32);
             pte = pte32;
         }
 
@@ -424,8 +429,9 @@ const Domain& WindowsGuestImpl<PtrType>::domain() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress WindowsGuestImpl<PtrType>::allocate(size_t& RegionSize, bool executable) {
+guest_ptr<void> WindowsGuestImpl<PtrType>::allocate(size_t& RegionSize, bool executable) {
     auto& event = static_cast<WindowsEvent&>(ThreadLocalEvent::get());
+    auto& vcpu = event.vcpu();
 
     const nt::PAGE_PROTECTION prot = (executable) ? nt::PAGE_PROTECTION::PAGE_EXECUTE_READWRITE
                                                   : nt::PAGE_PROTECTION::PAGE_READWRITE;
@@ -445,35 +451,41 @@ GuestVirtualAddress WindowsGuestImpl<PtrType>::allocate(size_t& RegionSize, bool
     if (unlikely(!result.NT_SUCCESS())) {
         // TODO: Throw an exception
         LOG4CXX_WARN(logger, "Allocation call to NtAllocateVirtualMemory failed: " << result);
-        return GuestVirtualAddress();
+        return guest_ptr<void>();
     }
 
-    GuestVirtualAddress gva(event.vcpu(), BaseAddress);
+    // Try to lock in the memory region
+    size_t LockedRegionSize = RegionSize;
+    result = inject::system_call<nt::NtLockVirtualMemory>(
+        0xFFFFFFFFFFFFFFFFLL, BaseAddress, LockedRegionSize, nt::MapType::MAP_PROCESS);
 
-    // Page the region in
-    // TODO: Should probably NtLockVirtualMemory instead
-
-    const auto end_addr = gva + RegionSize;
-    for (auto addr = gva; addr < end_addr; addr += x86::PageDirectory::PAGE_SIZE) {
-        result = inject::system_call<nt::NtReadVirtualMemory>(0xFFFFFFFFFFFFFFFFLL, addr, addr, 1,
-                                                              nullptr);
-        if (unlikely(!result.NT_SUCCESS())) {
-            // TODO: Throw an exception
-            LOG4CXX_WARN(logger, "Page-in call to NtReadVirtualMemory failed: " << result);
-            return GuestVirtualAddress();
+    if (!result.NT_SUCCESS()) {
+        LOG4CXX_WARN(logger, "Failed to lock newly allocated region: " << result);
+        // Page the region in
+        const auto end_addr = BaseAddress + RegionSize;
+        for (auto addr = BaseAddress; addr < end_addr; addr += x86::PageDirectory::PAGE_SIZE) {
+            result = inject::system_call<nt::NtReadVirtualMemory>(
+                0xFFFFFFFFFFFFFFFFLL, guest_ptr<void>(vcpu, addr), guest_ptr<void>(vcpu, addr), 1,
+                nullptr);
+            if (unlikely(!result.NT_SUCCESS())) {
+                // TODO: Throw an exception
+                LOG4CXX_WARN(logger, "Page-in call to NtReadVirtualMemory failed: " << result);
+                return guest_ptr<void>();
+            }
         }
     }
 
-    return gva;
+    return guest_ptr<void>(event.vcpu(), BaseAddress);
 }
 
 template <typename PtrType>
-void WindowsGuestImpl<PtrType>::guest_free(GuestVirtualAddress& BaseAddress, size_t RegionSize) {
+void WindowsGuestImpl<PtrType>::guest_free(const guest_ptr<void>& BaseAddress, size_t RegionSize) {
     try {
         nt::NTSTATUS result = inject::system_call<nt::NtFreeVirtualMemory>(
-            nt::NtCurrentProcess(), BaseAddress.value(), RegionSize, nt::MEM_RELEASE);
+            nt::NtCurrentProcess(), BaseAddress.address(), RegionSize, nt::MEM_RELEASE);
 
         if (unlikely(!result.NT_SUCCESS())) {
+            introvirt_assert(false, "");
             LOG4CXX_WARN(logger, "Free call to NtFreeVirtualMemory failed: " << result);
             return;
         }

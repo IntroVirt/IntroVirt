@@ -50,8 +50,8 @@ class TOKEN_PRIVILEGES_IMPL final
 
     Json::Value json() const override;
 
-    TOKEN_PRIVILEGES_IMPL(const GuestVirtualAddress& gva);
-    TOKEN_PRIVILEGES_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    TOKEN_PRIVILEGES_IMPL(const guest_ptr<void>& ptr);
+    TOKEN_PRIVILEGES_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
     using array_iterable_type =

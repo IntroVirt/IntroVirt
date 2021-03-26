@@ -59,7 +59,7 @@ class ConDrvIoctl::IMPL_SPEC final : public ConDrvIoctl::IMPL {
             auto serverData =
                 reinterpret_cast<const ConsoleCallServerGenericHeader*>(inputData.get());
             genericRequestData = std::make_unique<ConsoleCallServerGenericRequest>(
-                guest, pRequestData.create(serverData->requestHeaderPtr), pRequestData,
+                guest, pRequestData.clone(serverData->requestHeaderPtr), pRequestData,
                 requestDataLen);
             break;
         }

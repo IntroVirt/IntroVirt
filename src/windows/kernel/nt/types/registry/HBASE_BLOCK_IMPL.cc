@@ -37,7 +37,7 @@ const int64_t HBASE_BLOCK_IMPL<PtrType>::TimeStamp() const {
 template <typename PtrType>
 const std::string& HBASE_BLOCK_IMPL<PtrType>::FileName() const {
     if (!FileName_) {
-        const GuestVirtualAddress pFileName = gva_ + hbase_block->FileName.offset();
+        const guest_ptr<void> pFileName = ptr_ + hbase_block->FileName.offset();
         LOG4CXX_DEBUG(logger, "HBASE_BLOCK.FileName " << pFileName);
         const auto FileNameBufferSize = hbase_block->FileName.size();
         FileName_.emplace(pFileName, FileNameBufferSize);
@@ -56,24 +56,19 @@ uint32_t HBASE_BLOCK_IMPL<PtrType>::Length() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress HBASE_BLOCK_IMPL<PtrType>::address() const {
-    return gva_;
-}
-
-template <typename PtrType>
 HBASE_BLOCK_IMPL<PtrType>::HBASE_BLOCK_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                            const GuestVirtualAddress& gva)
-    : kernel_(kernel), gva_(gva) {
+                                            const guest_ptr<void>& ptr)
+    : kernel_(kernel), ptr_(ptr) {
 
     hbase_block = LoadOffsets<structs::HBASE_BLOCK>(kernel);
-    hbase_block_buffer_.reset(gva_, hbase_block->size());
+    hbase_block_buffer_.reset(ptr, hbase_block->size());
 
     const auto Signature = hbase_block->Signature.get<uint32_t>(hbase_block_buffer_);
     if (unlikely(Signature != 0x66676572 /* "regf" */)) {
         throw InvalidStructureException("Invalid signature for HBASE_BLOCK");
     }
 
-    LOG4CXX_DEBUG(logger, "Parsed HBASE_BLOCK " << gva_);
+    LOG4CXX_DEBUG(logger, "Parsed HBASE_BLOCK " << ptr);
 }
 
 template <typename PtrType>

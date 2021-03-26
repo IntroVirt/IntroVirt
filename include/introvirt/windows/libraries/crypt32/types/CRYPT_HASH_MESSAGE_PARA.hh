@@ -18,7 +18,7 @@
 #include "CRYPT_ALGORITHM_IDENTIFIER.hh"
 #include "HCRYPTPROV_LEGACY.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 
@@ -46,10 +46,10 @@ class CRYPT_HASH_MESSAGE_PARA {
     virtual const CRYPT_ALGORITHM_IDENTIFIER& HashAlgorithm() const = 0;
     virtual CRYPT_ALGORITHM_IDENTIFIER& HashAlgorithm() = 0;
 
-    virtual GuestVirtualAddress pvHashAuxInfo() const = 0;
-    virtual void pvHashAuxInfo(const GuestVirtualAddress& pvHashAuxInfo) = 0;
+    virtual guest_ptr<void> pvHashAuxInfo() const = 0;
+    virtual void pvHashAuxInfo(const guest_ptr<void>& pvHashAuxInfo) = 0;
 
-    static std::unique_ptr<CRYPT_HASH_MESSAGE_PARA> make_unique(const GuestVirtualAddress& gva,
+    static std::shared_ptr<CRYPT_HASH_MESSAGE_PARA> make_shared(const guest_ptr<void>& ptr,
                                                                 bool x64);
 
     /**

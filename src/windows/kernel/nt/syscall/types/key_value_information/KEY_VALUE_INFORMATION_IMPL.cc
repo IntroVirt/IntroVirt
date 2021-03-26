@@ -20,7 +20,6 @@
 #include "KEY_VALUE_PARTIAL_INFORMATION_IMPL.hh"
 
 #include <introvirt/core/exception/BufferTooSmallException.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/util/compiler.hh>
 #include <introvirt/windows/kernel/nt/NtKernel.hh>
 
@@ -52,48 +51,47 @@ Json::Value KEY_VALUE_INFORMATION_IMPL<_BaseClass, _StructType>::json() const {
 
 template <typename _BaseClass, typename _StructType>
 KEY_VALUE_INFORMATION_IMPL<_BaseClass, _StructType>::KEY_VALUE_INFORMATION_IMPL(
-    KEY_VALUE_INFORMATION_CLASS information_class, const GuestVirtualAddress& gva,
-    uint32_t buffer_size)
-    : class_(information_class), gva_(gva), buffer_size_(buffer_size) {
+    KEY_VALUE_INFORMATION_CLASS information_class, const guest_ptr<void>& ptr, uint32_t buffer_size)
+    : class_(information_class), buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(_StructType)))
         throw BufferTooSmallException(sizeof(_StructType), buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 }
 
 template <typename PtrType>
 std::unique_ptr<KEY_VALUE_INFORMATION>
-make_unique_impl(KEY_VALUE_INFORMATION_CLASS information_class, const GuestVirtualAddress& gva,
+make_unique_impl(KEY_VALUE_INFORMATION_CLASS information_class, const guest_ptr<void>& ptr,
                  uint32_t buffer_size) {
 
     // TODO: Verify the "Align64" types work as expected
     switch (information_class) {
     case KEY_VALUE_INFORMATION_CLASS::KeyValueBasicInformation:
-        return std::make_unique<KEY_VALUE_BASIC_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<KEY_VALUE_BASIC_INFORMATION_IMPL>(ptr, buffer_size);
     case KEY_VALUE_INFORMATION_CLASS::KeyValueFullInformation:
     case KEY_VALUE_INFORMATION_CLASS::KeyValueFullInformationAlign64:
-        return std::make_unique<KEY_VALUE_FULL_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<KEY_VALUE_FULL_INFORMATION_IMPL>(ptr, buffer_size);
     case KEY_VALUE_INFORMATION_CLASS::KeyValuePartialInformation:
     case KEY_VALUE_INFORMATION_CLASS::KeyValuePartialInformationAlign64:
-        return std::make_unique<KEY_VALUE_PARTIAL_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<KEY_VALUE_PARTIAL_INFORMATION_IMPL>(ptr, buffer_size);
     }
 
-    return std::make_unique<KEY_VALUE_INFORMATION_IMPL<>>(information_class, gva, buffer_size);
+    return std::make_unique<KEY_VALUE_INFORMATION_IMPL<>>(information_class, ptr, buffer_size);
 }
 
 std::unique_ptr<KEY_VALUE_INFORMATION>
 KEY_VALUE_INFORMATION::make_unique(const NtKernel& kernel,
                                    KEY_VALUE_INFORMATION_CLASS information_class,
-                                   const GuestVirtualAddress& gva, uint32_t buffer_size) {
+                                   const guest_ptr<void>& ptr, uint32_t buffer_size) {
 
     if (unlikely(buffer_size == 0))
         return nullptr;
 
     if (kernel.x64())
-        return make_unique_impl<uint64_t>(information_class, gva, buffer_size);
+        return make_unique_impl<uint64_t>(information_class, ptr, buffer_size);
     else
-        return make_unique_impl<uint32_t>(information_class, gva, buffer_size);
+        return make_unique_impl<uint32_t>(information_class, ptr, buffer_size);
 }
 
 template class KEY_VALUE_INFORMATION_IMPL<KEY_VALUE_BASIC_INFORMATION,

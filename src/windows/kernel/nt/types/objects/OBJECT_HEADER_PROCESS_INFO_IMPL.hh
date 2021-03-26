@@ -34,7 +34,7 @@ template <typename PtrType>
 class OBJECT_HEADER_PROCESS_INFO_IMPL final : public OBJECT_HEADER_PROCESS_INFO {
   public:
     OBJECT_HEADER_PROCESS_INFO_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                    const GuestVirtualAddress& gva);
+                                    const guest_ptr<void>& ptr);
 
   private:
     const structs::OBJECT_HEADER_PROCESS_INFO* offsets_;

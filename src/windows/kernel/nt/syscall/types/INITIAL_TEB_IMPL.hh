@@ -36,33 +36,30 @@ struct _INITIAL_TEB {
 template <typename PtrType>
 class INITIAL_TEB_IMPL final : public INITIAL_TEB {
   public:
-    uint64_t StackBase() const override { return data_->StackBase; }
-    void StackBase(uint64_t StackBase) override { data_->StackBase = StackBase; }
+    uint64_t StackBase() const override { return ptr_->StackBase; }
+    void StackBase(uint64_t StackBase) override { ptr_->StackBase = StackBase; }
 
-    uint64_t StackLimit() const override { return data_->StackLimit; }
-    void StackLimit(uint64_t StackLimit) override { data_->StackLimit = StackLimit; }
+    uint64_t StackLimit() const override { return ptr_->StackLimit; }
+    void StackLimit(uint64_t StackLimit) override { ptr_->StackLimit = StackLimit; }
 
-    uint64_t StackCommit() const override { return data_->StackCommit; }
-    void StackCommit(uint64_t StackCommit) override { data_->StackCommit = StackCommit; }
+    uint64_t StackCommit() const override { return ptr_->StackCommit; }
+    void StackCommit(uint64_t StackCommit) override { ptr_->StackCommit = StackCommit; }
 
-    uint64_t StackCommitMax() const override { return data_->StackCommitMax; }
-    void StackCommitMax(uint64_t StackCommitMax) override {
-        data_->StackCommitMax = StackCommitMax;
-    }
+    uint64_t StackCommitMax() const override { return ptr_->StackCommitMax; }
+    void StackCommitMax(uint64_t StackCommitMax) override { ptr_->StackCommitMax = StackCommitMax; }
 
-    uint64_t StackReserved() const override { return data_->StackReserved; }
-    void StackReserved(uint64_t StackReserved) override { data_->StackReserved = StackReserved; }
+    uint64_t StackReserved() const override { return ptr_->StackReserved; }
+    void StackReserved(uint64_t StackReserved) override { ptr_->StackReserved = StackReserved; }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    INITIAL_TEB_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva_) {}
+    INITIAL_TEB_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_INITIAL_TEB<PtrType>> data_;
+    guest_ptr<structs::_INITIAL_TEB<PtrType>> ptr_;
 };
 
 } // namespace nt

@@ -48,13 +48,13 @@ class IMAGE_IMPORT_DESCRIPTOR_IMPL final : public IMAGE_IMPORT_DESCRIPTOR {
         {
             std::lock_guard lock(thunks_init_);
             if (thunks_.empty()) {
-                GuestVirtualAddress pThunk = image_base_ + data_->OriginalFirstThunk;
+                guest_ptr<void> pThunk = image_base_ + ptr_->OriginalFirstThunk;
 
                 while (true) {
                     // Create a thunk and verify it's not the terminator
                     auto thunk =
                         std::make_unique<IMAGE_THUNK_DATA_IMPL<PtrType>>(image_base_, pThunk);
-                    if (thunk->address_of_data() == 0)
+                    if (thunk->AddressOfData() == 0)
                         break;
 
                     // Push it back on our vector
@@ -69,22 +69,23 @@ class IMAGE_IMPORT_DESCRIPTOR_IMPL final : public IMAGE_IMPORT_DESCRIPTOR {
         return thunks_;
     }
 
-    IMAGE_IMPORT_DESCRIPTOR_IMPL(const GuestVirtualAddress& image_base,
-                                 const GuestVirtualAddress& gva)
-        : image_base_(image_base), data_(gva) {
+    const std::string& ModuleName() const override { return module_name_; }
 
-        if (data_->OriginalFirstThunk == 0u)
+    IMAGE_IMPORT_DESCRIPTOR_IMPL(const guest_ptr<void>& image_base, const guest_ptr<void>& ptr)
+        : image_base_(image_base), ptr_(ptr) {
+
+        if (ptr_->OriginalFirstThunk == 0u)
             return;
 
         // Get the string
-        module_name_ = map_guest_cstr(image_base_ + data_->Name);
+        module_name_ = map_guest_cstring(image_base_ + ptr_->Name).str();
     }
 
   private:
-    const GuestVirtualAddress image_base_;
-    guest_ptr<structs::_IMAGE_IMPORT_DESCRIPTOR> data_;
+    const guest_ptr<void> image_base_;
+    guest_ptr<structs::_IMAGE_IMPORT_DESCRIPTOR> ptr_;
 
-    std::mutex thunks_init_;
+    mutable std::mutex thunks_init_;
     mutable std::vector<std::unique_ptr<const IMAGE_THUNK_DATA>> thunks_;
 
     std::string module_name_;

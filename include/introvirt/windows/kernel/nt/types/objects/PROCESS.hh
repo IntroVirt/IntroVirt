@@ -146,12 +146,11 @@ class PROCESS : public DISPATCHER_OBJECT {
      *
      * @return The Win32Process pointer from the EPROCESS structure
      */
-    virtual GuestVirtualAddress Win32Process() const = 0;
+    virtual guest_ptr<void> Win32Process() const = 0;
 
     virtual ~PROCESS() = default;
 
-    static std::shared_ptr<PROCESS> make_shared(const NtKernel& kernel,
-                                                const GuestVirtualAddress& gva);
+    static std::shared_ptr<PROCESS> make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr);
     static std::shared_ptr<PROCESS> make_shared(const NtKernel& kernel,
                                                 std::unique_ptr<OBJECT_HEADER>&& header);
 };

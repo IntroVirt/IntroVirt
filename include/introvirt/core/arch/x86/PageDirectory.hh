@@ -18,10 +18,6 @@
 #ifdef __x86_64__
 
 #include <introvirt/core/fwd.hh>
-
-#include <introvirt/core/fwd.hh>
-#include <introvirt/core/memory/GuestPhysicalAddress.hh>
-
 #include <introvirt/util/compiler.hh>
 
 #include <cstdint>
@@ -51,13 +47,14 @@ class PageDirectory final {
     static constexpr uint64_t PAGE_MASK = (~(PAGE_SIZE - 1));
 
     /**
-     * @brief Convert a GuestVirtualAddress to a GuestPhysicalAddress
+     * @brief Convert a virtual address to a physical address
      *
-     * @param gva The virtual address to translate
+     * @param virtual_address The virtual address to translate
+     * @param page_directory The page directory to use for address translation
      * @return The translated address
      * @throws VirtualAddressNotPresentException If the virtual address is not present
      */
-    GuestPhysicalAddress translate(const GuestVirtualAddress& gva) const HOT;
+    uint64_t translate(uint64_t virtual_address, uint64_t page_directory) const HOT;
 
     /**
      * @brief Reset the cached addresses
@@ -69,7 +66,7 @@ class PageDirectory final {
      *
      * @param domain The domain this directory belongs to
      */
-    PageDirectory(const Domain& domain);
+    PageDirectory(Domain& domain);
 
     /**
      * @brief Destroy the instance
@@ -77,7 +74,7 @@ class PageDirectory final {
     ~PageDirectory();
 
   private:
-    const Domain& domain_;
+    Domain& domain_;
 
     int pt_levels_ = 0;
     int pte_size_ = 0;

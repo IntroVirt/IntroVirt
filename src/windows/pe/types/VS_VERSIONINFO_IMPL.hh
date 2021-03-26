@@ -54,19 +54,25 @@ class VS_VERSIONINFO_IMPL final : public FILE_INFO_IMPL<VS_VERSIONINFO> {
         return nullptr;
     }
 
-    VS_VERSIONINFO_IMPL(const GuestVirtualAddress& pVersionInfo)
+    VS_VERSIONINFO_IMPL(const guest_ptr<void>& pVersionInfo)
         : FILE_INFO_IMPL<VS_VERSIONINFO>(pVersionInfo) {
 
-        assert(this->szKey() == "VS_VERSION_INFO");
+        introvirt_assert(this->szKey() == "VS_VERSION_INFO", "");
 
-        const GuestVirtualAddress pValue = this->pChildren();
+        const guest_ptr<void> pValue = this->pChildren();
         Value_.emplace(pValue);
 
         // Remaining children
-        GuestVirtualAddress pChildren = dword_align(pValue + sizeof(structs::_VS_FIXEDFILEINFO));
+        guest_ptr<void> pChildren = dword_align(pValue + sizeof(structs::_VS_FIXEDFILEINFO));
 
-        const GuestVirtualAddress pEndChildren =
-            pChildren + (wLength() - (pChildren - pVersionInfo));
+        std::cout << "pChildren: " << pChildren << '\n';
+        std::cout << "pVersionInfo: " << pVersionInfo << '\n';
+        std::cout << "pChildren - pVersionInfo: " << (pChildren - pVersionInfo) << '\n';
+        std::cout << "pChildren.address() - pVersionInfo.address(): "
+                  << (pChildren.address() - pVersionInfo.address()) << '\n';
+
+        const guest_ptr<void> pEndChildren =
+            pChildren + (wLength() - (pChildren.address() - pVersionInfo.address()));
 
         while (pChildren < pEndChildren) {
             FILE_INFO_IMPL<> fInfo(pChildren);

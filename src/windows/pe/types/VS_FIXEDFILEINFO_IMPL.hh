@@ -49,30 +49,30 @@ static const uint32_t FIXEDFILEINFO_SIGNATURE = 0xFEEF04BD;
 
 class VS_FIXEDFILEINFO_IMPL final : public VS_FIXEDFILEINFO {
   public:
-    uint32_t dwSignature() const override { return data_->dwSignature; }
-    uint32_t dwStrucVersion() const override { return data_->dwStrucVersion; }
+    uint32_t dwSignature() const override { return ptr_->dwSignature; }
+    uint32_t dwStrucVersion() const override { return ptr_->dwStrucVersion; }
     uint64_t dwFileVersion() const override {
-        return (data_->dwFileVersionMS << 16L) | data_->dwFileVersionLS;
+        return (ptr_->dwFileVersionMS << 16L) | ptr_->dwFileVersionLS;
     }
     uint64_t dwProductVersion() const override {
-        return (data_->dwProductVersionMS << 16L) | data_->dwProductVersionLS;
+        return (ptr_->dwProductVersionMS << 16L) | ptr_->dwProductVersionLS;
     }
-    uint32_t dwFileFlagsMask() const override { return data_->dwFileFlagsMask; }
-    uint32_t dwFileFlags() const override { return data_->dwFileFlags; }
-    uint32_t dwFileOS() const override { return data_->dwFileOS; }
-    uint32_t dwFileType() const override { return data_->dwFileType; }
-    uint32_t dwFileSubtype() const override { return data_->dwFileSubtype; }
+    uint32_t dwFileFlagsMask() const override { return ptr_->dwFileFlagsMask; }
+    uint32_t dwFileFlags() const override { return ptr_->dwFileFlags; }
+    uint32_t dwFileOS() const override { return ptr_->dwFileOS; }
+    uint32_t dwFileType() const override { return ptr_->dwFileType; }
+    uint32_t dwFileSubtype() const override { return ptr_->dwFileSubtype; }
     uint64_t dwFileDate() const override {
-        return (data_->dwFileDateMS << 16L) | data_->dwFileDateLS;
+        return (ptr_->dwFileDateMS << 16L) | ptr_->dwFileDateLS;
     }
 
-    VS_FIXEDFILEINFO_IMPL(const GuestVirtualAddress& pFixedFileInfo) : data_(pFixedFileInfo) {
-        if (unlikely(data_->dwSignature != FIXEDFILEINFO_SIGNATURE))
+    VS_FIXEDFILEINFO_IMPL(const guest_ptr<void>& pFixedFileInfo) : ptr_(pFixedFileInfo) {
+        if (unlikely(ptr_->dwSignature != FIXEDFILEINFO_SIGNATURE))
             throw PeException("Bad VS_FIXEDFILEINFO signature");
     }
 
   private:
-    guest_ptr<structs::_VS_FIXEDFILEINFO> data_;
+    guest_ptr<structs::_VS_FIXEDFILEINFO> ptr_;
 };
 
 } /* namespace pe */

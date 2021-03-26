@@ -37,23 +37,23 @@ struct _FILE_STANDARD_INFORMATION {
 
 class FILE_STANDARD_INFORMATION_IMPL final : public FILE_STANDARD_INFORMATION {
   public:
-    uint64_t AllocationSize() const override { return data_->AllocationSize; }
-    uint64_t EndOfFile() const override { return data_->EndOfFile; }
-    uint32_t NumberOfLinks() const override { return data_->NumberOfLinks; }
-    bool DeletePending() const override { return data_->DeletePending; }
-    bool Directory() const override { return data_->Directory; }
+    uint64_t AllocationSize() const override { return ptr_->AllocationSize; }
+    uint64_t EndOfFile() const override { return ptr_->EndOfFile; }
+    uint32_t NumberOfLinks() const override { return ptr_->NumberOfLinks; }
+    bool DeletePending() const override { return ptr_->DeletePending; }
+    bool Directory() const override { return ptr_->Directory; }
 
-    void AllocationSize(uint64_t value) override { data_->AllocationSize = value; }
-    void EndOfFile(uint64_t value) override { data_->EndOfFile = value; }
-    void NumberOfLinks(uint32_t value) override { data_->NumberOfLinks = value; }
-    void DeletePending(bool value) override { data_->DeletePending = value; }
-    void Directory(bool value) override { data_->Directory = value; }
+    void AllocationSize(uint64_t value) override { ptr_->AllocationSize = value; }
+    void EndOfFile(uint64_t value) override { ptr_->EndOfFile = value; }
+    void NumberOfLinks(uint32_t value) override { ptr_->NumberOfLinks = value; }
+    void DeletePending(bool value) override { ptr_->DeletePending = value; }
+    void Directory(bool value) override { ptr_->Directory = value; }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileStandardInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -61,12 +61,11 @@ class FILE_STANDARD_INFORMATION_IMPL final : public FILE_STANDARD_INFORMATION {
 
     Json::Value json() const override;
 
-    FILE_STANDARD_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_STANDARD_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_STANDARD_INFORMATION> data_;
+    guest_ptr<structs::_FILE_STANDARD_INFORMATION> ptr_;
 };
 
 } // namespace nt

@@ -78,21 +78,21 @@ class HANDLE_TABLE_IMPL final : public HANDLE_TABLE {
 
     uint32_t NextHandleNeedingPool() const override;
 
-    HANDLE_TABLE_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva,
+    HANDLE_TABLE_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr,
                       bool isCidTable = false);
 
     ~HANDLE_TABLE_IMPL() override;
 
   private:
     void
-    parse_open_handles_l2(GuestVirtualAddress TableAddress,
+    parse_open_handles_l2(const guest_ptr<void>& TableAddress,
                           std::vector<std::unique_ptr<const HANDLE_TABLE_ENTRY>>& handles) const;
 
-    void parse_open_handles_l1(GuestVirtualAddress TableAddress,
+    void parse_open_handles_l1(const guest_ptr<void>& TableAddress,
                                std::vector<std::unique_ptr<const HANDLE_TABLE_ENTRY>>& handles,
                                PtrType handle_start = 0) const;
 
-    void parse_open_handles_l0(GuestVirtualAddress TableAddress,
+    void parse_open_handles_l0(const guest_ptr<void>& TableAddress,
                                std::vector<std::unique_ptr<const HANDLE_TABLE_ENTRY>>& handles,
                                PtrType handle_start = 0) const;
 
@@ -103,7 +103,6 @@ class HANDLE_TABLE_IMPL final : public HANDLE_TABLE {
     using ObjectTable = std::map<uint64_t, std::unique_ptr<OBJECT>>;
 
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
     const structs::HANDLE_TABLE* const offsets_;
     const structs::HANDLE_TABLE_ENTRY* const handle_table_entry_;
     const bool isPspCidTable;

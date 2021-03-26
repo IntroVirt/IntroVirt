@@ -42,7 +42,7 @@ class MEMORY_BASIC_INFORMATION : public MEMORY_INFORMATION {
     virtual MEMORY_ALLOCATION_TYPE Type() const = 0;
 
     static std::unique_ptr<MEMORY_BASIC_INFORMATION>
-    make_unique(const NtKernel& kernel, const GuestVirtualAddress& gva, uint32_t buffer_size);
+    make_unique(const NtKernel& kernel, const guest_ptr<void>& ptr, uint32_t buffer_size);
 };
 
 } // namespace nt
@@ -51,13 +51,10 @@ class MEMORY_BASIC_INFORMATION : public MEMORY_INFORMATION {
 namespace inject {
 
 template <>
-class GuestAllocation<windows::nt::MEMORY_BASIC_INFORMATION>
+class GuestAllocation<windows::nt::MEMORY_BASIC_INFORMATION> final
     : public GuestAllocationComplexBase<windows::nt::MEMORY_BASIC_INFORMATION> {
   public:
-    explicit GuestAllocation();
-
-  private:
-    std::optional<GuestAllocation<uint8_t[]>> buffer_;
+    GuestAllocation();
 };
 
 } // namespace inject

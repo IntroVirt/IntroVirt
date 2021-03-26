@@ -16,6 +16,7 @@
 #pragma once
 
 #include <introvirt/core/arch/fwd.hh>
+#include <type_traits>
 
 /**
  * @brief Core IntroVirt classes
@@ -69,12 +70,60 @@ class TaskFilter;
 
 class FunctionCall;
 
-class GuestAddress;
 class GuestMemoryMapping;
-class GuestPhysicalAddress;
-class GuestVirtualAddress;
 
 class SystemCall;
 class SystemCallFilter;
+
+/* Dummy class used for automatically getting the correct size */
+class guest_size_t;
+using guest_ptr_t = guest_size_t;
+
+template <typename _Tp>
+struct identity {
+    using type = _Tp;
+};
+
+template <typename _Tp>
+struct remove_all_pointers
+    : std::conditional_t<std::is_pointer_v<_Tp>, remove_all_pointers<std::remove_pointer_t<_Tp>>,
+                         identity<_Tp>> {};
+
+template <typename _Tp>
+using remove_all_pointers_t = typename remove_all_pointers<_Tp>::type;
+
+template <typename _Tp, typename Enable = void>
+struct is_guest_size : std::false_type {};
+
+template <typename _Tp>
+struct is_guest_size<
+    _Tp,
+    std::enable_if_t<std::is_same_v<
+        guest_size_t, std::remove_const_t<remove_all_pointers_t<std::remove_all_extents_t<_Tp>>>>>>
+    : std::true_type {};
+
+template <typename _Tp>
+inline constexpr bool is_guest_size_v = is_guest_size<_Tp>::value;
+
+// Some tests
+static_assert(is_guest_size_v<guest_size_t>, "guest_size_t failed check");
+static_assert(is_guest_size_v<guest_size_t[]>, "guest_size_t failed check");
+static_assert(is_guest_size_v<const guest_size_t>, "guest_size_t failed check");
+static_assert(is_guest_size_v<const guest_size_t[]>, "guest_size_t failed check");
+static_assert(is_guest_size_v<guest_size_t*>, "guest_size_t failed check");
+static_assert(is_guest_size_v<const guest_size_t**>, "guest_size_t failed check");
+static_assert(is_guest_size_v<const guest_size_t*[]>, "guest_size_t failed check");
+
+template <typename _Tp, typename _PtrType, bool _Physical, typename _Enabled = void>
+class basic_guest_ptr;
+
+template <typename _Tp, typename _PtrType, bool _Physical>
+class basic_guest_ptr<_Tp, _PtrType, _Physical, std::enable_if_t<is_guest_size_v<_Tp>>>;
+
+template <typename _Tp, typename _PtrType = void>
+using guest_ptr = basic_guest_ptr<_Tp, _PtrType, false>;
+
+template <typename _Tp, typename _PtrType = void>
+using guest_phys_ptr = basic_guest_ptr<_Tp, _PtrType, true>;
 
 } // namespace introvirt

@@ -25,10 +25,9 @@ template <typename PtrType>
 class PROCESS_IMAGE_FILE_NAME_WIN32_INFORMATION_IMPL
     : public PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL<PtrType> {
   public:
-    PROCESS_IMAGE_FILE_NAME_WIN32_INFORMATION_IMPL(const GuestVirtualAddress& gva,
-                                                   uint32_t buffer_size)
+    PROCESS_IMAGE_FILE_NAME_WIN32_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL<PtrType>(
-              PROCESS_INFORMATION_CLASS::ProcessImageFileNameWin32, gva, buffer_size) {}
+              PROCESS_INFORMATION_CLASS::ProcessImageFileNameWin32, ptr, buffer_size) {}
 };
 
 } // namespace nt

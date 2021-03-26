@@ -84,7 +84,7 @@ class ThreadArrayImpl final : public ThreadArrayImplBase<PtrType> {
         return result;
     }
 
-    ThreadArrayImpl(const GuestVirtualAddress pEntryCount, const GuestVirtualAddress& pFirstEntry,
+    ThreadArrayImpl(const guest_ptr<void> pEntryCount, const guest_ptr<void>& pFirstEntry,
                     uint32_t buffer_size)
         : ThreadArrayImplBase<PtrType>(pEntryCount, pFirstEntry), buffer_size_(buffer_size) {
 
@@ -97,77 +97,80 @@ class ThreadArrayImpl final : public ThreadArrayImplBase<PtrType> {
 
 template <typename PtrType>
 class SYSTEM_PROCESS_INFORMATION_ENTRY_IMPL final : public SYSTEM_PROCESS_INFORMATION_ENTRY {
+
+    using _SYSTEM_PROCESS_INFORMATION = structs::_SYSTEM_PROCESS_INFORMATION<PtrType>;
+
   public:
-    uint32_t NextEntryOffset() const override { return this->data_->NextEntryOffset; }
+    uint32_t NextEntryOffset() const override { return this->ptr_->NextEntryOffset; }
     void NextEntryOffset(uint32_t NextEntryOffset) override {
-        this->data_->NextEntryOffset = NextEntryOffset;
+        this->ptr_->NextEntryOffset = NextEntryOffset;
     };
 
-    uint32_t NumberOfThreads() const override { return this->data_->NumberOfThreads; }
+    uint32_t NumberOfThreads() const override { return this->ptr_->NumberOfThreads; }
     void NumberOfThreads(uint32_t NumberOfThreads) override {
-        this->data_->NumberOfThreads = NumberOfThreads;
+        this->ptr_->NumberOfThreads = NumberOfThreads;
     }
 
-    int64_t WorkingSetPrivateSize() const override { return this->data_->WorkingSetPrivateSize; }
+    int64_t WorkingSetPrivateSize() const override { return this->ptr_->WorkingSetPrivateSize; }
     void WorkingSetPrivateSize(int64_t WorkingSetPrivateSize) override {
-        this->data_->WorkingSetPrivateSize = WorkingSetPrivateSize;
+        this->ptr_->WorkingSetPrivateSize = WorkingSetPrivateSize;
     }
 
-    uint32_t HardFaultCount() const override { return this->data_->HardFaultCount; }
+    uint32_t HardFaultCount() const override { return this->ptr_->HardFaultCount; }
     void HardFaultCount(uint32_t HardFaultCount) override {
-        this->data_->HardFaultCount = HardFaultCount;
+        this->ptr_->HardFaultCount = HardFaultCount;
     }
 
     uint32_t NumberOfThreadsHighWatermark() const override {
-        return this->data_->NumberOfThreadsHighWatermark;
+        return this->ptr_->NumberOfThreadsHighWatermark;
     }
     void NumberOfThreadsHighWatermark(uint32_t NumberOfThreadsHighWatermark) override {
-        this->data_->NumberOfThreadsHighWatermark = NumberOfThreadsHighWatermark;
+        this->ptr_->NumberOfThreadsHighWatermark = NumberOfThreadsHighWatermark;
     }
 
-    int64_t CycleTime() const override { return this->data_->CycleTime; }
-    void CycleTime(int64_t CycleTime) override { this->data_->CycleTime = CycleTime; }
+    int64_t CycleTime() const override { return this->ptr_->CycleTime; }
+    void CycleTime(int64_t CycleTime) override { this->ptr_->CycleTime = CycleTime; }
 
     WindowsTime CreateTime() const override {
-        return WindowsTime::from_windows_time(this->data_->CreateTime);
+        return WindowsTime::from_windows_time(this->ptr_->CreateTime);
     }
     void CreateTime(WindowsTime CreateTime) override {
-        this->data_->CreateTime = CreateTime.windows_time();
+        this->ptr_->CreateTime = CreateTime.windows_time();
     }
 
-    int64_t UserTime() const override { return this->data_->UserTime; }
-    void UserTime(int64_t UserTime) override { this->data_->UserTime = UserTime; }
+    int64_t UserTime() const override { return this->ptr_->UserTime; }
+    void UserTime(int64_t UserTime) override { this->ptr_->UserTime = UserTime; }
 
-    int64_t KernelTime() const override { return this->data_->KernelTime; }
-    void KernelTime(int64_t KernelTime) override { this->data_->KernelTime = KernelTime; }
+    int64_t KernelTime() const override { return this->ptr_->KernelTime; }
+    void KernelTime(int64_t KernelTime) override { this->ptr_->KernelTime = KernelTime; }
 
     std::string ImageName() const override { return ImageName_->utf8(); }
     void ImageName(const std::string& ImageName) override { ImageName_->set(ImageName); }
 
-    int32_t BasePriority() const override { return this->data_->BasePriority; }
-    void BasePriority(int32_t BasePriority) override { this->data_->BasePriority = BasePriority; }
+    int32_t BasePriority() const override { return this->ptr_->BasePriority; }
+    void BasePriority(int32_t BasePriority) override { this->ptr_->BasePriority = BasePriority; }
 
-    uint64_t UniqueProcessId() const override { return this->data_->UniqueProcessId; }
+    uint64_t UniqueProcessId() const override { return this->ptr_->UniqueProcessId; }
     void UniqueProcessId(uint64_t UniqueProcessId) override {
-        this->data_->UniqueProcessId = UniqueProcessId;
+        this->ptr_->UniqueProcessId = UniqueProcessId;
     }
 
     uint64_t InheritedFromUniqueProcessId() const override {
-        return this->data_->InheritedFromUniqueProcessId;
+        return this->ptr_->InheritedFromUniqueProcessId;
     }
     void InheritedFromUniqueProcessId(uint64_t InheritedFromUniqueProcessId) override {
-        this->data_->InheritedFromUniqueProcessId = InheritedFromUniqueProcessId;
+        this->ptr_->InheritedFromUniqueProcessId = InheritedFromUniqueProcessId;
     }
 
-    uint32_t HandleCount() const override { return this->data_->HandleCount; }
-    void HandleCount(uint32_t HandleCount) override { this->data_->HandleCount = HandleCount; }
+    uint32_t HandleCount() const override { return this->ptr_->HandleCount; }
+    void HandleCount(uint32_t HandleCount) override { this->ptr_->HandleCount = HandleCount; }
 
-    uint32_t SessionId() const override { return this->data_->SessionId; }
-    void SessionId(uint32_t SessionId) override { this->data_->SessionId = SessionId; }
+    uint32_t SessionId() const override { return this->ptr_->SessionId; }
+    void SessionId(uint32_t SessionId) override { this->ptr_->SessionId = SessionId; }
 
-    uint32_t UniqueProcessKey() const override { return this->data_->UniqueProcessKey; }
+    uint32_t UniqueProcessKey() const override { return this->ptr_->UniqueProcessKey; }
     void UniqueProcessKey(uint32_t UniqueProcessKey) override {
-        this->data_->UniqueProcessKey = UniqueProcessKey;
+        this->ptr_->UniqueProcessKey = UniqueProcessKey;
     }
 
     const IO_COUNTERS& IOCounters() const override { return *IOCounters_; }
@@ -176,10 +179,9 @@ class SYSTEM_PROCESS_INFORMATION_ENTRY_IMPL final : public SYSTEM_PROCESS_INFORM
     const VM_COUNTERS& VMCounters() const override { return *VMCounters_; }
     VM_COUNTERS& VMCounters() override { return *VMCounters_; }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
     uint32_t buffer_size() const override {
-        return offsetof(structs::_SYSTEM_PROCESS_INFORMATION<PtrType>, Threads) +
-               Threads().buffer_size();
+        return offsetof(_SYSTEM_PROCESS_INFORMATION, Threads) + Threads().buffer_size();
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
@@ -190,41 +192,34 @@ class SYSTEM_PROCESS_INFORMATION_ENTRY_IMPL final : public SYSTEM_PROCESS_INFORM
     }
     SYSTEM_PROCESS_INFORMATION_ENTRY::ThreadArray& Threads() override { return *Threads_; }
 
-    SYSTEM_PROCESS_INFORMATION_ENTRY_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
-        : gva_(gva) {
+    SYSTEM_PROCESS_INFORMATION_ENTRY_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size) {
 
-        if (unlikely(buffer_size < sizeof(structs::_SYSTEM_PROCESS_INFORMATION<PtrType>)))
-            throw BufferTooSmallException(sizeof(structs::_SYSTEM_PROCESS_INFORMATION<PtrType>),
-                                          buffer_size);
+        if (unlikely(buffer_size < sizeof(_SYSTEM_PROCESS_INFORMATION)))
+            throw BufferTooSmallException(sizeof(_SYSTEM_PROCESS_INFORMATION), buffer_size);
 
-        data_.reset(gva_);
-        ImageName_.emplace(gva_ +
-                           offsetof(structs::_SYSTEM_PROCESS_INFORMATION<PtrType>, ImageName));
+        ptr_.reset(ptr);
+        ImageName_.emplace(ptr + offsetof(_SYSTEM_PROCESS_INFORMATION, ImageName));
 
-        VMCounters_.emplace(gva_ +
-                            offsetof(structs::_SYSTEM_PROCESS_INFORMATION<PtrType>, VMCounters));
+        VMCounters_.emplace(ptr + offsetof(_SYSTEM_PROCESS_INFORMATION, VMCounters));
 
-        IOCounters_.emplace(gva_ +
-                            offsetof(structs::_SYSTEM_PROCESS_INFORMATION<PtrType>, IOCounters));
+        IOCounters_.emplace(ptr + offsetof(_SYSTEM_PROCESS_INFORMATION, IOCounters));
 
-        auto pThreads = gva_ + offsetof(structs::_SYSTEM_PROCESS_INFORMATION<PtrType>, Threads);
+        auto pThreads = ptr + offsetof(_SYSTEM_PROCESS_INFORMATION, Threads);
 
-        GuestVirtualAddress pEndThreads;
+        guest_ptr<void> pEndThreads;
         if (NextEntryOffset()) {
             pEndThreads = pThreads + NextEntryOffset();
         } else {
             // Last entry in the buffer
-            pEndThreads = gva_ + buffer_size;
+            pEndThreads = ptr + buffer_size;
         }
 
-        Threads_.emplace(
-            gva + offsetof(structs::_SYSTEM_PROCESS_INFORMATION<PtrType>, NumberOfThreads),
-            pThreads, pEndThreads - pThreads);
+        Threads_.emplace(ptr + offsetof(_SYSTEM_PROCESS_INFORMATION, NumberOfThreads), pThreads,
+                         pEndThreads.address() - pThreads.address());
     }
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_SYSTEM_PROCESS_INFORMATION<PtrType>> data_;
+    guest_ptr<_SYSTEM_PROCESS_INFORMATION> ptr_;
     std::optional<UNICODE_STRING_IMPL<PtrType>> ImageName_;
     std::optional<IO_COUNTERS_IMPL> IOCounters_;
     std::optional<VM_COUNTERS_IMPL<PtrType>> VMCounters_;

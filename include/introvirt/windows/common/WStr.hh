@@ -56,51 +56,45 @@ class WStr : public Utf16String {
     /**
      * @brief Get the address of the buffer in the guest
      */
-    GuestVirtualAddress address() const;
+    guest_ptr<void> ptr() const;
 
     /**
      * @brief Parse a UTF16LE string from guest memory
      *
      * This version attemps to automatically determine the size of the string
      *
-     * @param gva The virtual address of the string.
+     * @param ptr The virtual address of the string.
      */
-    WStr(const GuestVirtualAddress& gva);
+    WStr(const guest_ptr<void>& ptr);
 
     /**
      * @brief Parse a UTF16LE string from guest memory
      *
      * This version attemps to automatically determine the size of the string
      *
-     * @param gva The virtual address of the string.
+     * @param ptr The virtual address of the string.
      * @param buffer_size The maximum size of the buffer
      */
-    WStr(const GuestVirtualAddress& gva, size_t buffer_size);
+    WStr(const guest_ptr<void>& ptr, size_t buffer_size);
 
     /**
      * @brief Parse a UTF16LE string from guest memory
      *
      * This version explicitly sets the size of the string
      *
-     * @param gva The virtual address of the string.
-     * @param len The length of the string in bytes
+     * @param ptr The virtual address of the string.
      * @param buffer_size The size to map, or 0 to use the size of the string
-     */
-    WStr(const GuestVirtualAddress& gva, size_t len, size_t buffer_size);
-
-    /*
-     * Create a UTF16LE string from already-mapped guest memory
      * @param len The length of the string in bytes
      */
-    WStr(guest_ptr<uint8_t[]>&& buffer, size_t len = 0);
+    WStr(const guest_ptr<void>& ptr, size_t buffer_size, size_t len);
 
     WStr(WStr&&) noexcept;
     WStr& operator=(WStr&&) noexcept;
     ~WStr() override;
 
   private:
-    class IMPL;
-    std::unique_ptr<IMPL> pImpl_;
+    guest_ptr<char16_t[]> buf_;
+    size_t len_;
 };
 
 } /* namespace windows */

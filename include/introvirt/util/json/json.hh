@@ -2301,7 +2301,7 @@ JSON_API OStream& operator<<(OStream&, const Value& root);
     {                                                                                              \
         OStringStream oss;                                                                         \
         oss << message;                                                                            \
-        assert(false && oss.str().c_str());                                                        \
+        introvirt_assert(false, oss.str().c_str());                                                \
         abort();                                                                                   \
     }
 

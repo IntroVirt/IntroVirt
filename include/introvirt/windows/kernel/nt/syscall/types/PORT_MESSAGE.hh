@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/json/json.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
@@ -48,7 +48,7 @@ class PORT_MESSAGE {
 
     virtual uint32_t CallbackId() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     // The size of the LPC_MESSAGE header
     virtual uint64_t HeaderSize() const = 0;
@@ -58,7 +58,7 @@ class PORT_MESSAGE {
     virtual Json::Value json() const = 0;
 
     static std::unique_ptr<PORT_MESSAGE> make_unique(const NtKernel& kernel,
-                                                     const GuestVirtualAddress& gva);
+                                                     const guest_ptr<void>& ptr);
 
     virtual ~PORT_MESSAGE() = default;
 };

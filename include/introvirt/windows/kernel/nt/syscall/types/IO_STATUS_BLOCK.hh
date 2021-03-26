@@ -17,7 +17,7 @@
 
 #include <introvirt/core/fwd.hh>
 #include <introvirt/core/injection/GuestAllocation.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/json/json.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
@@ -74,13 +74,13 @@ class IO_STATUS_BLOCK {
     /**
      * @returns The virtual address of the structure
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
     virtual Json::Value json() const = 0;
 
     static std::unique_ptr<IO_STATUS_BLOCK> make_unique(const NtKernel& kernel,
-                                                        const GuestVirtualAddress& gva);
+                                                        const guest_ptr<void>& ptr);
 
     virtual ~IO_STATUS_BLOCK() = default;
 };
@@ -89,17 +89,12 @@ class IO_STATUS_BLOCK {
 } /* namespace windows */
 
 namespace inject {
-
 template <>
-class GuestAllocation<windows::nt::IO_STATUS_BLOCK>
+class GuestAllocation<windows::nt::IO_STATUS_BLOCK> final
     : public GuestAllocationComplexBase<windows::nt::IO_STATUS_BLOCK> {
   public:
-    explicit GuestAllocation();
-
-  private:
-    std::optional<GuestAllocation<uint8_t[]>> buffer_;
+    GuestAllocation();
 };
-
-} // namespace inject
+} /* namespace inject */
 
 } /* namespace introvirt */

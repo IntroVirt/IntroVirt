@@ -59,12 +59,11 @@ Json::Value FILE_IO_COMPLETION_INFORMATION_IMPL<PtrType>::json() const {
 }
 
 std::unique_ptr<FILE_IO_COMPLETION_INFORMATION>
-FILE_IO_COMPLETION_INFORMATION::make_unique(const NtKernel& kernel,
-                                            const GuestVirtualAddress& gva) {
+FILE_IO_COMPLETION_INFORMATION::make_unique(const NtKernel& kernel, const guest_ptr<void>& ptr) {
     if (kernel.x64()) {
-        return std::make_unique<FILE_IO_COMPLETION_INFORMATION_IMPL<uint64_t>>(gva);
+        return std::make_unique<FILE_IO_COMPLETION_INFORMATION_IMPL<uint64_t>>(ptr);
     } else {
-        return std::make_unique<FILE_IO_COMPLETION_INFORMATION_IMPL<uint32_t>>(gva);
+        return std::make_unique<FILE_IO_COMPLETION_INFORMATION_IMPL<uint32_t>>(ptr);
     }
 }
 

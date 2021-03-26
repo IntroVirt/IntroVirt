@@ -1,0 +1,85 @@
+{
+    "CONDITIONPROC": {
+        "note": "Function Pointer",
+        "redirect": "void"
+    },
+    "FD_SET": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/FD_SET.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "HOSTENT": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/HOSTENT.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "OVERLAPPED": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/OVERLAPPED.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "QOS": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/QOS.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "SOCKET": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/SOCKET.hh>"
+        ],
+        "size_t": true,
+        "extends": "builtin_type"
+    },
+    "SOCKADDR": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/SOCKADDR.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "TIMEVAL": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/TIMEVAL.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "TRANSMIT_FILE_BUFFERS": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/TRANSMIT_FILE_BUFFERS.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "WSABUF": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/WSABUF.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "WSADATA": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/WSADATA.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "WSAOVERLAPPED": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/WSAOVERLAPPED.hh>"
+        ],
+        "extends": "class_method_make_shared_64check"
+    },
+    "WSAOVERLAPPED_COMPLETION_ROUTINE": {
+        "note": "Function Pointer",
+        "redirect": "void"
+    },
+    "WSAPROTOCOL_INFOA": {
+        "TODO": "Implement this",
+        "redirect": "void"
+    },
+    "WSAPROTOCOL_INFOW": {
+        "TODO": "Implement this",
+        "redirect": "void"
+    }
+}

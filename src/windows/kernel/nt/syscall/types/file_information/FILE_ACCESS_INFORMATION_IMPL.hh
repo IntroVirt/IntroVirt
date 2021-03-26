@@ -15,7 +15,9 @@
  */
 #pragma once
 
+#include <introvirt/core/exception/BufferTooSmallException.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
+#include <introvirt/util/compiler.hh>
 #include <introvirt/windows/kernel/nt/syscall/types/file_information/FILE_ACCESS_INFORMATION.hh>
 
 namespace introvirt {
@@ -32,28 +34,42 @@ struct _FILE_ACCESS_INFORMATION {
 
 class FILE_ACCESS_INFORMATION_IMPL final : public FILE_ACCESS_INFORMATION {
   public:
-    FILE_ACCESS_MASK AccessFlags() const override { return data_->AccessFlags; }
+    FILE_ACCESS_MASK AccessFlags() const override { return ptr_->AccessFlags; }
 
-    void AccessFlags(FILE_ACCESS_MASK value) override { data_->AccessFlags = value; }
+    void AccessFlags(FILE_ACCESS_MASK value) override { ptr_->AccessFlags = value; }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileAccessInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
-    void write(std::ostream& os, const std::string& linePrefix = "") const override;
+    void write(std::ostream& os, const std::string& linePrefix = "") const override {
+        os << linePrefix << "FileInformationClass: " << FileInformationClass() << '\n';
+        os << linePrefix << "AccessFlags: " << AccessFlags() << '\n';
+    }
 
-    Json::Value json() const override;
+    Json::Value json() const override {
+        Json::Value result;
+        result["FileInformationClass"] = to_string(FileInformationClass());
+        result["AccessFlags"] = AccessFlags().json();
+        return result;
+    }
 
-    FILE_ACCESS_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_ACCESS_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
+        : buffer_size_(buffer_size) {
+
+        if (unlikely(buffer_size < sizeof(structs::_FILE_ACCESS_INFORMATION)))
+            throw BufferTooSmallException(sizeof(structs::_FILE_ACCESS_INFORMATION), buffer_size);
+
+        ptr_.reset(ptr);
+    }
 
   private:
-    const GuestVirtualAddress gva_;
+    guest_ptr<structs::_FILE_ACCESS_INFORMATION> ptr_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_ACCESS_INFORMATION> data_;
 };
 
 } // namespace nt

@@ -20,8 +20,6 @@
 #include <introvirt/core/arch/arch.hh>
 #include <introvirt/core/exception/NotImplementedException.hh>
 #include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
-#include <introvirt/core/memory/GuestPhysicalAddress.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/core/syscall/SystemCallFilter.hh>
 #include <introvirt/util/compiler.hh>
@@ -78,8 +76,7 @@ x86::Segment VcpuImpl::segment(x86::SegmentSelector sel) const {
 x86::SegmentDescriptorTable VcpuImpl::global_descriptor_table() const {
     // Get the GDT base and limit from the registers
     const auto& regs = registers();
-    return x86::SegmentDescriptorTable(GuestVirtualAddress(*this, regs.gdtr_base()),
-                                       regs.gdtr_limit());
+    return x86::SegmentDescriptorTable(guest_ptr<void>(*this, regs.gdtr_base()), regs.gdtr_limit());
 }
 
 x86::SegmentDescriptorTable VcpuImpl::local_descriptor_table() const {
@@ -88,7 +85,7 @@ x86::SegmentDescriptorTable VcpuImpl::local_descriptor_table() const {
 
     const auto ldt = regs.ldt();
 
-    return x86::SegmentDescriptorTable(GuestVirtualAddress(*this, ldt.base()), ldt.limit());
+    return x86::SegmentDescriptorTable(guest_ptr<void>(*this, ldt.base()), ldt.limit());
 }
 
 std::unique_ptr<const x86::Idt> VcpuImpl::interrupt_descriptor_table() const {

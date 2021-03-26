@@ -38,13 +38,13 @@ void PS_ATTRIBUTE_IMPL<PtrType>::write(std::ostream& os, const std::string& line
     case PS_ATTRIBUTE_NUM::PsAttributeClientId:
         // TODO: Create a PsAttributeClientId to hold this
         if (Value() != 0u) {
-            CLIENT_ID_IMPL<PtrType> cid(gva_.create(Value()));
+            CLIENT_ID_IMPL<PtrType> cid(ptr_->ValuePtr.get(ptr_));
             cid.write(os, linePrefix + "  ");
         }
         break;
     case PS_ATTRIBUTE_NUM::PsAttributeImageName: {
         // TODO: Create a PsAttributeImageName class to hold this
-        WStr imageName(address().create(Value()), Size());
+        WStr imageName(ptr_->ValuePtr.get(ptr_), Size());
         os << linePrefix << "  " << imageName << '\n';
         break;
     }
@@ -90,7 +90,7 @@ Json::Value PS_ATTRIBUTE_IMPL<PtrType>::json() const {
         break;
     case PS_ATTRIBUTE_NUM::PsAttributeImageName: {
         // TODO: Create a PsAttributeImageName class to hold this
-        WStr imageName(address().create(Value()), Size());
+        WStr imageName(ptr_->ValuePtr.get(ptr_), Size());
         result["Value"] = imageName.utf8();
         break;
     }

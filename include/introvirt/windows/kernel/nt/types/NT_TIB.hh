@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <cstdint>
@@ -30,8 +30,8 @@ namespace nt {
  */
 class NT_TIB {
   public:
-    virtual GuestVirtualAddress StackLimit() const = 0;
-    virtual GuestVirtualAddress StackBase() const = 0;
+    virtual guest_ptr<void> StackLimit() const = 0;
+    virtual guest_ptr<void> StackBase() const = 0;
 
     virtual ~NT_TIB() = default;
 };

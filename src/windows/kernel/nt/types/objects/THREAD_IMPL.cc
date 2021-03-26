@@ -78,9 +78,9 @@ void THREAD_IMPL<PtrType>::Priority(int8_t priority) {
 }
 
 template <typename PtrType>
-GuestVirtualAddress THREAD_IMPL<PtrType>::Win32StartAddress() const {
+guest_ptr<void> THREAD_IMPL<PtrType>::Win32StartAddress() const {
     // TODO: The resulting VCPU should probably be based on the process' address space
-    return this->address().create(offsets_->Win32StartAddress.get<PtrType>(buffer_.get()));
+    return this->ptr_.clone(offsets_->Win32StartAddress.get<PtrType>(buffer_.get()));
 }
 
 template <typename PtrType>
@@ -143,8 +143,7 @@ const TEB* THREAD_IMPL<PtrType>::Teb() const {
     std::lock_guard lock(mtx_);
     if (!Teb_) {
         // TODO: If the thread doesn't have a process we need to deal with that somehow
-        const GuestVirtualAddress pTeb(
-            this->gva_.create(offsets_->Tcb.Teb.get<PtrType>(buffer_.get())));
+        const guest_ptr<void> pTeb(this->ptr_.clone(offsets_->Tcb.Teb.get<PtrType>(buffer_.get())));
 
         if (pTeb)
             Teb_.emplace(kernel_, pTeb);
@@ -280,23 +279,22 @@ void THREAD_IMPL<PtrType>::DisableDynamicCodeOptOut(bool DisableDynamicCodeOptOu
 }
 
 template <typename PtrType>
-THREAD_IMPL<PtrType>::THREAD_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                  const GuestVirtualAddress& gva)
-    : DISPATCHER_OBJECT_IMPL<PtrType, THREAD>(kernel, gva, ObjectType::Thread), kernel_(kernel),
-      offsets_(LoadOffsets<structs::ETHREAD>(kernel)), Cid_(gva + offsets_->Cid.offset()) {
+THREAD_IMPL<PtrType>::THREAD_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
+    : DISPATCHER_OBJECT_IMPL<PtrType, THREAD>(kernel, ptr, ObjectType::Thread), kernel_(kernel),
+      offsets_(LoadOffsets<structs::ETHREAD>(kernel)), Cid_(ptr + offsets_->Cid.offset()) {
 
-    buffer_.reset(gva, offsets_->size());
+    buffer_.reset(ptr, offsets_->size());
 
     // Load up the PROCESS instance
     const auto pProcess =
-        this->gva_.create(offsets_->Tcb.ApcState.Process.get<PtrType>(buffer_.get()));
+        this->ptr_.clone(offsets_->Tcb.ApcState.Process.get<PtrType>(buffer_.get()));
 
     // Get the process from the kernel cache
     Process_ = kernel_.process(pProcess);
 
     // Use the DTB from the process
-    if (Process_) {
-        this->gva_.page_directory(Process_->DirectoryTableBase());
+    if (Process_ && Process_->DirectoryTableBase() != this->ptr_.page_directory()) {
+        this->ptr_.reset(this->ptr_.domain(), this->ptr_.address(), Process_->DirectoryTableBase());
     }
 }
 
@@ -305,31 +303,30 @@ THREAD_IMPL<PtrType>::THREAD_IMPL(const NtKernelImpl<PtrType>& kernel,
                                   std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header)
     : DISPATCHER_OBJECT_IMPL<PtrType, THREAD>(kernel, std::move(object_header), ObjectType::Thread),
       kernel_(kernel), offsets_(LoadOffsets<structs::ETHREAD>(kernel)),
-      Cid_(OBJECT_IMPL<PtrType, THREAD>::address() + offsets_->Cid.offset()) {
+      Cid_(this->ptr_ + offsets_->Cid.offset()) {
 
-    buffer_.reset(OBJECT_IMPL<PtrType, THREAD>::address(), offsets_->size());
+    buffer_.reset(this->ptr_, offsets_->size());
 
     // Load up the PROCESS instance
-    const auto pProcess = OBJECT_IMPL<PtrType, THREAD>::address().create(
-        offsets_->Tcb.ApcState.Process.get<PtrType>(buffer_.get()));
+    const auto pProcess =
+        this->ptr_.clone(offsets_->Tcb.ApcState.Process.get<PtrType>(buffer_.get()));
 
     // Get the process from the kernel cache
     Process_ = kernel_.process(pProcess);
 
     // Use the DTB from the process
-    if (Process_) {
-        this->gva_.page_directory(Process_->DirectoryTableBase());
+    if (Process_ && Process_->DirectoryTableBase() != this->ptr_.page_directory()) {
+        this->ptr_.reset(this->ptr_.domain(), this->ptr_.address(), Process_->DirectoryTableBase());
     }
 }
 
-std::shared_ptr<THREAD> THREAD::make_shared(const NtKernel& kernel,
-                                            const GuestVirtualAddress& gva) {
+std::shared_ptr<THREAD> THREAD::make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<THREAD_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<THREAD_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<THREAD> THREAD::make_shared(const NtKernel& kernel,

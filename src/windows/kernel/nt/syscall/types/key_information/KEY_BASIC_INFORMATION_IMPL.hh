@@ -39,24 +39,24 @@ static_assert(sizeof(_KEY_BASIC_INFORMATION) == 0x10);
 class KEY_BASIC_INFORMATION_IMPL final : public KEY_BASIC_INFORMATION {
   public:
     WindowsTime LastWriteTime() const override {
-        return WindowsTime::from_windows_time(data_->LastWriteTime);
+        return WindowsTime::from_windows_time(ptr_->LastWriteTime);
     }
-    void LastWriteTime(WindowsTime value) override { data_->LastWriteTime = value.windows_time(); }
+    void LastWriteTime(WindowsTime value) override { ptr_->LastWriteTime = value.windows_time(); }
 
-    uint32_t TitleIndex() const override { return data_->TitleIndex; }
-    void TitleIndex(uint32_t value) override { data_->TitleIndex = value; }
+    uint32_t TitleIndex() const override { return ptr_->TitleIndex; }
+    void TitleIndex(uint32_t value) override { ptr_->TitleIndex = value; }
 
     const std::string& Name() const override { return Name_->utf8(); }
     void Name(const std::string& value) override {
         Name_->set(value);
-        data_->NameLength = Name_->Length();
+        ptr_->NameLength = Name_->Length();
     }
 
     KEY_INFORMATION_CLASS KeyInformationClass() const override {
         return KEY_INFORMATION_CLASS::KeyBasicInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -64,12 +64,11 @@ class KEY_BASIC_INFORMATION_IMPL final : public KEY_BASIC_INFORMATION {
 
     Json::Value json() const override;
 
-    KEY_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    KEY_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_KEY_BASIC_INFORMATION> data_;
+    guest_ptr<structs::_KEY_BASIC_INFORMATION> ptr_;
     std::optional<WStr> Name_;
 };
 

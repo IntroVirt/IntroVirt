@@ -18,7 +18,7 @@
 #include <introvirt/windows/kernel/nt/const/SECURITY_IMPERSONATION_LEVEL.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 #include <memory>
@@ -43,7 +43,7 @@ class SECURITY_QUALITY_OF_SERVICE {
     virtual bool EffectiveOnly() const = 0;
     virtual void EffectiveOnly(bool EffectiveOnly) = 0;
 
-    static std::unique_ptr<SECURITY_QUALITY_OF_SERVICE> make_unique(const GuestVirtualAddress& gva);
+    static std::unique_ptr<SECURITY_QUALITY_OF_SERVICE> make_unique(const guest_ptr<void>& ptr);
 
     virtual ~SECURITY_QUALITY_OF_SERVICE() = default;
 };

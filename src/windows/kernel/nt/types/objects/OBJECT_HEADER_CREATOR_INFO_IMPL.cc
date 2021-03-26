@@ -29,10 +29,10 @@ uint64_t OBJECT_HEADER_CREATOR_INFO_IMPL<PtrType>::CreatorUniqueProcess() const 
 
 template <typename PtrType>
 OBJECT_HEADER_CREATOR_INFO_IMPL<PtrType>::OBJECT_HEADER_CREATOR_INFO_IMPL(
-    const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva)
+    const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
     : offsets_(LoadOffsets<structs::OBJECT_HEADER_CREATOR_INFO>(kernel)) {
 
-    buffer_ = guest_ptr<char[]>(gva, offsets_->size());
+    buffer_ = guest_ptr<char[]>(ptr, offsets_->size());
 }
 
 template class OBJECT_HEADER_CREATOR_INFO_IMPL<uint32_t>;

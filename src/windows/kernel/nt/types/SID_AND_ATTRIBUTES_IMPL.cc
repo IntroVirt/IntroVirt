@@ -17,62 +17,9 @@
 
 #include <introvirt/windows/kernel/nt/NtKernel.hh>
 
-#include <log4cxx/logger.h>
-
-static log4cxx::LoggerPtr
-    logger(log4cxx::Logger::getLogger("introvirt.windows.kernel.nt.types.SID_AND_ATTRIBUTES"));
-
 namespace introvirt {
 namespace windows {
 namespace nt {
-
-template <typename PtrType>
-GuestVirtualAddress SID_AND_ATTRIBUTES_IMPL<PtrType>::SidPtr() const {
-    return gva_.create(data_->Sid);
-}
-
-template <typename PtrType>
-void SID_AND_ATTRIBUTES_IMPL<PtrType>::SidPtr(const GuestVirtualAddress& gva) {
-    data_->Sid = gva.value();
-    sid.reset();
-}
-
-template <typename PtrType>
-SID_AND_ATTRIBUTES::SidAttributeFlags SID_AND_ATTRIBUTES_IMPL<PtrType>::Attributes() const {
-    return SidAttributeFlags(data_->Attributes);
-}
-
-template <typename PtrType>
-void SID_AND_ATTRIBUTES_IMPL<PtrType>::Attributes(SidAttributeFlags Attributes) {
-    data_->Attributes = Attributes;
-}
-
-template <typename PtrType>
-const SID* SID_AND_ATTRIBUTES_IMPL<PtrType>::Sid() const {
-    if (sid) {
-        return &(*sid);
-    }
-
-    // TODO: Can this actually happen?
-    return nullptr;
-}
-
-template <typename PtrType>
-SID_AND_ATTRIBUTES_IMPL<PtrType>::SID_AND_ATTRIBUTES_IMPL(const GuestVirtualAddress& gva)
-    : gva_(gva), data_(gva) {
-
-    const auto pSid = SidPtr();
-    if (pSid)
-        sid.emplace(pSid);
-}
-
-template <typename PtrType>
-Json::Value SID_AND_ATTRIBUTES_IMPL<PtrType>::json() const {
-    Json::Value result;
-    result["SID"] = Sid()->json();
-    result["Attributes"] = Attributes().value();
-    return result;
-}
 
 bool SID_AND_ATTRIBUTES::SidAttributeFlags::SE_GROUP_MANDATORY() const {
     return value_ & SID_AND_ATTRIBUTES_FLAGS::SE_GROUP_MANDATORY;
@@ -151,16 +98,13 @@ std::ostream& operator<<(std::ostream& os, SID_AND_ATTRIBUTES::SidAttributeFlags
     return os;
 }
 
-std::shared_ptr<SID_AND_ATTRIBUTES>
-SID_AND_ATTRIBUTES::make_shared(const NtKernel& kernel, const GuestVirtualAddress& gva) {
+std::shared_ptr<SID_AND_ATTRIBUTES> SID_AND_ATTRIBUTES::make_shared(const NtKernel& kernel,
+                                                                    const guest_ptr<void>& ptr) {
     if (kernel.x64())
-        return std::make_shared<SID_AND_ATTRIBUTES_IMPL<uint64_t>>(gva);
+        return std::make_shared<SID_AND_ATTRIBUTES_IMPL<uint64_t>>(ptr);
     else
-        return std::make_shared<SID_AND_ATTRIBUTES_IMPL<uint32_t>>(gva);
+        return std::make_shared<SID_AND_ATTRIBUTES_IMPL<uint32_t>>(ptr);
 }
-
-template class SID_AND_ATTRIBUTES_IMPL<uint32_t>;
-template class SID_AND_ATTRIBUTES_IMPL<uint64_t>;
 
 } // namespace nt
 } // namespace windows

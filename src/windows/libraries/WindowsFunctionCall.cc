@@ -16,6 +16,7 @@
 #include <introvirt/core/domain/Vcpu.hh>
 #include <introvirt/core/event/Event.hh>
 #include <introvirt/core/exception/InvalidMethodException.hh>
+#include <introvirt/util/introvirt_assert.hh>
 #include <introvirt/windows/event/WindowsEvent.hh>
 #include <introvirt/windows/kernel/nt/types/KPCR.hh>
 #include <introvirt/windows/kernel/nt/types/objects/PROCESS.hh>
@@ -23,8 +24,6 @@
 #include <introvirt/windows/libraries/WindowsFunctionCall.hh>
 
 #include <log4cxx/logger.h>
-
-#include <cassert>
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -35,18 +34,11 @@ namespace windows {
 static log4cxx::LoggerPtr
     logger(log4cxx::Logger::getLogger("introvirt.windows.function.WindowsFunctionCall"));
 
-GuestVirtualAddress WindowsFunctionCall::return_address() const {
-    if (stack32_.get())
-        return stack_ptr_.create(stack32_[0]);
-    return stack_ptr_.create(stack64_[0]);
-}
-void WindowsFunctionCall::return_address(const GuestVirtualAddress& value) {
-    assert(!returned());
-
-    if (stack32_.get())
-        stack32_[0] = value.value();
-    else
-        stack64_[0] = value.value();
+guest_ptr<void> WindowsFunctionCall::return_address() const { return stack_.clone(stack_.at(0)); }
+void WindowsFunctionCall::return_address(const guest_ptr<void>& value) {
+    introvirt_assert(!returned(),
+                     "return_address cannot be changed after the return already occurred");
+    stack_.set(0, value.address());
 }
 
 bool WindowsFunctionCall::returned() const { return returned_; }
@@ -70,7 +62,7 @@ void WindowsFunctionCall::handle_return(Event& event) {
     raw_return_value_ = event_->vcpu().registers().rax();
 
     // Mask off high bits for 32-bit function handlers
-    if (stack32_.get())
+    if (!x64())
         raw_return_value_ &= 0xFFFFFFFF;
 }
 
@@ -90,7 +82,7 @@ void WindowsFunctionCall::raw_return_value(uint64_t value) {
     }
 
     // Mask off high bits for 32-bit function handlers
-    if (stack32_.get())
+    if (!x64())
         value &= 0xFFFFFFFF;
 
     // As far as I know, values are always returned in rax
@@ -115,20 +107,19 @@ void WindowsFunctionCall::set_argument(unsigned int index, uint64_t value) {
     set_argument_(index, value);
 }
 
-GuestVirtualAddress WindowsFunctionCall::get_address_argument(unsigned int index) const {
-    return GuestVirtualAddress(stack_ptr_.create(get_argument(index)));
+guest_ptr<void> WindowsFunctionCall::get_address_argument(unsigned int index) const {
+    return guest_ptr<void>(vcpu(), get_argument(index));
 }
-void WindowsFunctionCall::set_address_argument(unsigned int index,
-                                               const GuestVirtualAddress& address) {
-    set_argument(index, address.value());
+void WindowsFunctionCall::set_address_argument(unsigned int index, const guest_ptr<void>& address) {
+    set_argument(index, address.address());
 }
 
 uint64_t WindowsFunctionCall::_get_argument_cdecl(unsigned int index) const {
-    return stack32_[index + 1];
+    return stack_[index + 1];
 }
 
 void WindowsFunctionCall::_set_argument_cdecl(unsigned int index, uint64_t value) {
-    stack32_[index + 1] = value;
+    stack_.set(index + 1, value);
 }
 
 uint64_t WindowsFunctionCall::_get_argument_fastcall(unsigned int index) const {
@@ -139,7 +130,7 @@ uint64_t WindowsFunctionCall::_get_argument_fastcall(unsigned int index) const {
         return event_->vcpu().registers().rdx();
     default:
         // Fastcall doesn't leave padding for register spill
-        return stack32_[index + 1 - 2];
+        return stack_[index + 1 - 2];
     }
 }
 
@@ -153,7 +144,7 @@ void WindowsFunctionCall::_set_argument_fastcall(unsigned int index, uint64_t va
         break;
     default:
         // Fastcall doesn't leave padding for register spill
-        stack32_[index + 1 - 2] = value;
+        stack_.set(index + 1 - 2, value);
     }
 }
 
@@ -168,7 +159,7 @@ uint64_t WindowsFunctionCall::_get_argument_x64(unsigned int index) const {
     case 3:
         return event_->vcpu().registers().r9();
     default:
-        return stack64_[index + 1];
+        return stack_[index + 1];
     }
 }
 
@@ -187,45 +178,14 @@ void WindowsFunctionCall::_set_argument_x64(unsigned int index, uint64_t value) 
         event_->vcpu().registers().r9(value);
         break;
     default:
-        stack64_[index + 1] = value;
+        stack_.set(index + 1, value);
     }
 }
 
 Vcpu& WindowsFunctionCall::vcpu() { return event_->vcpu(); }
 const Vcpu& WindowsFunctionCall::vcpu() const { return event_->vcpu(); }
 
-uint64_t WindowsFunctionCall::get_ptrsize_value(const GuestVirtualAddress& gva) const {
-    if (vcpu().long_mode() && !vcpu().long_compatibility_mode()) {
-        // 64-bit mode
-        return *guest_ptr<uint64_t>(gva);
-    } else {
-        // 32-bit mode
-        return *guest_ptr<uint32_t>(gva);
-    }
-}
-
-void WindowsFunctionCall::set_ptrsize_value(const GuestVirtualAddress& gva, uint64_t value) {
-    if (vcpu().long_mode() && !vcpu().long_compatibility_mode()) {
-        // 64-bit mode
-        *guest_ptr<uint64_t>(gva) = value;
-    } else {
-        // 32-bit mode
-        *guest_ptr<uint32_t>(gva) = value;
-    }
-}
-
-GuestVirtualAddress WindowsFunctionCall::get_ptr(const GuestVirtualAddress& gva) const {
-    return gva.create(get_ptrsize_value(gva));
-}
-
-void WindowsFunctionCall::set_ptr(const GuestVirtualAddress& gva,
-                                  const GuestVirtualAddress& value) {
-    set_ptrsize_value(gva, value.virtual_address());
-}
-
-bool WindowsFunctionCall::x64() const {
-    return (vcpu().long_mode() && !vcpu().long_compatibility_mode());
-}
+bool WindowsFunctionCall::x64() const { return x64_; }
 
 WindowsFunctionCall::WindowsFunctionCall(Event& event, unsigned int argument_count,
                                          WindowsCallType type)
@@ -233,6 +193,8 @@ WindowsFunctionCall::WindowsFunctionCall(Event& event, unsigned int argument_cou
 
     auto& vcpu = event.vcpu();
     auto& regs = vcpu.registers();
+
+    x64_ = (vcpu.long_mode() && !vcpu.long_compatibility_mode());
 
     if (vcpu.long_mode()) {
         // Check for WoW64
@@ -250,28 +212,25 @@ WindowsFunctionCall::WindowsFunctionCall(Event& event, unsigned int argument_cou
     }
 
     const unsigned int stack_size = argument_count + 1;
-    stack_ptr_ = GuestVirtualAddress(event.vcpu(), regs.rsp());
+    stack_.reset(x64(), event.vcpu(), regs.rsp(), stack_size);
 
     switch (type) {
     case WindowsCallType::STDCALL: // These are the same as far as arguments go
     case WindowsCallType::CDECL:
-        stack32_.reset(stack_ptr_, stack_size);
         get_argument_ = std::bind(&WindowsFunctionCall::_get_argument_cdecl, this, _1);
         set_argument_ = std::bind(&WindowsFunctionCall::_set_argument_cdecl, this, _1, _2);
-        return_rsp_ = stack_ptr_.value() + (sizeof(uint32_t) * argument_count) + sizeof(uint32_t);
+        return_rsp_ = stack_.address() + (sizeof(uint32_t) * argument_count) + sizeof(uint32_t);
         break;
     case WindowsCallType::FASTCALL:
-        stack32_.reset(stack_ptr_, stack_size);
         get_argument_ = std::bind(&WindowsFunctionCall::_get_argument_fastcall, this, _1);
         set_argument_ = std::bind(&WindowsFunctionCall::_set_argument_fastcall, this, _1, _2);
-        return_rsp_ = stack_ptr_.value() + (sizeof(uint32_t) * argument_count) + sizeof(uint32_t);
+        return_rsp_ = stack_.address() + (sizeof(uint32_t) * argument_count) + sizeof(uint32_t);
         break;
     case WindowsCallType::X64:
-        stack64_.reset(stack_ptr_, stack_size);
         get_argument_ = std::bind(&WindowsFunctionCall::_get_argument_x64, this, _1);
         set_argument_ = std::bind(&WindowsFunctionCall::_set_argument_x64, this, _1, _2);
         // Seems the caller cleans up, the callee only pops off the return address
-        return_rsp_ = stack_ptr_.value() + sizeof(uint64_t);
+        return_rsp_ = stack_.address() + sizeof(uint64_t);
         break;
     default:
         // TODO: Throw an exception

@@ -17,7 +17,6 @@
 
 #include "windows/kernel/nt/structs/structs.hh"
 
-#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/fwd.hh>
 #include <introvirt/util/compiler.hh>
 #include <introvirt/windows/kernel/nt/types/registry/KEY_VALUE.hh>
@@ -29,10 +28,10 @@ namespace nt {
 template <typename _BaseClass = KEY_VALUE>
 class KEY_VALUE_IMPL : public _BaseClass {
   public:
-    const char* Data() const final { return Data_.get(); }
-    uint32_t DataSize() const final { return DataSize_; }
+    guest_ptr<const uint8_t[]> Data() const final { return buf_; }
+    guest_ptr<uint8_t[]> Data() final { return buf_; }
+
     REG_TYPE Type() const final { return type_; }
-    GuestVirtualAddress address() const final { return gva_; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override {
         os << linePrefix << "Type: " << Type() << '\n';
@@ -44,14 +43,12 @@ class KEY_VALUE_IMPL : public _BaseClass {
         return result;
     }
 
-    KEY_VALUE_IMPL(REG_TYPE type, const GuestVirtualAddress& gva, uint32_t size)
-        : type_(type), gva_(gva), Data_(gva_, size), DataSize_(size) {}
+    KEY_VALUE_IMPL(REG_TYPE type, const guest_ptr<void>& ptr, uint32_t size)
+        : type_(type), buf_(ptr, size) {}
 
   protected:
     const REG_TYPE type_;
-    const GuestVirtualAddress gva_;
-    guest_ptr<char[]> Data_;
-    const uint32_t DataSize_;
+    guest_ptr<uint8_t[]> buf_;
 };
 
 } // namespace nt

@@ -44,27 +44,27 @@ using SECTION_IMAGE_INFORMATION_IMPL_BASE =
 template <typename PtrType>
 class SECTION_IMAGE_INFORMATION_IMPL final : public SECTION_IMAGE_INFORMATION_IMPL_BASE<PtrType> {
   public:
-    uint64_t TransferAddress() const override { return this->data_->TransferAddress; }
-    void TransferAddress(uint64_t value) override { this->data_->TransferAddress = value; }
+    uint64_t TransferAddress() const override { return this->ptr_->TransferAddress; }
+    void TransferAddress(uint64_t value) override { this->ptr_->TransferAddress = value; }
 
-    uint32_t ZeroBits() const override { return this->data_->ZeroBits; }
-    void ZeroBits(uint32_t value) override { this->data_->ZeroBits = value; }
+    uint32_t ZeroBits() const override { return this->ptr_->ZeroBits; }
+    void ZeroBits(uint32_t value) override { this->ptr_->ZeroBits = value; }
 
-    uint64_t MaximumStackSize() const override { return this->data_->MaximumStackSize; }
-    void MaximumStackSize(uint64_t value) override { this->data_->MaximumStackSize = value; }
+    uint64_t MaximumStackSize() const override { return this->ptr_->MaximumStackSize; }
+    void MaximumStackSize(uint64_t value) override { this->ptr_->MaximumStackSize = value; }
 
-    uint64_t CommittedStackSize() const override { return this->data_->CommittedStackSize; }
-    void CommittedStackSize(uint64_t value) override { this->data_->CommittedStackSize = value; }
+    uint64_t CommittedStackSize() const override { return this->ptr_->CommittedStackSize; }
+    void CommittedStackSize(uint64_t value) override { this->ptr_->CommittedStackSize = value; }
 
-    uint32_t SubSystemType() const override { return this->data_->SubSystemType; }
-    void SubSystemType(uint32_t value) override { this->data_->SubSystemType = value; }
+    uint32_t SubSystemType() const override { return this->ptr_->SubSystemType; }
+    void SubSystemType(uint32_t value) override { this->ptr_->SubSystemType = value; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    SECTION_IMAGE_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    SECTION_IMAGE_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : SECTION_IMAGE_INFORMATION_IMPL_BASE<PtrType>(
-              SECTION_INFORMATION_CLASS::SectionImageInformation, gva, buffer_size) {}
+              SECTION_INFORMATION_CLASS::SectionImageInformation, ptr, buffer_size) {}
 };
 
 } // namespace nt

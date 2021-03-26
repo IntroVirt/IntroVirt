@@ -53,7 +53,7 @@ class KEY_VALUE_PARTIAL_INFORMATION_IMPL final : public KEY_VALUE_PARTIAL_INFORM
 
     Json::Value json() const override;
 
-    KEY_VALUE_PARTIAL_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    KEY_VALUE_PARTIAL_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
     std::unique_ptr<KEY_VALUE> Data_;

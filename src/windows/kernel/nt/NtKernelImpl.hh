@@ -67,9 +67,9 @@ class NtKernelImpl final : public NtKernel, public TypeContainer {
 
     bool x64() const override;
 
-    GuestVirtualAddress symbol(const std::string& name) const override;
+    guest_ptr<void> symbol(const std::string& name) const override;
 
-    GuestVirtualAddress base_address() const override;
+    const guest_ptr<void>& ptr() const override;
 
     uint64_t InvalidPteMask() const override;
 
@@ -95,9 +95,9 @@ class NtKernelImpl final : public NtKernel, public TypeContainer {
 
     const WindowsGuest& guest() const override;
 
-    std::shared_ptr<THREAD> thread(const GuestVirtualAddress& address) const override HOT;
+    std::shared_ptr<THREAD> thread(const guest_ptr<void>& address) const override HOT;
 
-    std::shared_ptr<PROCESS> process(const GuestVirtualAddress& address) const override HOT;
+    std::shared_ptr<PROCESS> process(const guest_ptr<void>& address) const override HOT;
 
     /**
      * @brief Get the path to the profile directory for this kernel
@@ -116,8 +116,8 @@ class NtKernelImpl final : public NtKernel, public TypeContainer {
 
     std::optional<TypeTableImpl<PtrType>> type_table_;
 
-    GuestVirtualAddress base_address_;
-    GuestVirtualAddress global_directory_address_;
+    guest_ptr<void> ptr_;
+    guest_ptr<void> global_directory_address_;
 
     std::optional<pe::PE_IMPL> pe_;
     std::optional<nt::DBGKD_GET_VERSION64_IMPL> KdVersionBlock_;
@@ -128,7 +128,7 @@ class NtKernelImpl final : public NtKernel, public TypeContainer {
     std::optional<ServiceDescriptorTableImpl<PtrType>> KeServiceDescriptorTableShadow_;
 
     std::vector<KPCR_IMPL<PtrType>> kpcrs_;
-    std::map<std::string, GuestVirtualAddress> drive_letters_;
+    std::map<std::string, guest_ptr<void>> drive_letters_;
     mutable std::mutex drive_letters_mtx_;
 
     const WindowsGuest& guest_;

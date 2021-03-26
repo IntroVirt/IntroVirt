@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/condrv/types/ConsoleCallServerGenericRequest.hh>
 
@@ -25,25 +24,21 @@ namespace condrv {
 
 class ConsoleCallServerGenericRequest::IMPL {
   public:
-    IMPL(const GuestVirtualAddress& pRequestHeader, const GuestVirtualAddress& pRequestData,
+    IMPL(const guest_ptr<void>& pRequestHeader, const guest_ptr<void>& pRequestData,
          uint32_t requestDataLen)
-        : pRequestHeader_(pRequestHeader), pRequestData_(pRequestData),
-          requestHeader(pRequestHeader_), requestData(pRequestData_, requestDataLen) {}
+        : pRequestHeader_(pRequestHeader), pRequestData_(pRequestData, requestDataLen) {}
 
   private:
     using ConsoleCallServerGenericRequestHeader = structs::ConsoleCallServerGenericRequestHeader;
 
   public:
-    const GuestVirtualAddress pRequestHeader_;
-    const GuestVirtualAddress pRequestData_;
-
-    guest_ptr<ConsoleCallServerGenericRequestHeader> requestHeader;
-    guest_ptr<uint8_t[]> requestData;
+    guest_ptr<ConsoleCallServerGenericRequestHeader> pRequestHeader_;
+    guest_ptr<uint8_t[]> pRequestData_;
 };
 
 ConsoleCallServerGenericRequestCode ConsoleCallServerGenericRequest::RequestCode() const {
     const ConsoleCallServerGenericRequestCode result =
-        static_cast<ConsoleCallServerGenericRequestCode>(pImpl->requestHeader->requestCode);
+        static_cast<ConsoleCallServerGenericRequestCode>(pImpl->pRequestHeader_->requestCode);
 
     // Make sure it's a legitimate value, else return the Unknown code
     switch (result) {
@@ -67,21 +62,21 @@ ConsoleCallServerGenericRequestCode ConsoleCallServerGenericRequest::RequestCode
     return ConsoleCallServerGenericRequestCode::Unknown;
 }
 
-uint32_t ConsoleCallServerGenericRequest::Data1() const { return pImpl->requestHeader->data1; }
-uint32_t ConsoleCallServerGenericRequest::Data2() const { return pImpl->requestHeader->data2; }
+uint32_t ConsoleCallServerGenericRequest::Data1() const { return pImpl->pRequestHeader_->data1; }
+uint32_t ConsoleCallServerGenericRequest::Data2() const { return pImpl->pRequestHeader_->data2; }
 
-GuestVirtualAddress ConsoleCallServerGenericRequest::header_address() const {
+guest_ptr<void> ConsoleCallServerGenericRequest::header_address() const {
     return pImpl->pRequestHeader_;
 }
-GuestVirtualAddress ConsoleCallServerGenericRequest::data_address() const {
+guest_ptr<void> ConsoleCallServerGenericRequest::data_address() const {
     return pImpl->pRequestData_;
 }
 
-guest_ptr<uint8_t[]> ConsoleCallServerGenericRequest::RequestData() { return pImpl->requestData; }
+guest_ptr<uint8_t[]> ConsoleCallServerGenericRequest::RequestData() { return pImpl->pRequestData_; }
 
 ConsoleCallServerGenericRequest::ConsoleCallServerGenericRequest(
-    const WindowsGuest& guest, const GuestVirtualAddress& pRequestHeader,
-    const GuestVirtualAddress& pRequestData, uint32_t requestDataLen)
+    const WindowsGuest& guest, const guest_ptr<void>& pRequestHeader,
+    const guest_ptr<void>& pRequestData, uint32_t requestDataLen)
     : pImpl(std::make_unique<IMPL>(pRequestHeader, pRequestData, requestDataLen)) {}
 
 ConsoleCallServerGenericRequest::~ConsoleCallServerGenericRequest() = default;

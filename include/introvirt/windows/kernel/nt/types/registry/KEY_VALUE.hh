@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/fwd.hh>
 #include <introvirt/windows/kernel/nt/const/REG_TYPE.hh>
 
@@ -32,18 +32,15 @@ namespace nt {
 
 class KEY_VALUE {
   public:
-    virtual const char* Data() const = 0;
-    virtual uint32_t DataSize() const = 0;
+    virtual guest_ptr<const uint8_t[]> Data() const = 0;
+    virtual guest_ptr<uint8_t[]> Data() = 0;
     virtual REG_TYPE Type() const = 0;
 
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
-
     virtual Json::Value json() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
-
     static std::unique_ptr<KEY_VALUE>
-    make_unique(REG_TYPE regType, const GuestVirtualAddress& pKeyValue, uint32_t dataSize);
+    make_unique(REG_TYPE regType, const guest_ptr<void>& pKeyValue, uint32_t dataSize);
 
     static const REG_TYPE RegType(uint32_t type);
 

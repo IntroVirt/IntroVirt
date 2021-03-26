@@ -17,7 +17,7 @@
 
 #include "KEY_INFORMATION_CLASS.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/json/json.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
@@ -44,9 +44,9 @@ class KEY_INFORMATION {
     /**
      * @brief Get the address that the buffer is at
      *
-     * @return GuestVirtualAddress
+     * @return guest_ptr<void>
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     /**
      * @brief Get the size of the buffer
@@ -74,12 +74,12 @@ class KEY_INFORMATION {
      *
      * @param kernel The kernel of the guest
      * @param information_class The type of information contained in the buffer
-     * @param gva The address of the information in the guest
+     * @param ptr The address of the information in the guest
      * @param buffer_size The size of the information buffer
      */
     static std::unique_ptr<KEY_INFORMATION> make_unique(const NtKernel& kernel,
                                                         KEY_INFORMATION_CLASS information_class,
-                                                        const GuestVirtualAddress& gva,
+                                                        const guest_ptr<void>& ptr,
                                                         uint32_t buffer_size);
 
     virtual ~KEY_INFORMATION() = default;

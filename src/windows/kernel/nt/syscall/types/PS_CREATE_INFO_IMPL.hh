@@ -88,9 +88,9 @@ template <typename PtrType>
 class PS_CREATE_INFO_IMPL final : public PS_CREATE_INFO {
   public:
     virtual PS_CREATE_STATE State() const override {
-        return static_cast<PS_CREATE_STATE>(data_->State);
+        return static_cast<PS_CREATE_STATE>(ptr_->State);
     }
-    virtual uint64_t Size() const override { return data_->Size; };
+    virtual uint64_t Size() const override { return ptr_->Size; };
 
     /** Only valid for state == PsCreateSuccess || PsCreateFailOnSectionCreate */
     virtual uint64_t FileHandle() const override;
@@ -116,15 +116,14 @@ class PS_CREATE_INFO_IMPL final : public PS_CREATE_INFO {
     virtual FILE_ACCESS_MASK AdditionalFileAccess() const override;
     virtual void AdditionalFileAccess(FILE_ACCESS_MASK AdditionalFileAccess) override;
 
-    virtual GuestVirtualAddress address() const override { return gva_; }
+    virtual guest_ptr<void> ptr() const override { return ptr_; }
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const override;
     virtual Json::Value json() const override;
 
-    PS_CREATE_INFO_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva_) {}
+    PS_CREATE_INFO_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_PS_CREATE_INFO<PtrType>> data_;
+    guest_ptr<structs::_PS_CREATE_INFO<PtrType>> ptr_;
 };
 
 } // namespace nt

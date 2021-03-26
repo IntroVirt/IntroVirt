@@ -73,21 +73,21 @@ Json::Value FILE_ID_BOTH_DIR_INFORMATION_IMPL::json() const {
     return result;
 }
 
-FILE_ID_BOTH_DIR_INFORMATION_IMPL::FILE_ID_BOTH_DIR_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+FILE_ID_BOTH_DIR_INFORMATION_IMPL::FILE_ID_BOTH_DIR_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                                      uint32_t buffer_size)
     : offset_iterable(
-          [](const GuestVirtualAddress& gva, uint32_t buffer_size) {
-              return std::make_shared<FILE_ID_BOTH_DIR_INFORMATION_ENTRY_IMPL>(gva);
+          [](const guest_ptr<void>& ptr, uint32_t buffer_size) {
+              return std::make_shared<FILE_ID_BOTH_DIR_INFORMATION_ENTRY_IMPL>(ptr);
           },
-          gva, buffer_size) {
+          ptr, buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_FILE_ID_BOTH_DIR_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_FILE_ID_BOTH_DIR_INFORMATION), buffer_size);
 }
 
 std::shared_ptr<FILE_ID_BOTH_DIR_INFORMATION_ENTRY>
-FILE_ID_BOTH_DIR_INFORMATION_ENTRY::make_shared(const GuestVirtualAddress& gva) {
-    return std::make_shared<FILE_ID_BOTH_DIR_INFORMATION_ENTRY_IMPL>(gva);
+FILE_ID_BOTH_DIR_INFORMATION_ENTRY::make_shared(const guest_ptr<void>& ptr) {
+    return std::make_shared<FILE_ID_BOTH_DIR_INFORMATION_ENTRY_IMPL>(ptr);
 }
 
 } // namespace nt

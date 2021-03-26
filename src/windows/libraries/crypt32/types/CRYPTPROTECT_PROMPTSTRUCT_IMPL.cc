@@ -32,12 +32,12 @@ size_t CRYPTPROTECT_PROMPTSTRUCT::size(const Vcpu& vcpu) {
     return CRYPTPROTECT_PROMPTSTRUCT::size(vcpu.long_mode() && !vcpu.long_compatibility_mode());
 }
 
-std::unique_ptr<CRYPTPROTECT_PROMPTSTRUCT>
-CRYPTPROTECT_PROMPTSTRUCT::make_unique(const GuestVirtualAddress& gva, bool x64) {
+std::shared_ptr<CRYPTPROTECT_PROMPTSTRUCT>
+CRYPTPROTECT_PROMPTSTRUCT::make_shared(const guest_ptr<void>& ptr, bool x64) {
     if (x64)
-        return std::make_unique<CRYPTPROTECT_PROMPTSTRUCT_IMPL<uint64_t>>(gva);
+        return std::make_shared<CRYPTPROTECT_PROMPTSTRUCT_IMPL<uint64_t>>(ptr);
 
-    return std::make_unique<CRYPTPROTECT_PROMPTSTRUCT_IMPL<uint32_t>>(gva);
+    return std::make_shared<CRYPTPROTECT_PROMPTSTRUCT_IMPL<uint32_t>>(ptr);
 }
 
 } // namespace crypt32

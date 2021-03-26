@@ -1,0 +1,45 @@
+{
+    "Ssl3GenerateKeyMaterial": {
+        "doc_url": "https://github.com/cuckoosandbox/monitor/blob/master/sigs/crypto.rst",
+        "result": {
+            "type": "nt::NTSTATUS"
+        },
+        "arguments": [
+            {
+                "type": "uint32_t",
+                "name": "unknown1",
+                "pointer": true
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bSecret",
+                "pointer": true,
+                "length": "dwSecretLength()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwSecretLength"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bSeed",
+                "pointer": true,
+                "length": "dwSeedLength()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwSeedLength"
+            },
+            {
+                "type": "void",
+                "name": "unknown2",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "unknown3",
+                "pointer": true
+            }
+        ]
+    }
+}

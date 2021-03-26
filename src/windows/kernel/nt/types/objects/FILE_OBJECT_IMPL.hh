@@ -61,7 +61,7 @@ class FILE_OBJECT_IMPL final : public OBJECT_IMPL<PtrType, FILE_OBJECT> {
      */
     std::string full_path() const override;
 
-    FILE_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    FILE_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     FILE_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel,
                      std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 

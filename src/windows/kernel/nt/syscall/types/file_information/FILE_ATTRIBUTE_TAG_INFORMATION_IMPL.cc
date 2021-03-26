@@ -42,15 +42,15 @@ Json::Value FILE_ATTRIBUTE_TAG_INFORMATION_IMPL::json() const {
     return result;
 }
 
-FILE_ATTRIBUTE_TAG_INFORMATION_IMPL::FILE_ATTRIBUTE_TAG_INFORMATION_IMPL(
-    const GuestVirtualAddress& gva, uint32_t buffer_size)
-    : gva_(gva), buffer_size_(buffer_size) {
+FILE_ATTRIBUTE_TAG_INFORMATION_IMPL::FILE_ATTRIBUTE_TAG_INFORMATION_IMPL(const guest_ptr<void>& ptr,
+                                                                         uint32_t buffer_size)
+    : buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_FILE_ATTRIBUTE_TAG_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_FILE_ATTRIBUTE_TAG_INFORMATION),
                                       buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 }
 
 } // namespace nt

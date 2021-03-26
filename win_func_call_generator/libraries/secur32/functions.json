@@ -1,0 +1,61 @@
+{
+    "DecryptMessage": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/secauthn/DecryptMessage--schannel",
+        "result": {
+            "type": "SECURITY_STATUS"
+        },
+        "arguments": [
+            {
+                "type": "void",
+                "name": "hContext",
+                "pointer": true
+            },
+            {
+                "type": "SecBufferDesc",
+                "name": "Message",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "MessageSeqNo"
+            },
+            {
+                "type": "uint32_t",
+                "name": "fQOP",
+                "pointer": true,
+                "in": false,
+                "out": true
+            }
+        ]
+    },
+    "EncryptMessage": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/secauthn/encryptmessage--schannel",
+        "result": {
+            "type": "SECURITY_STATUS"
+        },
+        "arguments": [
+            {
+                "type": "void",
+                "name": "hContext",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "fQOP"
+            },
+            {
+                "type": "SecBufferDesc",
+                "name": "Message",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "MessageSeqNo"
+            }
+        ]
+    }
+}

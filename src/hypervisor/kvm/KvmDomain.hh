@@ -52,7 +52,8 @@ class KvmDomain final : public DomainImpl {
 
     const KvmHypervisor& hypervisor() const override;
 
-    GuestMemoryMapping map_pfns(const uint64_t* pfns, size_t count) const override HOT;
+    std::shared_ptr<GuestMemoryMapping> map_pfns(const uint64_t* pfns,
+                                                 size_t count) const override HOT;
 
     KvmDomain(const KvmHypervisor& hypervisor, const std::string& name, uint32_t id, int fd);
     ~KvmDomain() override;

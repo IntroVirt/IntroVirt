@@ -51,25 +51,24 @@ class IMAGE_SECTION_HEADER_IMPL final : public IMAGE_SECTION_HEADER {
   public:
     const std::string& Name() const override { return Name_; }
 
-    virtual uint32_t VirtualSize() const override { return data_->Misc.VirtualSize; }
+    virtual uint32_t VirtualSize() const override { return ptr_->Misc.VirtualSize; }
 
-    virtual GuestVirtualAddress VirtualAddress() const override {
-        return image_base_ + data_->VirtualAddress;
+    virtual guest_ptr<void> VirtualAddress() const override {
+        return image_base_ + ptr_->VirtualAddress;
     }
 
-    virtual uint32_t SizeOfRawData() const override { return data_->SizeOfRawData; }
+    virtual uint32_t SizeOfRawData() const override { return ptr_->SizeOfRawData; }
 
-    GuestVirtualAddress address() const { return gva_; }
+    guest_ptr<void> ptr() const { return ptr_; }
 
-    IMAGE_SECTION_HEADER_IMPL(const GuestVirtualAddress& image_base, const GuestVirtualAddress& gva)
-        : image_base_(image_base), gva_(gva), data_(gva) {
-        Name_ = std::string(data_->Name, strnlen(data_->Name, sizeof(data_->Name)));
+    IMAGE_SECTION_HEADER_IMPL(const guest_ptr<void>& image_base, const guest_ptr<void>& ptr)
+        : image_base_(image_base), ptr_(ptr) {
+        Name_ = std::string(ptr_->Name, strnlen(ptr_->Name, sizeof(ptr_->Name)));
     }
 
   private:
-    const GuestVirtualAddress image_base_;
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_IMAGE_SECTION_HEADER> data_;
+    const guest_ptr<void> image_base_;
+    guest_ptr<structs::_IMAGE_SECTION_HEADER> ptr_;
     std::string Name_;
 };
 

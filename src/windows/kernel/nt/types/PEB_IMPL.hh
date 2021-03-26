@@ -23,6 +23,8 @@
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/types/PEB.hh>
 
+#include <log4cxx/logger.h>
+
 #include <optional>
 
 namespace introvirt {
@@ -56,9 +58,9 @@ struct _PEB {
         };
     };
     PtrType Mutant;
-    PtrType ImageBaseAddress;
-    PtrType Ldr;
-    PtrType ProcessParameters;
+    guest_member_ptr<void, PtrType> ImageBaseAddress;
+    guest_member_ptr<_PEB_LDR_DATA<PtrType>, PtrType> Ldr;
+    guest_member_ptr<_RTL_USER_PROCESS_PARAMETERS<PtrType>, PtrType> ProcessParameters;
     PtrType SubSystemData;
     PtrType ProcessHeap;
     PtrType FastPebLock;
@@ -144,45 +146,65 @@ static_assert(offsetof(_PEB<uint64_t>, CSDVersion) == 0x2e8);
 
 template <typename PtrType>
 class PEB_IMPL final : public PEB {
+    static const inline log4cxx::LoggerPtr logger =
+        log4cxx::Logger::getLogger("introvirt.windows.kernel.nt.types.PEB");
+
   public:
-    GuestVirtualAddress ImageBaseAddress() const override;
+    guest_ptr<void> ImageBaseAddress() const override { return ptr_->ImageBaseAddress.get(ptr_); }
 
-    const PEB_LDR_DATA* Ldr() const override;
-    PEB_LDR_DATA* Ldr() override;
+    const PEB_LDR_DATA* Ldr() const override {
+        if (!ldr) {
+            try {
+                ldr.emplace(ptr_->Ldr.get(ptr_));
+            } catch (TraceableException& ex) {
+                LOG4CXX_WARN(logger, "Failed to get Ldr: " << ex);
+                return nullptr;
+            }
+        }
+        return &(*ldr);
+    }
+    PEB_LDR_DATA* Ldr() override {
+        const auto* const_this = this;
+        return const_cast<PEB_LDR_DATA*>(const_this->Ldr());
+    }
 
-    const RTL_USER_PROCESS_PARAMETERS* ProcessParameters() const override;
-    RTL_USER_PROCESS_PARAMETERS* ProcessParameters() override;
+    const RTL_USER_PROCESS_PARAMETERS* ProcessParameters() const override {
+        if (!rtlUserProcessParams) {
+            try {
+                rtlUserProcessParams.emplace(ptr_->ProcessParameters.get(ptr_));
+            } catch (TraceableException& ex) {
+                LOG4CXX_WARN(logger, "Failed to get ProcessParameters: " << ex);
+                return nullptr;
+            }
+        }
+        return &(*rtlUserProcessParams);
+    }
+    RTL_USER_PROCESS_PARAMETERS* ProcessParameters() override {
+        const auto* const_this = this;
+        return const_cast<RTL_USER_PROCESS_PARAMETERS*>(const_this->ProcessParameters());
+    }
 
-    uint32_t OSMajorVersion() const override;
+    uint32_t OSMajorVersion() const override { return ptr_->OSMajorVersion; }
+    uint32_t OSMinorVersion() const override { return ptr_->OSMinorVersion; }
+    uint16_t OSBuildNumber() const override { return ptr_->OSBuildNumber; }
+    uint16_t OSCSDVersion() const override { return ptr_->OSCSDVersion; }
+    uint32_t OSPlatformId() const override { return ptr_->OSPlatformId; }
+    uint32_t NumberOfProcessors() const override { return ptr_->NumberOfProcessors; }
 
-    uint32_t OSMinorVersion() const override;
+    uint16_t ServicePackNumber() const override { return (OSCSDVersion() >> 8) & 0xFF; }
+    uint16_t MinorServicePackNumber() const override { return (OSCSDVersion()) & 0xFF; }
 
-    uint16_t OSBuildNumber() const override;
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    uint16_t OSCSDVersion() const override;
+    bool BeingDebugged() const override { return ptr_->BeingDebugged; }
 
-    uint32_t OSPlatformId() const override;
+    void BeingDebugged(bool BeingDebugged) override { ptr_->BeingDebugged = BeingDebugged; }
 
-    uint16_t ServicePackNumber() const override;
-
-    uint16_t MinorServicePackNumber() const override;
-
-    uint32_t NumberOfProcessors() const override;
-
-    GuestVirtualAddress address() const override;
-
-    bool BeingDebugged() const override;
-
-    void BeingDebugged(bool BeingDebugged) override;
-
-    PEB_IMPL(const GuestVirtualAddress& gva);
+    PEB_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
+    const guest_ptr<structs::_PEB<PtrType>> ptr_;
 
-    guest_ptr<structs::_PEB<PtrType>> data_;
-
-    // TODO: We'll need to make these two use real structs for 32-on-64 compatibility
     mutable std::optional<PEB_LDR_DATA_IMPL<PtrType>> ldr;
     mutable std::optional<RTL_USER_PROCESS_PARAMETERS_IMPL<PtrType>> rtlUserProcessParams;
 };

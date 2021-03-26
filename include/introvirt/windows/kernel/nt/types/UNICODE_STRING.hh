@@ -16,7 +16,7 @@
 #pragma once
 
 #include <introvirt/core/injection/GuestAllocation.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/common/Utf16String.hh>
 
 #include <introvirt/core/fwd.hh>
@@ -52,15 +52,15 @@ class UNICODE_STRING : public Utf16String {
     virtual uint16_t MaximumLength() const = 0;
     virtual void MaximumLength(uint16_t MaximumLength) = 0;
 
-    virtual GuestVirtualAddress BufferAddress() const = 0;
-    virtual void BufferAddress(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> BufferAddress() const = 0;
+    virtual void BufferAddress(const guest_ptr<void>& ptr) = 0;
 
     Json::Value json() const override = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     static std::unique_ptr<UNICODE_STRING> make_unique(const NtKernel& kernel,
-                                                       const GuestVirtualAddress& gva);
+                                                       const guest_ptr<void>& gva);
 
     ~UNICODE_STRING() override = default;
 };
@@ -71,14 +71,11 @@ class UNICODE_STRING : public Utf16String {
 namespace inject {
 
 template <>
-class GuestAllocation<windows::nt::UNICODE_STRING>
+class GuestAllocation<windows::nt::UNICODE_STRING> final
     : public GuestAllocationComplexBase<windows::nt::UNICODE_STRING> {
   public:
     explicit GuestAllocation(const std::string& value);
     explicit GuestAllocation(const std::string& value, unsigned int MaximumLength);
-
-  private:
-    std::optional<GuestAllocation<uint8_t[]>> buffer_;
 };
 
 } /* namespace inject */

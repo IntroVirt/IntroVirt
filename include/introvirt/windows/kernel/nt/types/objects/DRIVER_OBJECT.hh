@@ -38,10 +38,10 @@ class DRIVER_OBJECT : public OBJECT {
      *
      * @throws InvalidIrpException If the IRP is out out bounds
      */
-    virtual GuestVirtualAddress MajorFunction(IRP_MJ irp) const = 0;
+    virtual guest_ptr<void> MajorFunction(IRP_MJ irp) const = 0;
 
     static std::shared_ptr<DRIVER_OBJECT> make_shared(const NtKernel& kernel,
-                                                      const GuestVirtualAddress& gva);
+                                                      const guest_ptr<void>& ptr);
 
     static std::shared_ptr<DRIVER_OBJECT>
     make_shared(const NtKernel& kernel, std::unique_ptr<OBJECT_HEADER>&& object_header);

@@ -17,7 +17,7 @@
 
 #include "OBJECT.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <cstdint>
@@ -32,16 +32,15 @@ class SECTION : public OBJECT {
     virtual uint64_t StartingVpn() const = 0;
     virtual uint64_t EndingVpn() const = 0;
 
-    virtual GuestVirtualAddress StartingVa() const = 0;
-    virtual GuestVirtualAddress EndingVa() const = 0;
+    virtual guest_ptr<void> StartingVa() const = 0;
+    virtual guest_ptr<void> EndingVa() const = 0;
 
     virtual uint64_t SizeOfSection() const = 0;
 
     virtual const CONTROL_AREA* ControlArea() const = 0;
     virtual const FILE_OBJECT* FileObject() const = 0;
 
-    static std::shared_ptr<SECTION> make_shared(const NtKernel& kernel,
-                                                const GuestVirtualAddress& gva);
+    static std::shared_ptr<SECTION> make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr);
 
     static std::shared_ptr<SECTION> make_shared(const NtKernel& kernel,
                                                 std::unique_ptr<OBJECT_HEADER>&& object_header);

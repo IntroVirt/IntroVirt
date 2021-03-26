@@ -45,32 +45,32 @@ using PROCESS_BASIC_INFORMATION_IMPL_BASE =
 template <typename PtrType>
 class PROCESS_BASIC_INFORMATION_IMPL final : public PROCESS_BASIC_INFORMATION_IMPL_BASE<PtrType> {
   public:
-    NTSTATUS ExitStatus() const override { return NTSTATUS(this->data_->ExitStatus); }
-    void ExitStatus(NTSTATUS ExitStatus) override { this->data_->ExitStatus = ExitStatus.code(); }
+    NTSTATUS ExitStatus() const override { return NTSTATUS(this->ptr_->ExitStatus); }
+    void ExitStatus(NTSTATUS ExitStatus) override { this->ptr_->ExitStatus = ExitStatus.code(); }
 
-    uint64_t PebBaseAddress() const override { return this->data_->PebBaseAddress; }
+    uint64_t PebBaseAddress() const override { return this->ptr_->PebBaseAddress; }
     void PebBaseAddress(uint64_t PebBaseAddress) override {
-        this->data_->PebBaseAddress = PebBaseAddress;
+        this->ptr_->PebBaseAddress = PebBaseAddress;
     }
 
-    uint64_t AffinityMask() const override { return this->data_->AffinityMask; }
-    void AffinityMask(uint64_t AffinityMask) override { this->data_->AffinityMask = AffinityMask; }
+    uint64_t AffinityMask() const override { return this->ptr_->AffinityMask; }
+    void AffinityMask(uint64_t AffinityMask) override { this->ptr_->AffinityMask = AffinityMask; }
 
-    int32_t BasePriority() const override { return this->data_->BasePriority; }
-    void BasePriority(int32_t BasePriority) override { this->data_->BasePriority = BasePriority; }
+    int32_t BasePriority() const override { return this->ptr_->BasePriority; }
+    void BasePriority(int32_t BasePriority) override { this->ptr_->BasePriority = BasePriority; }
 
-    uint64_t Pid() const override { return this->data_->Pid; }
-    void Pid(uint64_t Pid) override { this->data_->Pid = Pid; }
+    uint64_t Pid() const override { return this->ptr_->Pid; }
+    void Pid(uint64_t Pid) override { this->ptr_->Pid = Pid; }
 
-    uint64_t ParentPid() const override { return this->data_->ParentPid; }
-    void ParentPid(uint64_t ParentPid) override { this->data_->ParentPid = ParentPid; }
+    uint64_t ParentPid() const override { return this->ptr_->ParentPid; }
+    void ParentPid(uint64_t ParentPid) override { this->ptr_->ParentPid = ParentPid; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    PROCESS_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    PROCESS_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : PROCESS_BASIC_INFORMATION_IMPL_BASE<PtrType>(
-              PROCESS_INFORMATION_CLASS::ProcessBasicInformation, gva, buffer_size) {}
+              PROCESS_INFORMATION_CLASS::ProcessBasicInformation, ptr, buffer_size) {}
 };
 
 } // namespace nt

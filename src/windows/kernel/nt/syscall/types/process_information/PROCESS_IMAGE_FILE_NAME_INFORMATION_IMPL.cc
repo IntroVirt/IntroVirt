@@ -38,11 +38,9 @@ Json::Value PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL<PtrType>::json() const {
 
 template <typename PtrType>
 void PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL<PtrType>::parse() const {
-    const GuestVirtualAddress pNameBuffer =
-        this->gva_ +
-        offsetof(structs::_PROCESS_IMAGE_FILE_NAME_INFORMATION<PtrType>, ImageFileName);
-
-    ImageFileName_.emplace(pNameBuffer);
+    ImageFileName_.emplace(
+        this->base_ +
+        offsetof(structs::_PROCESS_IMAGE_FILE_NAME_INFORMATION<PtrType>, ImageFileName));
 
     // Used for invalidating the buffer
     ImageFileNameLength_ = ImageFileName_->Length();
@@ -50,15 +48,14 @@ void PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL<PtrType>::parse() const {
 
 template <typename PtrType>
 PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL<PtrType>::PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL(
-    const GuestVirtualAddress& gva, uint32_t buffer_size)
+    const guest_ptr<void>& ptr, uint32_t buffer_size)
     : PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL<PtrType>(
-          PROCESS_INFORMATION_CLASS::ProcessImageFileName, gva, buffer_size) {}
+          PROCESS_INFORMATION_CLASS::ProcessImageFileName, ptr, buffer_size) {}
 
 template <typename PtrType>
 PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL<PtrType>::PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL(
-    PROCESS_INFORMATION_CLASS information_class, const GuestVirtualAddress& gva,
-    uint32_t buffer_size)
-    : PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL_BASE<PtrType>(information_class, gva, buffer_size) {
+    PROCESS_INFORMATION_CLASS information_class, const guest_ptr<void>& ptr, uint32_t buffer_size)
+    : PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL_BASE<PtrType>(information_class, ptr, buffer_size) {
 
     parse();
 }
@@ -80,23 +77,24 @@ void GuestAllocation<windows::nt::PROCESS_IMAGE_FILE_NAME_INFORMATION>::init(
     const size_t structure_size = sizeof(structs::_PROCESS_IMAGE_FILE_NAME_INFORMATION<PtrType>);
 
     // Allocate memory for the size of the structure plus the size of the string
-    buffer_.emplace(structure_size + string_buffer_size);
+    allocation_.emplace(structure_size + string_buffer_size);
+    auto& ptr = allocation_->ptr();
 
     // Figure out the buffer address
-    GuestVirtualAddress BufferAddress = buffer_->address() + structure_size;
+    const uint64_t BufferAddress = ptr.address() + structure_size;
 
     // Prepare the UNICODE_STRING structure
     auto* data =
-        reinterpret_cast<structs::_PROCESS_IMAGE_FILE_NAME_INFORMATION<PtrType>*>(buffer_->get());
+        reinterpret_cast<structs::_PROCESS_IMAGE_FILE_NAME_INFORMATION<PtrType>*>(ptr.get());
 
     // Setting this up properly is only necessary for calling NtSetInformationProcess
     // I don't know if that's even legal, but we might as well make it valid.
-    data->ImageFileName.Buffer = BufferAddress.value();
+    data->ImageFileName.Buffer = BufferAddress;
     data->ImageFileName.Length = 0;
     data->ImageFileName.MaximumLength = string_buffer_size;
 
     value_ = std::make_unique<PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL<PtrType>>(
-        buffer_->address(), structure_size + string_buffer_size);
+        ptr, structure_size + string_buffer_size);
 }
 
 GuestAllocation<windows::nt::PROCESS_IMAGE_FILE_NAME_INFORMATION>::GuestAllocation(
@@ -104,7 +102,7 @@ GuestAllocation<windows::nt::PROCESS_IMAGE_FILE_NAME_INFORMATION>::GuestAllocati
 
     auto& domain = Domain::thread_local_domain();
     auto* guest = static_cast<windows::WindowsGuest*>(domain.guest());
-    assert(guest != nullptr);
+    introvirt_assert(guest != nullptr, "");
     auto& kernel = guest->kernel();
 
     if (kernel.x64())

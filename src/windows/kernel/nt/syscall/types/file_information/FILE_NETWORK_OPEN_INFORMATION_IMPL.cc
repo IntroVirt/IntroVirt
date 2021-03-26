@@ -51,23 +51,22 @@ Json::Value FILE_NETWORK_OPEN_INFORMATION_IMPL::json() const {
     return result;
 }
 
-FILE_NETWORK_OPEN_INFORMATION_IMPL::FILE_NETWORK_OPEN_INFORMATION_IMPL(
-    const GuestVirtualAddress& gva)
-    : FILE_NETWORK_OPEN_INFORMATION_IMPL(gva, sizeof(structs::_FILE_NETWORK_OPEN_INFORMATION)) {}
+FILE_NETWORK_OPEN_INFORMATION_IMPL::FILE_NETWORK_OPEN_INFORMATION_IMPL(const guest_ptr<void>& ptr)
+    : FILE_NETWORK_OPEN_INFORMATION_IMPL(ptr, sizeof(structs::_FILE_NETWORK_OPEN_INFORMATION)) {}
 
-FILE_NETWORK_OPEN_INFORMATION_IMPL::FILE_NETWORK_OPEN_INFORMATION_IMPL(
-    const GuestVirtualAddress& gva, uint32_t buffer_size)
-    : gva_(gva), buffer_size_(buffer_size) {
+FILE_NETWORK_OPEN_INFORMATION_IMPL::FILE_NETWORK_OPEN_INFORMATION_IMPL(const guest_ptr<void>& ptr,
+                                                                       uint32_t buffer_size)
+    : buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_FILE_NETWORK_OPEN_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_FILE_NETWORK_OPEN_INFORMATION), buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 }
 
 std::unique_ptr<FILE_NETWORK_OPEN_INFORMATION>
-FILE_NETWORK_OPEN_INFORMATION::make_unique(const GuestVirtualAddress& gva) {
-    return std::make_unique<FILE_NETWORK_OPEN_INFORMATION_IMPL>(gva);
+FILE_NETWORK_OPEN_INFORMATION::make_unique(const guest_ptr<void>& ptr) {
+    return std::make_unique<FILE_NETWORK_OPEN_INFORMATION_IMPL>(ptr);
 }
 
 } // namespace nt

@@ -42,8 +42,8 @@ using PROCESS_PRIORITY_CLASS_INFORMATION_IMPL_BASE =
 class PROCESS_PRIORITY_CLASS_INFORMATION_IMPL final
     : public PROCESS_PRIORITY_CLASS_INFORMATION_IMPL_BASE {
   public:
-    bool Foreground() const override { return this->data_->Foreground; }
-    void Foreground(bool Foreground) override { this->data_->Foreground = Foreground; }
+    bool Foreground() const override { return this->ptr_->Foreground; }
+    void Foreground(bool Foreground) override { this->ptr_->Foreground = Foreground; }
 
     // Windows uses this weird maping rather than just using the default values
     static constexpr int PROCESS_PRIORITY_CLASS_UNKNOWN = 0;
@@ -56,7 +56,7 @@ class PROCESS_PRIORITY_CLASS_INFORMATION_IMPL final
 
     PRIORITY_CLASS PriorityClass() const override {
 
-        switch (this->data_->PriorityClass) {
+        switch (this->ptr_->PriorityClass) {
         case PROCESS_PRIORITY_CLASS_IDLE:
             return PRIORITY_CLASS::IDLE_PRIORITY_CLASS;
         case PROCESS_PRIORITY_CLASS_NORMAL:
@@ -77,22 +77,22 @@ class PROCESS_PRIORITY_CLASS_INFORMATION_IMPL final
     void PriorityClass(PRIORITY_CLASS PriorityClass) override {
         switch (PriorityClass) {
         case PRIORITY_CLASS::IDLE_PRIORITY_CLASS:
-            this->data_->PriorityClass = PROCESS_PRIORITY_CLASS_IDLE;
+            this->ptr_->PriorityClass = PROCESS_PRIORITY_CLASS_IDLE;
             break;
         case PRIORITY_CLASS::NORMAL_PRIORITY_CLASS:
-            this->data_->PriorityClass = PROCESS_PRIORITY_CLASS_NORMAL;
+            this->ptr_->PriorityClass = PROCESS_PRIORITY_CLASS_NORMAL;
             break;
         case PRIORITY_CLASS::HIGH_PRIORITY_CLASS:
-            this->data_->PriorityClass = PROCESS_PRIORITY_CLASS_HIGH;
+            this->ptr_->PriorityClass = PROCESS_PRIORITY_CLASS_HIGH;
             break;
         case PRIORITY_CLASS::REALTIME_PRIORITY_CLASS:
-            this->data_->PriorityClass = PROCESS_PRIORITY_CLASS_REALTIME;
+            this->ptr_->PriorityClass = PROCESS_PRIORITY_CLASS_REALTIME;
             break;
         case PRIORITY_CLASS::BELOW_NORMAL_PRIORITY_CLASS:
-            this->data_->PriorityClass = PROCESS_PRIORITY_CLASS_BELOW_NORMAL;
+            this->ptr_->PriorityClass = PROCESS_PRIORITY_CLASS_BELOW_NORMAL;
             break;
         case PRIORITY_CLASS::ABOVE_NORMAL_PRIORITY_CLASS:
-            this->data_->PriorityClass = PROCESS_PRIORITY_CLASS_ABOVE_NORMAL;
+            this->ptr_->PriorityClass = PROCESS_PRIORITY_CLASS_ABOVE_NORMAL;
             break;
         case PRIORITY_CLASS::UNKNOWN_PRIORITY_CLASS:
         default:
@@ -104,9 +104,9 @@ class PROCESS_PRIORITY_CLASS_INFORMATION_IMPL final
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    PROCESS_PRIORITY_CLASS_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    PROCESS_PRIORITY_CLASS_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : PROCESS_PRIORITY_CLASS_INFORMATION_IMPL_BASE(
-              PROCESS_INFORMATION_CLASS::ProcessPriorityClass, gva, buffer_size) {}
+              PROCESS_INFORMATION_CLASS::ProcessPriorityClass, ptr, buffer_size) {}
 };
 
 } // namespace nt

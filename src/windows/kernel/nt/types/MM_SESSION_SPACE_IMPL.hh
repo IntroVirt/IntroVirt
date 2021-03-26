@@ -17,7 +17,6 @@
 
 #include "windows/kernel/nt/structs/structs.hh"
 
-#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/types/MM_SESSION_SPACE.hh>
 
 namespace introvirt {
@@ -30,21 +29,21 @@ class NtKernelImpl;
 template <typename PtrType>
 class MM_SESSION_SPACE_IMPL final : public MM_SESSION_SPACE {
   public:
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t SessionID() const override;
 
     std::vector<std::shared_ptr<const PROCESS>> process_list() const override;
 
-    MM_SESSION_SPACE_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    MM_SESSION_SPACE_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
   private:
     uint16_t SessionProcessLinksOffset() const;
-    GuestVirtualAddress SessionProcListHeadAddress() const;
+    guest_ptr<void> SessionProcListHeadAddress() const;
 
   private:
     const NtKernel& kernel_;
-    const GuestVirtualAddress gva_;
+    const guest_ptr<void> ptr_;
     const structs::MM_SESSION_SPACE* mm_session_space;
     const structs::EPROCESS* eprocess;
     guest_ptr<char[]> buffer;

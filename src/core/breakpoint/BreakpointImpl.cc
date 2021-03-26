@@ -32,17 +32,17 @@ void BreakpointImpl::callback(std::function<void(Event&)> callback) {
     cbdata_->callback_ = callback;
 }
 
-const GuestPhysicalAddress& BreakpointImpl::address() const { return address_; }
+guest_phys_ptr<uint8_t> BreakpointImpl::ptr() const { return ptr_; }
 
-BreakpointImpl::BreakpointImpl(const GuestAddress& address, std::function<void(Event&)> callback)
-    : address_(address.domain(), address.physical_address()),
-      cbdata_(std::make_shared<BreakpointImplCallback>(std::move(callback))) {}
+BreakpointImpl::BreakpointImpl(const guest_phys_ptr<void>& ptr,
+                               std::function<void(Event&)> callback)
+    : ptr_(ptr), cbdata_(std::make_shared<BreakpointImplCallback>(std::move(callback))) {}
 
 BreakpointImpl::~BreakpointImpl() {
     // Notify the breakpoint manager that we're done
     cbdata_->destroyed_ = true;
 
-    auto& domain = const_cast<DomainImpl&>(static_cast<const DomainImpl&>(address_.domain()));
+    auto& domain = const_cast<DomainImpl&>(static_cast<const DomainImpl&>(ptr_.domain()));
     domain.breakpoint_manager().remove_ref(*this);
 }
 

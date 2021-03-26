@@ -38,18 +38,18 @@ using PROCESS_DEFAULT_HARD_ERROR_MODE_INFORMATION_IMPL_BASE =
 class PROCESS_DEFAULT_HARD_ERROR_MODE_INFORMATION_IMPL final
     : public PROCESS_DEFAULT_HARD_ERROR_MODE_INFORMATION_IMPL_BASE {
   public:
-    uint32_t DefaultHardErrorMode() const override { return this->data_->DefaultHardErrorMode; }
+    uint32_t DefaultHardErrorMode() const override { return this->ptr_->DefaultHardErrorMode; }
     void DefaultHardErrorMode(uint32_t DefaultHardErrorMode) override {
-        this->data_->DefaultHardErrorMode = DefaultHardErrorMode;
+        this->ptr_->DefaultHardErrorMode = DefaultHardErrorMode;
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    PROCESS_DEFAULT_HARD_ERROR_MODE_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+    PROCESS_DEFAULT_HARD_ERROR_MODE_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                      uint32_t buffer_size)
         : PROCESS_DEFAULT_HARD_ERROR_MODE_INFORMATION_IMPL_BASE(
-              PROCESS_INFORMATION_CLASS::ProcessDefaultHardErrorMode, gva, buffer_size) {}
+              PROCESS_INFORMATION_CLASS::ProcessDefaultHardErrorMode, ptr, buffer_size) {}
 };
 
 } // namespace nt

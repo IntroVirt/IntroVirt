@@ -23,8 +23,7 @@ namespace nt {
 
 class KEVENT : public DISPATCHER_OBJECT {
   public:
-    static std::shared_ptr<KEVENT> make_shared(const NtKernel& kernel,
-                                               const GuestVirtualAddress& gva);
+    static std::shared_ptr<KEVENT> make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr);
 
     static std::shared_ptr<KEVENT> make_shared(const NtKernel& kernel,
                                                std::unique_ptr<OBJECT_HEADER>&& object_header);

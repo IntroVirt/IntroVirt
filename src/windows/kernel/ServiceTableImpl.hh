@@ -24,13 +24,22 @@ namespace windows {
 template <typename PtrType>
 class ServiceTableImpl final : public ServiceTable {
   public:
-    GuestVirtualAddress entry(unsigned int index) const override;
-    unsigned int length() const override;
+    guest_ptr<void> entry(unsigned int index) const override {
+        if constexpr (std::is_same_v<uint64_t, PtrType>) {
+            // With 64-bit, the value is relative to the start of the table
+            return ptr_ + (table_[index] >> 4);
+        } else {
+            // With 32-bit, the table directly holds the address
+            return ptr_.clone(table_[index]);
+        }
+    }
+    unsigned int length() const override { return table_.length(); }
 
-    ServiceTableImpl(const GuestVirtualAddress& gva, unsigned int length);
+    ServiceTableImpl(const guest_ptr<void>& ptr, unsigned int length)
+        : ptr_(ptr), table_(ptr, length) {}
 
   private:
-    GuestVirtualAddress gva_;
+    guest_ptr<void> ptr_;
     guest_ptr<int32_t[]> table_;
 };
 

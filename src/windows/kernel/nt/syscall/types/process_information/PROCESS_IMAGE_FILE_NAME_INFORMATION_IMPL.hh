@@ -48,7 +48,7 @@ class PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL
     : public PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL_BASE<PtrType> {
   public:
     std::string ImageFileName() const final {
-        if (ImageFileNameLength_ != this->data_->ImageFileName.Length)
+        if (ImageFileNameLength_ != this->ptr_->ImageFileName.Length)
             parse();
 
         return ImageFileName_->utf8();
@@ -56,14 +56,14 @@ class PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL
 
     void ImageFileName(const std::string& ImageFileName) final {
         ImageFileName_->set(ImageFileName);
-        this->data_->ImageFileName.Length = ImageFileName_->Length();
+        this->ptr_->ImageFileName.Length = ImageFileName_->Length();
         ImageFileNameLength_ = ImageFileName_->Length();
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const final;
     Json::Value json() const final;
 
-    PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   protected:
     /*
@@ -71,7 +71,7 @@ class PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL
      * That's why it takes the information_class argument.
      */
     PROCESS_IMAGE_FILE_NAME_INFORMATION_IMPL(PROCESS_INFORMATION_CLASS information_class,
-                                             const GuestVirtualAddress& gva, uint32_t buffer_size);
+                                             const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
     void parse() const;

@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 
@@ -40,13 +40,13 @@ class CRYPT_DECRYPT_MESSAGE_PARA {
     virtual uint32_t cCertStore() const = 0;
     virtual void cCertStore(uint32_t cCertStore) = 0;
 
-    virtual GuestVirtualAddress prghCertStore() const = 0;
-    virtual void prghCertStore(const GuestVirtualAddress& prghCertStore) = 0;
+    virtual guest_ptr<void> prghCertStore() const = 0;
+    virtual void prghCertStore(const guest_ptr<void>& prghCertStore) = 0;
 
     virtual uint32_t dwFlags() const = 0;
     virtual void dwFlags(uint32_t dwFlags) = 0;
 
-    static std::unique_ptr<CRYPT_DECRYPT_MESSAGE_PARA> make_unique(const GuestVirtualAddress& gva,
+    static std::shared_ptr<CRYPT_DECRYPT_MESSAGE_PARA> make_shared(const guest_ptr<void>& ptr,
                                                                    bool x64);
 
     /**

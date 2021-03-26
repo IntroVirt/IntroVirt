@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <memory>
 
@@ -65,7 +65,7 @@ class size_iterator {
         // Get the next entry offset
         const uint64_t entry_size = current_->Size();
 
-        GuestVirtualAddress pNextEntry = current_->address() + entry_size;
+        guest_ptr<void> pNextEntry = current_->ptr() + entry_size;
         if (pNextEntry < buffer_end_) {
             current_ = _T::make_shared(pNextEntry);
         } else {
@@ -83,9 +83,9 @@ class size_iterator {
         return copy;
     }
 
-    size_iterator(const std::shared_ptr<_T>& value, const GuestVirtualAddress& buffer_end)
+    size_iterator(const std::shared_ptr<_T>& value, const guest_ptr<void>& buffer_end)
         : current_(value), buffer_end_(buffer_end) {}
-    size_iterator(std::shared_ptr<_T>&& value, const GuestVirtualAddress& buffer_end)
+    size_iterator(std::shared_ptr<_T>&& value, const guest_ptr<void>& buffer_end)
         : current_(std::move(value)), buffer_end_(buffer_end) {}
 
     // null/end constructor
@@ -101,7 +101,7 @@ class size_iterator {
 
   private:
     std::shared_ptr<_T> current_;
-    GuestVirtualAddress buffer_end_;
+    guest_ptr<void> buffer_end_;
 };
 
 } // namespace nt

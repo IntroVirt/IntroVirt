@@ -42,7 +42,7 @@ class DISPATCHER_HEADER_IMPL final : public DISPATCHER_HEADER {
 
     int32_t SignalState() const override;
 
-    DISPATCHER_HEADER_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    DISPATCHER_HEADER_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
   private:
     const structs::DISPATCHER_HEADER* offsets_;

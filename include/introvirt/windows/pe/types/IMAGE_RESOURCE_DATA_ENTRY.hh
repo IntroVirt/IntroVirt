@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 
@@ -49,9 +49,9 @@ class IMAGE_RESOURCE_DATA_ENTRY {
     /**
      * @brief Get the absolute address of the data
      *
-     * @return GuestVirtualAddress
+     * @return guest_ptr<void>
      */
-    virtual GuestVirtualAddress data_address() const = 0;
+    virtual guest_ptr<void> data_address() const = 0;
 
     virtual ~IMAGE_RESOURCE_DATA_ENTRY() = default;
 };

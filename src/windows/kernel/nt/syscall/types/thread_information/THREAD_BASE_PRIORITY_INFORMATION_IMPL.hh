@@ -40,15 +40,15 @@ using THREAD_BASE_PRIORITY_INFORMATION_IMPL_BASE =
 class THREAD_BASE_PRIORITY_INFORMATION_IMPL final
     : public THREAD_BASE_PRIORITY_INFORMATION_IMPL_BASE {
   public:
-    int32_t BasePriority() const override { return this->data_->BasePriority; }
-    void BasePriority(int32_t BasePriority) override { this->data_->BasePriority = BasePriority; }
+    int32_t BasePriority() const override { return this->ptr_->BasePriority; }
+    void BasePriority(int32_t BasePriority) override { this->ptr_->BasePriority = BasePriority; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    THREAD_BASE_PRIORITY_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    THREAD_BASE_PRIORITY_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : THREAD_BASE_PRIORITY_INFORMATION_IMPL_BASE(THREAD_INFORMATION_CLASS::ThreadBasePriority,
-                                                     gva, buffer_size) {}
+                                                     ptr, buffer_size) {}
 };
 
 } // namespace nt

@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <functional>
 #include <memory>
@@ -50,7 +50,7 @@ class offset_iterator {
             return (current_.get() == other.current_.get());
         }
 
-        return current_->address() == other.current_->address();
+        return current_->ptr() == other.current_->ptr();
     }
     inline bool operator!=(const offset_iterator<_T, _Const>& other) const {
         return !(operator==(other));
@@ -65,21 +65,21 @@ class offset_iterator {
 
         // Get the next entry offset
         const uint64_t next_entry_offset = current_->NextEntryOffset();
-        GuestVirtualAddress pNextEntry;
+        guest_ptr<void> pNextEntry;
 
         // If there is another
         if (next_entry_offset) {
             // If it's non-zero, there should be another entry
-            pNextEntry = current_->address() + next_entry_offset;
+            pNextEntry = current_->ptr() + next_entry_offset;
             if (pNextEntry >= buffer_end_) {
                 // We're past the end of the buffer.
-                pNextEntry = GuestVirtualAddress();
+                pNextEntry = guest_ptr<void>();
             }
         }
 
         if (pNextEntry) {
             previous_ = std::move(current_);
-            current_ = make_shared_func_(pNextEntry, buffer_end_ - pNextEntry);
+            current_ = make_shared_func_(pNextEntry, buffer_end_.address() - pNextEntry.address());
         } else {
             // We've reached the end
             current_.reset();
@@ -99,12 +99,12 @@ class offset_iterator {
     pointer previous() const { return previous_.get(); }
 
     offset_iterator(
-        std::function<std::shared_ptr<_T>(const GuestVirtualAddress&, uint32_t)> make_shared_func,
-        const std::shared_ptr<_T>& value, const GuestVirtualAddress& buffer_end)
+        std::function<std::shared_ptr<_T>(const guest_ptr<void>&, uint32_t)> make_shared_func,
+        const std::shared_ptr<_T>& value, const guest_ptr<void>& buffer_end)
         : make_shared_func_(make_shared_func), current_(value), buffer_end_(buffer_end) {}
     offset_iterator(
-        std::function<std::shared_ptr<_T>(const GuestVirtualAddress&, uint32_t)> make_shared_func,
-        std::shared_ptr<_T>&& value, const GuestVirtualAddress& buffer_end)
+        std::function<std::shared_ptr<_T>(const guest_ptr<void>&, uint32_t)> make_shared_func,
+        std::shared_ptr<_T>&& value, const guest_ptr<void>& buffer_end)
         : make_shared_func_(make_shared_func), current_(std::move(value)), buffer_end_(buffer_end) {
     }
 
@@ -124,10 +124,10 @@ class offset_iterator {
     friend class offset_iterator<_T, false>;
     friend class offset_iterator<_T, true>;
 
-    std::function<std::shared_ptr<_T>(const GuestVirtualAddress&, uint32_t)> make_shared_func_;
+    std::function<std::shared_ptr<_T>(const guest_ptr<void>&, uint32_t)> make_shared_func_;
     std::shared_ptr<_T> current_;
     std::shared_ptr<_T> previous_;
-    GuestVirtualAddress buffer_end_;
+    guest_ptr<void> buffer_end_;
 };
 
 } // namespace nt

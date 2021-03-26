@@ -17,7 +17,6 @@
 
 #include "LUID_IMPL.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/types/LUID_AND_ATTRIBUTES.hh>
 
@@ -42,19 +41,16 @@ class LUID_AND_ATTRIBUTES_IMPL final : public LUID_AND_ATTRIBUTES {
     LUID& Luid() override { return luid_; }
     const LUID& Luid() const override { return luid_; }
 
-    LUID_ATTRIBUTES Attributes() const override { return luid_and_attributes_->Attributes; }
-    void Attributes(LUID_ATTRIBUTES attributes) override {
-        luid_and_attributes_->Attributes = attributes;
-    }
+    LUID_ATTRIBUTES Attributes() const override { return ptr_->Attributes; }
+    void Attributes(LUID_ATTRIBUTES attributes) override { ptr_->Attributes = attributes; }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    LUID_AND_ATTRIBUTES_IMPL(const GuestVirtualAddress& gva);
+    LUID_AND_ATTRIBUTES_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr), luid_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
+    const guest_ptr<structs::_LUID_AND_ATTRIBUTES> ptr_;
     LUID_IMPL luid_;
-    guest_ptr<structs::_LUID_AND_ATTRIBUTES> luid_and_attributes_;
 };
 
 } // namespace nt

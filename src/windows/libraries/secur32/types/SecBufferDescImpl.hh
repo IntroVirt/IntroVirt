@@ -30,7 +30,7 @@ template <typename PtrType>
 struct _SecBufferDesc {
     uint32_t ulVersion;
     uint32_t cBuffers;
-    PtrType pBuffers;
+    guest_member_ptr<void, PtrType> pBuffers;
 };
 
 } // namespace structs
@@ -38,22 +38,19 @@ struct _SecBufferDesc {
 template <typename PtrType>
 class SecBufferDescImpl final : public SecBufferDesc {
   public:
-    uint32_t ulVersion() const override { return data_->ulVersion; }
-    void ulVersion(uint32_t ulVersion) override { data_->ulVersion = ulVersion; }
+    uint32_t ulVersion() const override { return ptr_->ulVersion; }
+    void ulVersion(uint32_t ulVersion) override { ptr_->ulVersion = ulVersion; }
 
-    uint32_t cBuffers() const override { return data_->cBuffers; }
-    void cBuffers(uint32_t cBuffers) override { data_->cBuffers = cBuffers; }
+    uint32_t cBuffers() const override { return ptr_->cBuffers; }
+    void cBuffers(uint32_t cBuffers) override { ptr_->cBuffers = cBuffers; }
 
-    GuestVirtualAddress pBuffers() const override { return gva_.create(data_->pBuffers); }
-    void pBuffers(const GuestVirtualAddress& gva) override {
-        data_->pBuffers = gva.virtual_address();
-    }
+    guest_ptr<void> pBuffers() const override { return ptr_->pBuffers.get(ptr_); }
+    void pBuffers(const guest_ptr<void>& ptr) override { ptr_->pBuffers.set(ptr); }
 
-    SecBufferDescImpl(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    SecBufferDescImpl(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_SecBufferDesc<PtrType>> data_;
+    guest_ptr<structs::_SecBufferDesc<PtrType>> ptr_;
 };
 
 } // namespace secur32

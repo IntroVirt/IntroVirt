@@ -43,20 +43,32 @@ static_assert(sizeof(_SID) == 0xc);
 } // namespace structs
 
 class SID_IMPL final : public SID {
+    using _SID = structs::_SID;
+    using _SID_IDENTIFIER_AUTHORITY = structs::_SID_IDENTIFIER_AUTHORITY;
+
   public:
-    uint8_t Revision() const override;
-    const std::vector<uint8_t>& IdentifierAuthority() const override;
-    const std::vector<uint32_t>& SubAuthorities() const override;
+    uint8_t Revision() const override { return ptr_->Revision; }
+    guest_ptr<const uint8_t[]> IdentifierAuthority() const override {
+        return pIdentifierAuthority_;
+    }
+    guest_ptr<const uint32_t[]> SubAuthorities() const override { return pSubAuthorities_; }
 
     Json::Value json() const override;
 
-    SID_IMPL(const GuestVirtualAddress& gva);
+    SID_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {
+
+        // Pull out the IdentifierAuthority array
+        pIdentifierAuthority_.reset(ptr + offsetof(_SID, IdentifierAuthority),
+                                    sizeof(_SID_IDENTIFIER_AUTHORITY::Value));
+
+        // Pull out the SubAuthority array
+        pSubAuthorities_.reset(ptr + offsetof(_SID, SubAuthority), ptr_->SubAuthorityCount);
+    }
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_SID> buffer_;
-    mutable std::vector<uint8_t> IdentifierAuthority_;
-    mutable std::vector<uint32_t> SubAuthorities_;
+    guest_ptr<_SID> ptr_;
+    guest_ptr<uint8_t[]> pIdentifierAuthority_;
+    guest_ptr<uint32_t[]> pSubAuthorities_;
 };
 
 } // namespace nt

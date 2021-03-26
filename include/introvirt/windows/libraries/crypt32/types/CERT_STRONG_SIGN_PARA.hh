@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/libraries/crypt32/types/types.hh>
 
 #include <cstdint>
@@ -38,17 +38,16 @@ class CERT_STRONG_SIGN_PARA {
     virtual uint32_t dwInfoChoice() const = 0;
     virtual void dwInfoChoice(uint32_t dwInfoChoice) = 0;
 
-    virtual GuestVirtualAddress pvInfo() const = 0;
-    virtual void pvInfo(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> pvInfo() const = 0;
+    virtual void pvInfo(const guest_ptr<void>& ptr) = 0;
 
-    virtual GuestVirtualAddress pSerializedInfo() const = 0;
-    virtual void pSerializedInfo(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> pSerializedInfo() const = 0;
+    virtual void pSerializedInfo(const guest_ptr<void>& ptr) = 0;
 
-    virtual GuestVirtualAddress pszOID() const = 0;
-    virtual void pszOID(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<char[]> pszOID() const = 0;
+    virtual void pszOID(const guest_ptr<char[]>& ptr) = 0;
 
-    static std::unique_ptr<CERT_STRONG_SIGN_PARA> make_unique(const GuestVirtualAddress& gva,
-                                                              bool x64);
+    static std::shared_ptr<CERT_STRONG_SIGN_PARA> make_shared(const guest_ptr<void>& ptr, bool x64);
 
     /**
      * @brief Get the size of the structure

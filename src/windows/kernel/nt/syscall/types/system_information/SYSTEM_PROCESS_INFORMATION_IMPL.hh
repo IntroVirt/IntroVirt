@@ -39,13 +39,13 @@ class SYSTEM_PROCESS_INFORMATION_IMPL final : public SYSTEM_PROCESS_INFORMATION_
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    SYSTEM_PROCESS_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    SYSTEM_PROCESS_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : SYSTEM_PROCESS_INFORMATION_IMPL_BASE<PtrType>(
-              [](const GuestVirtualAddress& gva, uint32_t buffer_size) {
+              [](const guest_ptr<void>& ptr, uint32_t buffer_size) {
                   return std::make_shared<SYSTEM_PROCESS_INFORMATION_ENTRY_IMPL<PtrType>>(
-                      gva, buffer_size);
+                      ptr, buffer_size);
               },
-              gva, buffer_size, SYSTEM_INFORMATION_CLASS::SystemProcessInformation, gva,
+              ptr, buffer_size, SYSTEM_INFORMATION_CLASS::SystemProcessInformation, ptr,
               buffer_size) {}
 };
 

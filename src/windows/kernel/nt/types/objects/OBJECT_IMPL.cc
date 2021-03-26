@@ -86,25 +86,24 @@ std::shared_ptr<OBJECT> OBJECT::make_shared(const NtKernel& kernel,
                                           std::move(object_header));
 }
 
-std::shared_ptr<OBJECT> OBJECT::make_shared(const NtKernel& kernel,
-                                            const GuestVirtualAddress& gva) {
+std::shared_ptr<OBJECT> OBJECT::make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr) {
     size_t object_headerOffset = 0x18;
     std::unique_ptr<OBJECT_HEADER> object_header;
 
     if (kernel.x64()) {
         object_headerOffset *= 2;
         object_header = std::make_unique<OBJECT_HEADER_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva - object_headerOffset);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr - object_headerOffset);
     } else {
         object_header = std::make_unique<OBJECT_HEADER_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva - object_headerOffset);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr - object_headerOffset);
     }
 
     switch (object_header->type()) {
     case ObjectType::Process:
-        return kernel.process(gva);
+        return kernel.process(ptr);
     case ObjectType::Thread:
-        return kernel.thread(gva);
+        return kernel.thread(ptr);
     default:
         return make_shared(kernel, std::move(object_header));
     }

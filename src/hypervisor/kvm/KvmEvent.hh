@@ -22,7 +22,6 @@
 
 #include <introvirt/core/domain/Domain.hh>
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/util/compiler.hh>
 
 namespace introvirt {
@@ -60,8 +59,8 @@ class KvmEvent final : public HypervisorEvent {
         }
     }
 
-    GuestPhysicalAddress mem_access_physical_address() const override {
-        return GuestPhysicalAddress(domain(), event_data_.mem_event.gpa);
+    guest_phys_ptr<void> mem_access_physical_address() const override {
+        return guest_phys_ptr<void>(vcpu_.domain(), event_data_.mem_event.gpa);
     }
 
     bool mem_access_read() const override {

@@ -22,7 +22,7 @@ namespace nt {
 
 template <typename PtrType>
 OBJECT_HEADER_PROCESS_INFO_IMPL<PtrType>::OBJECT_HEADER_PROCESS_INFO_IMPL(
-    const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva) {}
+    const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr) {}
 
 template class OBJECT_HEADER_PROCESS_INFO_IMPL<uint32_t>;
 template class OBJECT_HEADER_PROCESS_INFO_IMPL<uint64_t>;

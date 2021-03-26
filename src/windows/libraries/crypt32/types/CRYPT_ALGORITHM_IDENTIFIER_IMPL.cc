@@ -22,12 +22,12 @@ namespace introvirt {
 namespace windows {
 namespace crypt32 {
 
-std::unique_ptr<CRYPT_ALGORITHM_IDENTIFIER>
-CRYPT_ALGORITHM_IDENTIFIER::make_unique(const GuestVirtualAddress& gva, bool x64) {
+std::shared_ptr<CRYPT_ALGORITHM_IDENTIFIER>
+CRYPT_ALGORITHM_IDENTIFIER::make_shared(const guest_ptr<void>& ptr, bool x64) {
     if (x64) {
-        return std::make_unique<CRYPT_ALGORITHM_IDENTIFIER_IMPL<uint64_t>>(gva);
+        return std::make_shared<CRYPT_ALGORITHM_IDENTIFIER_IMPL<uint64_t>>(ptr);
     }
-    return std::make_unique<CRYPT_ALGORITHM_IDENTIFIER_IMPL<uint32_t>>(gva);
+    return std::make_shared<CRYPT_ALGORITHM_IDENTIFIER_IMPL<uint32_t>>(ptr);
 }
 
 size_t CRYPT_ALGORITHM_IDENTIFIER::size(bool x64) {

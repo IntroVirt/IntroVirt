@@ -32,15 +32,15 @@ Json::Value KEY_VALUE_BASIC_INFORMATION_IMPL::json() const {
     return result;
 }
 
-KEY_VALUE_BASIC_INFORMATION_IMPL::KEY_VALUE_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+KEY_VALUE_BASIC_INFORMATION_IMPL::KEY_VALUE_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                                    uint32_t buffer_size)
     : KEY_VALUE_BASIC_INFORMATION_IMPL_BASE(KEY_VALUE_INFORMATION_CLASS::KeyValueBasicInformation,
-                                            gva, buffer_size) {
+                                            ptr, buffer_size) {
 
-    const auto pName = gva_ + offsetof(structs::_KEY_VALUE_BASIC_INFORMATION, Name);
-    const uint32_t name_buffer_len = (gva_ + buffer_size) - pName;
-    const uint32_t name_length = std::min(data_->NameLength, name_buffer_len);
-    Name_.emplace(pName, name_length, name_buffer_len);
+    const auto pName = ptr + offsetof(structs::_KEY_VALUE_BASIC_INFORMATION, Name);
+    const uint32_t name_buffer_len = (ptr + buffer_size) - pName;
+    const uint32_t name_length = std::min(ptr_->NameLength, name_buffer_len);
+    Name_.emplace(pName, name_buffer_len, name_length);
 }
 
 } // namespace nt

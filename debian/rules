@@ -1,5 +1,8 @@
 #!/usr/bin/make -f
 
+export DEB_CXXFLAGS_MAINT_APPEND = -g
+export DEB_LDFLAGS_MAINT_APPEND = -rdynamic
+
 %:
 	dh $@
 

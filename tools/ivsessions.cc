@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
 
         const auto& sessionProcList = session->process_list();
         cout << "*************************************************************\n";
-        cout << "Session " << session->address() << ": ";
+        cout << "Session " << session->ptr() << ": ";
         cout << std::right << std::setw(5);
         cout << "ID: " << session->SessionID() << '\n';
 

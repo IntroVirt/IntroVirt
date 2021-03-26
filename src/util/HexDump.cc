@@ -16,9 +16,6 @@
 
 #include <introvirt/util/HexDump.hh>
 
-#include <introvirt/core/memory/GuestPhysicalAddress.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
-
 #include <iomanip>
 #include <utility>
 
@@ -30,24 +27,24 @@ HexDump::HexDump(const void* buf, size_t len, size_t start_address, std::string 
     : buf_(static_cast<const uint8_t*>(buf)), len_(len), start_address_(start_address),
       prepend_(prepend) {}
 
-HexDump::HexDump(const GuestAddress& ga, size_t len, std::string prepend)
-    : len_(len), start_address_(ga.value()), prepend_(prepend) {
+HexDump::HexDump(const guest_ptr<void>& ptr, size_t len, std::string prepend)
+    : len_(len), start_address_(ptr.address()), prepend_(prepend) {
 
-    guest_data_ = guest_ptr<uint8_t[]>(ga, len);
+    guest_data_ = guest_ptr<uint8_t[]>(ptr, len);
     buf_ = guest_data_.get();
 }
 
 void HexDump::write(ostream& os) const {
-    os << hex << setfill('0');
+    os << std::hex << std::setfill('0');
 
     for (unsigned int i = 0; i < len_; i += 16) {
         os << prepend_;
-        os << setw(16);
+        os << std::setw(16);
         os << (start_address_ + i) << "  ";
 
         for (unsigned int j = i; j < (i + 16); ++j) {
             if (j < len_) {
-                os << setw(2) << static_cast<unsigned int>(buf_[j] & 0xFF) << " ";
+                os << std::setw(2) << static_cast<unsigned int>(buf_[j] & 0xFF) << " ";
             } else {
                 os << "   "; // Padding to reach the end
             }
@@ -58,7 +55,7 @@ void HexDump::write(ostream& os) const {
         os << " |";
         for (unsigned int j = i; j < (i + 16); ++j) {
             if (j < len_) {
-                if (isprint(buf_[j]) != 0) {
+                if (std::isprint(buf_[j]) != 0) {
                     os << char(buf_[j]);
                 } else {
                     os << '.';
@@ -68,7 +65,7 @@ void HexDump::write(ostream& os) const {
         os << "|\n";
     }
 
-    os << dec;
+    os << std::dec;
 }
 
 } // namespace introvirt

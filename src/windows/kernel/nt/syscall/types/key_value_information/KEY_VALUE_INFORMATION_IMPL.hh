@@ -38,13 +38,13 @@ template <typename _BaseClass = KEY_VALUE_INFORMATION,
           typename _StructType = structs::_KEY_VALUE_INFORMATION>
 class KEY_VALUE_INFORMATION_IMPL : public _BaseClass {
   public:
-    uint32_t TitleIndex() const final { return data_->TitleIndex; }
+    uint32_t TitleIndex() const final { return ptr_->TitleIndex; }
 
-    void TitleIndex(uint32_t TitleIndex) final { data_->TitleIndex = TitleIndex; }
+    void TitleIndex(uint32_t TitleIndex) final { ptr_->TitleIndex = TitleIndex; }
 
-    REG_TYPE Type() const final { return static_cast<REG_TYPE>(data_->Type); }
+    REG_TYPE Type() const final { return static_cast<REG_TYPE>(ptr_->Type); }
 
-    void Type(REG_TYPE Type) final { data_->Type = static_cast<decltype(data_->Type)>(Type); }
+    void Type(REG_TYPE Type) final { ptr_->Type = static_cast<decltype(ptr_->Type)>(Type); }
 
     const std::string& Name() const override {
         static std::string empty;
@@ -59,17 +59,16 @@ class KEY_VALUE_INFORMATION_IMPL : public _BaseClass {
 
     KEY_VALUE_INFORMATION_CLASS KeyValueInformationClass() const final { return class_; }
 
-    GuestVirtualAddress address() const final { return gva_; }
+    guest_ptr<void> ptr() const final { return ptr_; }
     uint32_t buffer_size() const final { return buffer_size_; }
 
     KEY_VALUE_INFORMATION_IMPL(KEY_VALUE_INFORMATION_CLASS information_class,
-                               const GuestVirtualAddress& gva, uint32_t buffer_size);
+                               const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   protected:
     const KEY_VALUE_INFORMATION_CLASS class_;
-    const GuestVirtualAddress gva_;
+    guest_ptr<_StructType> ptr_;
     const uint32_t buffer_size_;
-    guest_ptr<_StructType> data_;
 };
 
 } // namespace nt

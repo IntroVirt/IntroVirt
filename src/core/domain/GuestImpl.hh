@@ -46,8 +46,8 @@ class GuestImpl {
      * @param pte The not-present PTE
      * @return The result of the function call
      */
-    virtual GuestPageFaultResult handle_page_fault(const GuestVirtualAddress& gva,
-                                                   uint64_t& pte) const = 0;
+    virtual GuestPageFaultResult
+    handle_page_fault(uint64_t virtual_address, uint64_t page_directory, uint64_t& pte) const = 0;
 
     /**
      * @brief Get the current thread id for the given vcpu

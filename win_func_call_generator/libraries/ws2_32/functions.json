@@ -1,0 +1,849 @@
+{
+    "accept": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-accept",
+        "result": {
+            "type": "SOCKET"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "addr",
+                "pointer": true
+            },
+            {
+                "type": "int32_t",
+                "name": "addrlen",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "bind": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-bind",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "name",
+                "pointer": true
+            },
+            {
+                "type": "int32_t",
+                "name": "namelen"
+            }
+        ]
+    },
+    "closesocket": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-closesocket",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            }
+        ]
+    },
+    "connect": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "name",
+                "pointer": true
+            },
+            {
+                "type": "int32_t",
+                "name": "namelen"
+            }
+        ]
+    },
+    "ConnectEx": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/mswsock/nc-mswsock-lpfn_connectex",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "name",
+                "pointer": true
+            },
+            {
+                "type": "int32_t",
+                "name": "namelen"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "SendBuffer",
+                "pointer": true,
+                "optional": true,
+                "length": "dwSendDataLength()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwSendDataLength"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwBytesSent",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "OVERLAPPED",
+                "name": "Overlapped",
+                "pointer": true
+            }
+        ]
+    },
+    "gethostbyname": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-gethostbyname",
+        "result": {
+            "type": "HOSTENT",
+            "pointer": true,
+            "optional": true
+        },
+        "arguments": [
+            {
+                "type": "cstring",
+                "name": "name",
+                "pointer": true
+            }
+        ]
+    },
+    "getsockname": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-getsockname",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "name",
+                "pointer": true
+            },
+            {
+                "type": "int32_t",
+                "name": "namelen",
+                "pointer": true
+            }
+        ]
+    },
+    "ioctlsocket": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-ioctlsocket",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "int32_t",
+                "name": "cmd"
+            },
+            {
+                "type": "uint32_t",
+                "name": "arg",
+                "pointer": true
+            }
+        ]
+    },
+    "listen": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-listen",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "int32_t",
+                "name": "backlog"
+            }
+        ]
+    },
+    "recv": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-recv",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "buf",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "TODO_length": "(returned() ? result() : len())",
+                "length": "len()"
+            },
+            {
+                "type": "int32_t",
+                "name": "len"
+            },
+            {
+                "type": "int32_t",
+                "name": "flags"
+            }
+        ]
+    },
+    "recvfrom": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-recvfrom",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "buf",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "TODO_length": "(returned() ? result() : len())",
+                "length": "len()"
+            },
+            {
+                "type": "int32_t",
+                "name": "len"
+            },
+            {
+                "type": "int32_t",
+                "name": "flags"
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "from",
+                "pointer": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "int32_t",
+                "name": "fromlen",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "select": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-select",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "int32_t",
+                "name": "nfds"
+            },
+            {
+                "type": "FD_SET",
+                "name": "readfds",
+                "pointer": true
+            },
+            {
+                "type": "FD_SET",
+                "name": "writefds",
+                "pointer": true
+            },
+            {
+                "type": "FD_SET",
+                "name": "exceptfds",
+                "pointer": true
+            },
+            {
+                "type": "TIMEVAL",
+                "name": "timeout",
+                "pointer": true
+            }
+        ]
+    },
+    "send": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-send",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "buf",
+                "pointer": true,
+                "length": "len()"
+            },
+            {
+                "type": "int32_t",
+                "name": "len"
+            },
+            {
+                "type": "int32_t",
+                "name": "flags"
+            }
+        ]
+    },
+    "sendto": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-sendto",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "buf",
+                "pointer": true,
+                "length": "len()"
+            },
+            {
+                "type": "int32_t",
+                "name": "len"
+            },
+            {
+                "type": "int32_t",
+                "name": "flags"
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "to",
+                "pointer": true
+            },
+            {
+                "type": "int32_t",
+                "name": "tolen"
+            }
+        ]
+    },
+    "setsockopt": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-setsockopt",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "int32_t",
+                "name": "level"
+            },
+            {
+                "type": "int32_t",
+                "name": "optname"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "optval",
+                "pointer": true,
+                "length": "optlen()"
+            },
+            {
+                "type": "int32_t",
+                "name": "optlen"
+            }
+        ]
+    },
+    "shutdown": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-shutdown",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "int32_t",
+                "name": "how"
+            }
+        ]
+    },
+    "socket": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket",
+        "result": {
+            "type": "SOCKET"
+        },
+        "arguments": [
+            {
+                "type": "int32_t",
+                "name": "af"
+            },
+            {
+                "type": "int32_t",
+                "name": "type"
+            },
+            {
+                "type": "int32_t",
+                "name": "protocol"
+            }
+        ]
+    },
+    "TransmitFile": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-transmitfile",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "hSocket"
+            },
+            {
+                "type": "uint64_t",
+                "name": "hFile"
+            },
+            {
+                "type": "int32_t",
+                "name": "nNumberOfBytesToWrite"
+            },
+            {
+                "type": "int32_t",
+                "name": "nNumberOfBytesPerSend"
+            },
+            {
+                "type": "OVERLAPPED",
+                "name": "Overlapped",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "TRANSMIT_FILE_BUFFERS",
+                "name": "TransmitBuffers",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwReserved"
+            }
+        ]
+    },
+    "WSAAccept": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsaaccept",
+        "result": {
+            "type": "SOCKET"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "addr",
+                "pointer": true
+            },
+            {
+                "type": "int32_t",
+                "name": "addrlen",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "CONDITIONPROC",
+                "name": "fnCondition",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwCallbackData",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "WSAConnect": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsaconnect",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "name",
+                "pointer": true
+            },
+            {
+                "type": "int32_t",
+                "name": "namelen"
+            },
+            {
+                "type": "WSABUF",
+                "name": "CallerData",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "WSABUF",
+                "name": "CalleeData",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "QOS",
+                "name": "SQOS",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "QOS",
+                "name": "GQOS",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "WSARecv": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsarecv",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "WSABUF",
+                "name": "Buffers",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwBufferCount"
+            },
+            {
+                "type": "uint32_t",
+                "name": "NumberOfBytesRecvd",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "Flags",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "WSAOVERLAPPED",
+                "name": "Overlapped",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE",
+                "name": "CompletionRoutine",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "WSARecvFrom": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsarecvfrom",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "WSABUF",
+                "name": "Buffers",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwBufferCount"
+            },
+            {
+                "type": "uint32_t",
+                "name": "NumberOfBytesRecvd",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "Flags",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "From",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "int32_t",
+                "name": "Fromlen",
+                "pointer": true,
+                "in": true,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "WSAOVERLAPPED",
+                "name": "Overlapped",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE",
+                "name": "CompletionRoutine",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "WSASend": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasend",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "WSABUF",
+                "name": "Buffers",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwBufferCount"
+            },
+            {
+                "type": "uint32_t",
+                "name": "NumberOfBytesSent",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "Flags",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "WSAOVERLAPPED",
+                "name": "Overlapped",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE",
+                "name": "CompletionRoutine",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "WSASendTo": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasendto",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "SOCKET",
+                "name": "s"
+            },
+            {
+                "type": "WSABUF",
+                "name": "Buffers",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwBufferCount"
+            },
+            {
+                "type": "uint32_t",
+                "name": "NumberOfBytesSent",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "optional": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "Flags",
+                "pointer": true,
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "SOCKADDR",
+                "name": "To",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "int32_t",
+                "name": "iToLen"
+            },
+            {
+                "type": "WSAOVERLAPPED",
+                "name": "Overlapped",
+                "pointer": true,
+                "optional": true
+            },
+            {
+                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE",
+                "name": "CompletionRoutine",
+                "pointer": true,
+                "optional": true
+            }
+        ]
+    },
+    "WSASocketA": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa",
+        "result": {
+            "type": "SOCKET"
+        },
+        "arguments": [
+            {
+                "type": "int32_t",
+                "name": "af"
+            },
+            {
+                "type": "int32_t",
+                "name": "type"
+            },
+            {
+                "type": "int32_t",
+                "name": "protocol"
+            },
+            {
+                "type": "WSAPROTOCOL_INFOA",
+                "name": "ProtocolInfo",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "g"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            }
+        ]
+    },
+    "WSASocketW": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketw",
+        "result": {
+            "type": "SOCKET"
+        },
+        "arguments": [
+            {
+                "type": "int32_t",
+                "name": "af"
+            },
+            {
+                "type": "int32_t",
+                "name": "type"
+            },
+            {
+                "type": "int32_t",
+                "name": "protocol"
+            },
+            {
+                "type": "WSAPROTOCOL_INFOW",
+                "name": "ProtocolInfo",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "g"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            }
+        ]
+    },
+    "WSAStartup": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsastartup",
+        "result": {
+            "type": "int32_t"
+        },
+        "arguments": [
+            {
+                "type": "int16_t",
+                "name": "wVersionRequested"
+            },
+            {
+                "type": "WSADATA",
+                "name": "WSAData",
+                "pointer": true
+            }
+        ]
+    }
+}

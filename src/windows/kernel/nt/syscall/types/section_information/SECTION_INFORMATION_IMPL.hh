@@ -16,7 +16,6 @@
 #pragma once
 
 #include <introvirt/core/exception/BufferTooSmallException.hh>
-#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/compiler.hh>
 #include <introvirt/windows/kernel/nt/syscall/types/section_information/SECTION_INFORMATION.hh>
 
@@ -42,12 +41,12 @@ class SECTION_INFORMATION_IMPL : public _BaseClass {
 
     SECTION_INFORMATION_CLASS SectionInformationClass() const override { return class_; }
 
-    GuestVirtualAddress address() const final { return gva_; }
+    guest_ptr<void> ptr() const final { return ptr_; }
     uint32_t buffer_size() const final { return buffer_size_; }
 
     SECTION_INFORMATION_IMPL(SECTION_INFORMATION_CLASS information_class,
-                             const GuestVirtualAddress& gva, uint32_t buffer_size)
-        : class_(information_class), gva_(gva), buffer_size_(buffer_size) {
+                             const guest_ptr<void>& ptr, uint32_t buffer_size)
+        : class_(information_class), buffer_size_(buffer_size) {
 
         if constexpr (!std::is_same_v<_StructType, char>) {
             // Make sure the basic structure fits
@@ -55,15 +54,14 @@ class SECTION_INFORMATION_IMPL : public _BaseClass {
                 throw BufferTooSmallException(sizeof(_StructType), buffer_size);
 
             // Map it in
-            data_.reset(gva);
+            ptr_.reset(ptr);
         }
     }
 
   protected:
     const SECTION_INFORMATION_CLASS class_;
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<_StructType> data_;
+    guest_ptr<_StructType> ptr_;
 };
 
 } // namespace nt

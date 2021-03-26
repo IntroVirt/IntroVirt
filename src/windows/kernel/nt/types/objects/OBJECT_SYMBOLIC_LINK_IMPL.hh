@@ -36,7 +36,7 @@ class OBJECT_SYMBOLIC_LINK_IMPL final : public OBJECT_IMPL<PtrType, OBJECT_SYMBO
     std::string LinkTarget() const override;
     uint32_t Flags() const override;
 
-    OBJECT_SYMBOLIC_LINK_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    OBJECT_SYMBOLIC_LINK_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     OBJECT_SYMBOLIC_LINK_IMPL(const NtKernelImpl<PtrType>& kernel,
                               std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& objHeader);
 

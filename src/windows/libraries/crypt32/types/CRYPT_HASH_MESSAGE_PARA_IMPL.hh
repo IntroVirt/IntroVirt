@@ -35,7 +35,7 @@ struct _CRYPT_HASH_MESSAGE_PARA {
     uint32_t dwMsgEncodingType;
     PtrType hCryptProv;
     _CRYPT_ALGORITHM_IDENTIFIER<PtrType> HashAlgorithm;
-    PtrType pvHashAuxInfo;
+    guest_member_ptr<void, PtrType> pvHashAuxInfo;
 };
 
 } // namespace structs
@@ -43,33 +43,29 @@ struct _CRYPT_HASH_MESSAGE_PARA {
 template <typename PtrType>
 class CRYPT_HASH_MESSAGE_PARA_IMPL final : public CRYPT_HASH_MESSAGE_PARA {
   public:
-    uint32_t cbSize() const override { return data_->cbSize; }
-    void cbSize(uint32_t cbSize) override { data_->cbSize = cbSize; }
+    uint32_t cbSize() const override { return ptr_->cbSize; }
+    void cbSize(uint32_t cbSize) override { ptr_->cbSize = cbSize; }
 
-    uint32_t dwMsgEncodingType() const override { return data_->dwMsgEncodingType; }
+    uint32_t dwMsgEncodingType() const override { return ptr_->dwMsgEncodingType; }
     void dwMsgEncodingType(uint32_t dwMsgEncodingType) override {
-        data_->dwMsgEncodingType = dwMsgEncodingType;
+        ptr_->dwMsgEncodingType = dwMsgEncodingType;
     }
 
-    HCRYPTPROV_LEGACY hCryptProv() const override { return data_->hCryptProv; }
-    void hCryptProv(HCRYPTPROV_LEGACY hCryptProv) override { data_->hCryptProv = hCryptProv; }
+    HCRYPTPROV_LEGACY hCryptProv() const override { return ptr_->hCryptProv; }
+    void hCryptProv(HCRYPTPROV_LEGACY hCryptProv) override { ptr_->hCryptProv = hCryptProv; }
 
     const CRYPT_ALGORITHM_IDENTIFIER& HashAlgorithm() const override { return HashAlgorithm_; }
     CRYPT_ALGORITHM_IDENTIFIER& HashAlgorithm() override { return HashAlgorithm_; }
 
-    GuestVirtualAddress pvHashAuxInfo() const override { return gva_.create(data_->pvHashAuxInfo); }
-    void pvHashAuxInfo(const GuestVirtualAddress& gva) override {
-        data_->pvHashAuxInfo = gva.virtual_address();
-    }
+    guest_ptr<void> pvHashAuxInfo() const override { return ptr_->pvHashAuxInfo.get(ptr_); }
+    void pvHashAuxInfo(const guest_ptr<void>& ptr) override { ptr_->pvHashAuxInfo.set(ptr); }
 
-    CRYPT_HASH_MESSAGE_PARA_IMPL(const GuestVirtualAddress& gva)
-        : gva_(gva), data_(gva),
-          HashAlgorithm_(gva_ +
-                         offsetof(structs::_CRYPT_HASH_MESSAGE_PARA<PtrType>, HashAlgorithm)) {}
+    CRYPT_HASH_MESSAGE_PARA_IMPL(const guest_ptr<void>& ptr)
+        : ptr_(ptr), HashAlgorithm_(ptr + offsetof(_CRYPT_HASH_MESSAGE_PARA, HashAlgorithm)) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_CRYPT_HASH_MESSAGE_PARA<PtrType>> data_;
+    using _CRYPT_HASH_MESSAGE_PARA = structs::_CRYPT_HASH_MESSAGE_PARA<PtrType>;
+    guest_ptr<structs::_CRYPT_HASH_MESSAGE_PARA<PtrType>> ptr_;
     CRYPT_ALGORITHM_IDENTIFIER_IMPL<PtrType> HashAlgorithm_;
 };
 

@@ -26,8 +26,8 @@ namespace advapi32 {
 
 guest_ptr<const uint8_t[]> PLAINTEXTKEYBLOB::KeyData() const { return key_data_; }
 
-PLAINTEXTKEYBLOB::PLAINTEXTKEYBLOB(const GuestVirtualAddress& gva, uint32_t length)
-    : BLOB(gva, length) {
+PLAINTEXTKEYBLOB::PLAINTEXTKEYBLOB(const guest_ptr<void>& ptr, uint32_t length)
+    : BLOB(ptr, length) {
 
     // Validate some lengths
     if (unlikely(length < sizeof(_PLAINTEXTKEYBLOB)))
@@ -40,7 +40,7 @@ PLAINTEXTKEYBLOB::PLAINTEXTKEYBLOB(const GuestVirtualAddress& gva, uint32_t leng
         throw BufferTooSmallException(sizeof(_PLAINTEXTKEYBLOB), length);
 
     // Map in the key data
-    key_data_.reset(gva + offsetof(_PLAINTEXTKEYBLOB, rgbKeyData), header->dwKeySize);
+    key_data_.reset(ptr + offsetof(_PLAINTEXTKEYBLOB, rgbKeyData), header->dwKeySize);
 }
 
 } // namespace advapi32

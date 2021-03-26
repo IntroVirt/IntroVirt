@@ -53,17 +53,17 @@ struct _DOS_HEADER {
 
 class DOS_HEADER_IMPL final : public DOS_HEADER {
   public:
-    inline auto e_lfanew() const { return data_->e_lfanew; }
+    inline auto e_lfanew() const { return ptr_->e_lfanew; }
 
-    DOS_HEADER_IMPL(const GuestVirtualAddress& image_base_address) : data_(image_base_address) {
+    DOS_HEADER_IMPL(const guest_ptr<void>& image_base) : ptr_(image_base) {
 
         // Validate the signature is "MZ"
-        if (unlikely(data_->e_magic != 0x5a4D))
+        if (unlikely(ptr_->e_magic != 0x5a4D))
             throw PeException("Invalid DOS Header");
     }
 
   private:
-    guest_ptr<structs::_DOS_HEADER> data_;
+    guest_ptr<structs::_DOS_HEADER> ptr_;
 };
 
 } // namespace pe

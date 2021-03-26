@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 #include <string>
@@ -28,7 +28,7 @@ class IMAGE_SECTION_HEADER {
   public:
     virtual const std::string& Name() const = 0;
     virtual uint32_t VirtualSize() const = 0;
-    virtual GuestVirtualAddress VirtualAddress() const = 0;
+    virtual guest_ptr<void> VirtualAddress() const = 0;
     virtual uint32_t SizeOfRawData() const = 0;
 
     virtual ~IMAGE_SECTION_HEADER() = default;

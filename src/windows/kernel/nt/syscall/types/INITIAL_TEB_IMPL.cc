@@ -46,12 +46,12 @@ Json::Value INITIAL_TEB_IMPL<PtrType>::json() const {
 }
 
 std::unique_ptr<INITIAL_TEB> INITIAL_TEB::make_unique(const NtKernel& kernel,
-                                                      const GuestVirtualAddress& gva) {
+                                                      const guest_ptr<void>& ptr) {
 
     if (kernel.x64())
-        return std::make_unique<INITIAL_TEB_IMPL<uint64_t>>(gva);
+        return std::make_unique<INITIAL_TEB_IMPL<uint64_t>>(ptr);
     else
-        return std::make_unique<INITIAL_TEB_IMPL<uint32_t>>(gva);
+        return std::make_unique<INITIAL_TEB_IMPL<uint32_t>>(ptr);
 }
 
 } // namespace nt

@@ -15,18 +15,20 @@
  */
 #pragma once
 
+#include <introvirt/core/memory/guest_size_t_ptr.hh>
+
 #include <cstdint>
 
 namespace introvirt {
 namespace windows {
 namespace ws2_32 {
 
-typedef uint64_t SOCKET;
-static constexpr SOCKET INVALID_SOCKET = ~0ull;
+typedef guest_size_t SOCKET;
+static constexpr uint64_t INVALID_SOCKET = ~0ull;
 
 // This isn't actually a type, some functions can return it.
 // We need socket error codes somewhere I guess.
-static constexpr int32_t SOCKET_ERROR = -1;
+static constexpr uint64_t SOCKET_ERROR = -1;
 
 } // namespace ws2_32
 } // namespace windows

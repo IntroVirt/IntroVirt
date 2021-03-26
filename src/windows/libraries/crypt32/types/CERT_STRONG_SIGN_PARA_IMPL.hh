@@ -19,6 +19,7 @@
 
 #include <introvirt/core/memory/guest_ptr.hh>
 
+#include <cassert>
 #include <cstdint>
 
 namespace introvirt {
@@ -32,9 +33,9 @@ struct _CERT_STRONG_SIGN_PARA {
     uint32_t cbSize;
     uint32_t dwInfoChoice;
     union {
-        PtrType pvInfo;
-        PtrType pSerializedInfo;
-        PtrType pszOID;
+        guest_member_ptr<void, PtrType> pvInfo;
+        guest_member_ptr<void, PtrType> pSerializedInfo;
+        guest_member_ptr<char[], PtrType> pszOID;
     };
 };
 
@@ -43,30 +44,28 @@ struct _CERT_STRONG_SIGN_PARA {
 template <typename PtrType>
 class CERT_STRONG_SIGN_PARA_IMPL final : public CERT_STRONG_SIGN_PARA {
   public:
-    uint32_t cbSize() const override { return data_->cbSize; }
-    void cbSize(uint32_t cbSize) override { data_->cbSize = cbSize; }
+    uint32_t cbSize() const override { return ptr_->cbSize; }
+    void cbSize(uint32_t cbSize) override { ptr_->cbSize = cbSize; }
 
-    uint32_t dwInfoChoice() const override { return data_->dwInfoChoice; }
-    void dwInfoChoice(uint32_t dwInfoChoice) override { data_->dwInfoChoice = dwInfoChoice; }
+    uint32_t dwInfoChoice() const override { return ptr_->dwInfoChoice; }
+    void dwInfoChoice(uint32_t dwInfoChoice) override { ptr_->dwInfoChoice = dwInfoChoice; }
 
-    GuestVirtualAddress pvInfo() const override { return gva_.create(data_->pvInfo); }
-    void pvInfo(const GuestVirtualAddress& gva) override { data_->pvInfo = gva.virtual_address(); }
+    guest_ptr<void> pvInfo() const override { return ptr_->pvInfo.get(ptr_); }
+    void pvInfo(const guest_ptr<void>& ptr) override { ptr_->pvInfo.set(ptr); }
 
-    GuestVirtualAddress pSerializedInfo() const override {
-        return gva_.create(data_->pSerializedInfo);
+    guest_ptr<void> pSerializedInfo() const override { return ptr_->pSerializedInfo.get(ptr_); }
+    void pSerializedInfo(const guest_ptr<void>& ptr) override { ptr_->pSerializedInfo.set(ptr); }
+    guest_ptr<char[]> pszOID() const override {
+        // TODO: We should be checking dwInfoChoice to make sure this is a string
+        return ptr_->pszOID.cstring(ptr_);
     }
-    void pSerializedInfo(const GuestVirtualAddress& gva) override {
-        data_->pSerializedInfo = gva.virtual_address();
-    }
+    void pszOID(const guest_ptr<char[]>& ptr) override { ptr_->pszOID.set(ptr); }
 
-    GuestVirtualAddress pszOID() const override { return gva_.create(data_->pszOID); }
-    void pszOID(const GuestVirtualAddress& gva) override { data_->pszOID = gva.virtual_address(); }
-
-    CERT_STRONG_SIGN_PARA_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    CERT_STRONG_SIGN_PARA_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_CERT_STRONG_SIGN_PARA<PtrType>> data_;
+    using _CERT_STRONG_SIGN_PARA = structs::_CERT_STRONG_SIGN_PARA<PtrType>;
+    guest_ptr<_CERT_STRONG_SIGN_PARA> ptr_;
 };
 
 } // namespace crypt32

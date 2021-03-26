@@ -15,7 +15,6 @@
  */
 
 #include <introvirt/core/exception/BadPhysicalAddressException.hh>
-#include <introvirt/core/memory/GuestPhysicalAddress.hh>
 
 #include <sstream>
 

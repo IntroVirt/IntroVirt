@@ -83,7 +83,7 @@ class THREAD_IMPL final : public DISPATCHER_OBJECT_IMPL<PtrType, THREAD> {
     /**
      * @returns The Win32StartAddress member of ETHREAD
      */
-    GuestVirtualAddress Win32StartAddress() const override;
+    guest_ptr<void> Win32StartAddress() const override;
 
     /*
      * Retrieve the state of the thread
@@ -127,7 +127,7 @@ class THREAD_IMPL final : public DISPATCHER_OBJECT_IMPL<PtrType, THREAD> {
     WindowsTime CreateTime() const override;
     void CreateTime(const WindowsTime& time) override;
 
-    THREAD_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    THREAD_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     THREAD_IMPL(const NtKernelImpl<PtrType>& kernel,
                 std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 

@@ -37,14 +37,14 @@ using TOKEN_IS_APP_CONTAINER_IMPL_BASE =
 
 class TOKEN_IS_APP_CONTAINER_IMPL final : public TOKEN_IS_APP_CONTAINER_IMPL_BASE {
   public:
-    uint32_t TokenIsAppContainer() const override { return data_->TokenIsAppContainer; }
-    void TokenIsAppContainer(uint32_t value) override { data_->TokenIsAppContainer = value; }
+    uint32_t TokenIsAppContainer() const override { return ptr_->TokenIsAppContainer; }
+    void TokenIsAppContainer(uint32_t value) override { ptr_->TokenIsAppContainer = value; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
 
     Json::Value json() const override;
 
-    TOKEN_IS_APP_CONTAINER_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    TOKEN_IS_APP_CONTAINER_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 };
 
 } // namespace nt

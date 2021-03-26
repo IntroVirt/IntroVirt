@@ -32,9 +32,9 @@ struct _CRYPT_VERIFY_MESSAGE_PARA {
     uint32_t cbSize;
     uint32_t dwMsgAndCertEncodingType;
     PtrType hCryptProv;
-    PtrType pfnGetSignerCertificate;
-    PtrType pvGetArg;
-    PtrType pStrongSignPara;
+    guest_member_ptr<void, PtrType> pfnGetSignerCertificate;
+    guest_member_ptr<void, PtrType> pvGetArg;
+    guest_member_ptr<void, PtrType> pStrongSignPara;
 };
 
 } // namespace structs
@@ -42,34 +42,34 @@ struct _CRYPT_VERIFY_MESSAGE_PARA {
 template <typename PtrType>
 class CRYPT_VERIFY_MESSAGE_PARA_IMPL : public CRYPT_VERIFY_MESSAGE_PARA {
   public:
-    uint32_t cbSize() const override { return data_->cbSize; }
-    void cbSize(uint32_t cbSize) override { data_->cbSize = cbSize; }
+    uint32_t cbSize() const override { return ptr_->cbSize; }
+    void cbSize(uint32_t cbSize) override { ptr_->cbSize = cbSize; }
 
-    uint32_t dwMsgAndCertEncodingType() const override { return data_->dwMsgAndCertEncodingType; }
+    uint32_t dwMsgAndCertEncodingType() const override { return ptr_->dwMsgAndCertEncodingType; }
     void dwMsgAndCertEncodingType(uint32_t dwMsgAndCertEncodingType) override {
-        data_->dwMsgAndCertEncodingType = dwMsgAndCertEncodingType;
+        ptr_->dwMsgAndCertEncodingType = dwMsgAndCertEncodingType;
     }
 
-    HCRYPTPROV_LEGACY hCryptProv() const override { return data_->hCryptProv; }
-    void hCryptProv(HCRYPTPROV_LEGACY hCryptProv) override { data_->hCryptProv = hCryptProv; }
+    HCRYPTPROV_LEGACY hCryptProv() const override { return ptr_->hCryptProv; }
+    void hCryptProv(HCRYPTPROV_LEGACY hCryptProv) override { ptr_->hCryptProv = hCryptProv; }
 
-    GuestVirtualAddress pfnGetSignerCertificate() const override {
-        return gva_.create(data_->pfnGetSignerCertificate);
+    guest_ptr<void> pfnGetSignerCertificate() const override {
+        return ptr_->pfnGetSignerCertificate.get(ptr_);
     }
-    void pfnGetSignerCertificate(const GuestVirtualAddress& gva) override {
-        data_->pfnGetSignerCertificate = gva.virtual_address();
-    }
-
-    GuestVirtualAddress pvGetArg() const override { return gva_.create(data_->pvGetArg); }
-    void pvGetArg(const GuestVirtualAddress& gva) override {
-        data_->pvGetArg = gva.virtual_address();
+    void pfnGetSignerCertificate(const guest_ptr<void>& ptr) override {
+        ptr_->pfnGetSignerCertificate.set(ptr);
     }
 
-    CRYPT_VERIFY_MESSAGE_PARA_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    guest_ptr<void> pvGetArg() const override { return ptr_->pvGetArg.get(ptr_); }
+    void pvGetArg(const guest_ptr<void>& ptr) override { ptr_->pvGetArg.set(ptr); }
+
+    guest_ptr<void> pStrongSignPara() const override { return ptr_->pStrongSignPara.get(ptr_); }
+    void pStrongSignPara(const guest_ptr<void>& ptr) override { ptr_->pStrongSignPara.set(ptr); }
+
+    CRYPT_VERIFY_MESSAGE_PARA_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_CRYPT_VERIFY_MESSAGE_PARA<PtrType>> data_;
+    guest_ptr<structs::_CRYPT_VERIFY_MESSAGE_PARA<PtrType>> ptr_;
 };
 
 } // namespace crypt32

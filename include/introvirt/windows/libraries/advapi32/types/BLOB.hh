@@ -32,7 +32,7 @@ class BLOB {
     uint8_t bVersion() const;
     ALG_ID aiKeyAlg() const;
 
-    BLOB(const GuestVirtualAddress& gva, uint32_t length);
+    BLOB(const guest_ptr<void>& ptr, uint32_t length);
     virtual ~BLOB();
 
   protected:

@@ -42,7 +42,7 @@ uint64_t HANDLE_TABLE_ENTRY_IMPL<PtrType>::Handle() const {
 
 template <typename PtrType>
 std::unique_ptr<OBJECT_HEADER> HANDLE_TABLE_ENTRY_IMPL<PtrType>::ObjectHeader() const {
-    GuestVirtualAddress pObjectHeader = gva_.create(Value());
+    guest_ptr<void> pObjectHeader = buffer_.clone(Value());
     if (unlikely(!pObjectHeader))
         throw InvalidStructureException("NULL value in HANDLE_TABLE_ENTRY::ObjectHeader()");
 
@@ -112,19 +112,14 @@ uint64_t HANDLE_TABLE_ENTRY_IMPL<PtrType>::Value() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress HANDLE_TABLE_ENTRY_IMPL<PtrType>::address() const {
-    return gva_;
-}
-
-template <typename PtrType>
 HANDLE_TABLE_ENTRY_IMPL<PtrType>::HANDLE_TABLE_ENTRY_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                                          const GuestVirtualAddress& gva,
+                                                          const guest_ptr<void>& ptr,
                                                           uint64_t handle, bool isPspCidTable)
-    : kernel_(kernel), gva_(gva), handle(handle), isPspCidTable(isPspCidTable),
+    : kernel_(kernel), handle(handle), isPspCidTable(isPspCidTable),
       offsets_(LoadOffsets<structs::HANDLE_TABLE_ENTRY>(kernel)) {
 
     // Map in the structure.
-    buffer_.reset(gva, offsets_->size());
+    buffer_.reset(ptr, offsets_->size());
 }
 
 template <typename PtrType>

@@ -21,7 +21,7 @@ class NullAddressException::IMPL {
   public:
 };
 
-NullAddressException::NullAddressException() : TraceableException("Null GuestAddress used") {}
+NullAddressException::NullAddressException() : TraceableException("Null address used") {}
 
 NullAddressException::NullAddressException(const std::string& message)
     : TraceableException(message) {}

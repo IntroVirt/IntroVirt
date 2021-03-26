@@ -26,12 +26,24 @@ namespace structs {
 
 template <typename PtrType>
 struct _HOSTENT {
-    PtrType h_name;
-    PtrType h_aliases;
+    guest_member_ptr<char[], PtrType> h_name;
+    guest_member_ptr<char*, PtrType> h_aliases;
     uint16_t h_addrtype;
     uint16_t h_length;
-    PtrType h_addr_list;
-} __attribute__((packed, aligned(sizeof(PtrType))));
+    guest_member_ptr<uint8_t*, PtrType> h_addr_list;
+};
+
+static_assert(offsetof(_HOSTENT<uint32_t>, h_name) == 0);
+static_assert(offsetof(_HOSTENT<uint32_t>, h_aliases) == 4);
+static_assert(offsetof(_HOSTENT<uint32_t>, h_addrtype) == 8);
+static_assert(offsetof(_HOSTENT<uint32_t>, h_length) == 10);
+static_assert(offsetof(_HOSTENT<uint32_t>, h_addr_list) == 12);
+
+static_assert(offsetof(_HOSTENT<uint64_t>, h_name) == 0);
+static_assert(offsetof(_HOSTENT<uint64_t>, h_aliases) == 8);
+static_assert(offsetof(_HOSTENT<uint64_t>, h_addrtype) == 16);
+static_assert(offsetof(_HOSTENT<uint64_t>, h_length) == 18);
+static_assert(offsetof(_HOSTENT<uint64_t>, h_addr_list) == 24);
 
 }; // namespace structs
 
@@ -41,57 +53,48 @@ struct _HOSTENT {
  */
 template <typename PtrType>
 class HOSTENT_IMPL final : public HOSTENT {
+    static inline constexpr bool x64_ = std::is_same_v<PtrType, uint64_t>;
+
   public:
     // Direct structure members
-    GuestVirtualAddress ph_name() const override { return gva_.create(data_->h_name); }
-    void ph_name(const GuestVirtualAddress& gva) override { data_->h_name = gva.value(); }
+    guest_ptr<char[]> ph_name() const override { return ptr_->h_name.cstring(ptr_); }
+    void ph_name(const guest_ptr<char[]>& ptr) override { ptr_->h_name.set(ptr); }
 
-    GuestVirtualAddress ph_aliases() const override { return gva_.create(data_->h_aliases); }
-    void ph_aliases(const GuestVirtualAddress& gva) override { data_->h_aliases = gva.value(); }
+    guest_ptr<char*, guest_ptr_t> ph_aliases() const override {
+        return guest_ptr<char*, guest_ptr_t>(ptr_->h_aliases.get(ptr_));
+    }
+    void ph_aliases(const guest_ptr<char*, guest_ptr_t>& ptr) override { ptr_->h_aliases.set(ptr); }
 
-    uint16_t h_addrtype() const override { return data_->h_addrtype; }
-    void h_addrtype(uint16_t h_addrtype) override { data_->h_addrtype = h_addrtype; }
+    uint16_t h_addrtype() const override { return ptr_->h_addrtype; }
+    void h_addrtype(uint16_t h_addrtype) override { ptr_->h_addrtype = h_addrtype; }
 
-    uint16_t h_length() const override { return data_->h_length; }
-    void h_length(uint16_t h_length) override { data_->h_length = h_length; }
+    uint16_t h_length() const override { return ptr_->h_length; }
+    void h_length(uint16_t h_length) override { ptr_->h_length = h_length; }
 
-    GuestVirtualAddress ph_addr_list() const override { return gva_.create(data_->h_addr_list); }
-    void ph_addr_list(const GuestVirtualAddress& gva) override { data_->h_addr_list = gva.value(); }
-
-    // Helpers
-    std::string h_name() const override {
-        GuestVirtualAddress gva = ph_name();
-        if (!gva) {
-            return std::string();
-        }
-        auto mapping = map_guest_cstr(gva);
-        return std::string(mapping.get(), mapping.length());
+    guest_ptr<uint8_t*, guest_ptr_t> ph_addr_list() const override {
+        return ptr_->h_addr_list.get(ptr_);
+    }
+    void ph_addr_list(const guest_ptr<uint8_t*, guest_ptr_t>& ptr) override {
+        ptr_->h_addr_list.set(ptr);
     }
 
-    std::vector<std::string> h_aliases() const override {
-        std::vector<std::string> result;
-        GuestVirtualAddress pArray = ph_aliases();
+    std::vector<guest_ptr<char[]>> h_aliases() const override {
+        std::vector<guest_ptr<char[]>> result;
 
-        if (pArray) {
-            GuestVirtualAddress pEntry = pArray.create(*guest_ptr<PtrType>(pArray));
-            while (pEntry) {
-                // Read the entry
-                auto mapping = map_guest_cstr(pEntry);
-                result.emplace_back(mapping.get(), mapping.length());
-
-                // Move to the next entry
-                pArray += sizeof(PtrType);
-                pEntry = pArray.create(*guest_ptr<PtrType>(pArray));
-            }
+        // A pointer to a null terminated array of pointers
+        guest_ptr<char*, PtrType> pAliases = ptr_->h_aliases.get(ptr_);
+        // Walk each entry and check for null
+        for (guest_ptr<char> pAlias = pAliases.get(); pAlias; ++pAliases) {
+            // Map the string at each entry and add it to the result
+            result.emplace_back(map_guest_cstring(pAlias));
         }
         return result;
     }
 
-    HOSTENT_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    HOSTENT_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_HOSTENT<PtrType>> data_;
+    guest_ptr<structs::_HOSTENT<PtrType>> ptr_;
 };
 
 } // namespace ws2_32

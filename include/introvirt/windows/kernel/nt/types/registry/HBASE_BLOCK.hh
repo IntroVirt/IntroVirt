@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <cstdint>
@@ -34,7 +34,7 @@ class HBASE_BLOCK {
     virtual const std::string& FileName() const = 0;
     virtual uint32_t RootCell() const = 0;
     virtual uint32_t Length() const = 0;
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual ~HBASE_BLOCK() = default;
 };

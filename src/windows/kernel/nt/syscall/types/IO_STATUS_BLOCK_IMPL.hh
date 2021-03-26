@@ -48,19 +48,19 @@ class IO_STATUS_BLOCK_IMPL final : public IO_STATUS_BLOCK {
      *
      * @returns The Status field from the IO_STATUS_BLOCK
      */
-    uint64_t Status() const override { return data_->Status; }
+    uint64_t Status() const override { return ptr_->Status; }
 
     /**
      * Note: Status and Pointer refer to the same area of memory!
      *
      * @returns The Pointer field from the IO_STATUS_BLOCK
      */
-    uint64_t Pointer() const override { return data_->Pointer; }
+    uint64_t Pointer() const override { return ptr_->Pointer; }
 
     /**
      * @returns The Information field from the IO_STATUS_BLOCK
      */
-    uint64_t Information() const override { return data_->Information; }
+    uint64_t Information() const override { return ptr_->Information; }
 
     /**
      * Set the Status field in the IO_STATUS_BLOCK
@@ -68,7 +68,7 @@ class IO_STATUS_BLOCK_IMPL final : public IO_STATUS_BLOCK {
      *
      * @param Status The value to set
      */
-    void Status(uint64_t Status) override { data_->Status = Status; }
+    void Status(uint64_t Status) override { ptr_->Status = Status; }
 
     /**
      * Set the Pointer field in the IO_STATUS_BLOCK
@@ -76,28 +76,27 @@ class IO_STATUS_BLOCK_IMPL final : public IO_STATUS_BLOCK {
      *
      * @param Pointer The value to set
      */
-    void Pointer(uint64_t Pointer) override { data_->Pointer = Pointer; }
+    void Pointer(uint64_t Pointer) override { ptr_->Pointer = Pointer; }
 
     /**
      * Set the Information field in the IO_STATUS_BLOCK
      *
      * @param Information The value to set
      */
-    void Information(uint64_t Information) override { data_->Information = Information; }
+    void Information(uint64_t Information) override { ptr_->Information = Information; }
 
     /**
      * @returns The  address of the structure
      */
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    IO_STATUS_BLOCK_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva_) {}
+    IO_STATUS_BLOCK_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_IO_STATUS_BLOCK<PtrType>> data_;
+    guest_ptr<structs::_IO_STATUS_BLOCK<PtrType>> ptr_;
 };
 
 } // namespace nt

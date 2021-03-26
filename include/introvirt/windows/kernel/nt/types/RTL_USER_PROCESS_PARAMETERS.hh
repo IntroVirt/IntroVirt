@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <introvirt/util/json/json.hh>
@@ -24,6 +24,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace introvirt {
 namespace windows {
@@ -34,14 +35,25 @@ class RTL_USER_PROCESS_PARAMETERS {
     virtual const std::string& CommandLine() const = 0;
     virtual const std::string& ImagePathName() const = 0;
     virtual const std::string& WindowTitle() const = 0;
-    virtual const std::map<std::string, std::string>& Environment() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    /**
+     * @brief Get a pointer to the environment array
+     */
+    virtual guest_ptr<char16_t> pEnvironment() const = 0;
+
+    /**
+     * @brief Get the environment as a string map, for quick lookups
+     *
+     * @return std::map<guest_ptr<char16_t[]>, guest_ptr<char16_t[]>>
+     */
+    virtual std::map<std::string, std::string> EnvironmentMap() const = 0;
+
+    virtual guest_ptr<void> ptr() const = 0;
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
     virtual Json::Value json() const = 0;
 
     static std::unique_ptr<RTL_USER_PROCESS_PARAMETERS> make_unique(const NtKernel& kernel,
-                                                                    const GuestVirtualAddress& gva);
+                                                                    const guest_ptr<void>& ptr);
 
     virtual ~RTL_USER_PROCESS_PARAMETERS() = default;
 };

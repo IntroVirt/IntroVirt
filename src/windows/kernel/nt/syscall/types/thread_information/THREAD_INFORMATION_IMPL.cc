@@ -29,34 +29,34 @@ namespace nt {
 
 template <typename PtrType>
 static std::unique_ptr<THREAD_INFORMATION> make_unique_impl(THREAD_INFORMATION_CLASS info_class,
-                                                            const GuestVirtualAddress& gva,
+                                                            const guest_ptr<void>& ptr,
                                                             uint32_t buffer_size) {
 
     switch (info_class) {
     case THREAD_INFORMATION_CLASS::ThreadBasicInformation:
-        return std::make_unique<THREAD_BASIC_INFORMATION_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<THREAD_BASIC_INFORMATION_IMPL<PtrType>>(ptr, buffer_size);
     case THREAD_INFORMATION_CLASS::ThreadImpersonationToken:
-        return std::make_unique<THREAD_IMPERSONATION_INFORMATION_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<THREAD_IMPERSONATION_INFORMATION_IMPL<PtrType>>(ptr, buffer_size);
     case THREAD_INFORMATION_CLASS::ThreadTimes:
-        return std::make_unique<THREAD_TIMES_INFORMATION_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<THREAD_TIMES_INFORMATION_IMPL<PtrType>>(ptr, buffer_size);
     case THREAD_INFORMATION_CLASS::ThreadBasePriority:
-        return std::make_unique<THREAD_BASE_PRIORITY_INFORMATION_IMPL>(gva, buffer_size);
+        return std::make_unique<THREAD_BASE_PRIORITY_INFORMATION_IMPL>(ptr, buffer_size);
     }
 
-    return std::make_unique<THREAD_INFORMATION_IMPL<>>(info_class, gva, buffer_size);
+    return std::make_unique<THREAD_INFORMATION_IMPL<>>(info_class, ptr, buffer_size);
 }
 
 std::unique_ptr<THREAD_INFORMATION>
 THREAD_INFORMATION::make_unique(const NtKernel& kernel, THREAD_INFORMATION_CLASS info_class,
-                                const GuestVirtualAddress& gva, uint32_t buffer_size) {
+                                const guest_ptr<void>& ptr, uint32_t buffer_size) {
 
     if (unlikely(buffer_size == 0))
         return nullptr;
 
     if (kernel.x64()) {
-        return make_unique_impl<uint64_t>(info_class, gva, buffer_size);
+        return make_unique_impl<uint64_t>(info_class, ptr, buffer_size);
     } else {
-        return make_unique_impl<uint32_t>(info_class, gva, buffer_size);
+        return make_unique_impl<uint32_t>(info_class, ptr, buffer_size);
     }
 }
 

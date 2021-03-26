@@ -56,18 +56,18 @@ Json::Value MEMORY_BASIC_INFORMATION_IMPL<PtrType>::json() const {
 }
 
 template <typename PtrType>
-MEMORY_BASIC_INFORMATION_IMPL<PtrType>::MEMORY_BASIC_INFORMATION_IMPL(
-    const GuestVirtualAddress& gva, uint32_t buffer_size)
-    : MEMORY_INFORMATION_IMPL_BASE<PtrType>(MEMORY_INFORMATION_CLASS::MemoryBasicInformation, gva,
+MEMORY_BASIC_INFORMATION_IMPL<PtrType>::MEMORY_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr,
+                                                                      uint32_t buffer_size)
+    : MEMORY_INFORMATION_IMPL_BASE<PtrType>(MEMORY_INFORMATION_CLASS::MemoryBasicInformation, ptr,
                                             buffer_size) {}
 
 std::unique_ptr<MEMORY_BASIC_INFORMATION>
-MEMORY_BASIC_INFORMATION::make_unique(const NtKernel& kernel, const GuestVirtualAddress& gva,
+MEMORY_BASIC_INFORMATION::make_unique(const NtKernel& kernel, const guest_ptr<void>& ptr,
                                       uint32_t buffer_size) {
     if (kernel.x64()) {
-        return std::make_unique<nt::MEMORY_BASIC_INFORMATION_IMPL<uint64_t>>(gva, buffer_size);
+        return std::make_unique<nt::MEMORY_BASIC_INFORMATION_IMPL<uint64_t>>(ptr, buffer_size);
     } else {
-        return std::make_unique<nt::MEMORY_BASIC_INFORMATION_IMPL<uint32_t>>(gva, buffer_size);
+        return std::make_unique<nt::MEMORY_BASIC_INFORMATION_IMPL<uint32_t>>(ptr, buffer_size);
     }
 }
 
@@ -85,16 +85,18 @@ GuestAllocation<windows::nt::MEMORY_BASIC_INFORMATION>::GuestAllocation() {
 
     auto& domain = Domain::thread_local_domain();
     auto* guest = static_cast<WindowsGuest*>(domain.guest());
-    assert(guest != nullptr);
+    introvirt_assert(guest != nullptr, "");
 
     if (guest->x64()) {
         constexpr uint32_t buffer_size = sizeof(structs::_MEMORY_BASIC_INFORMATION<uint64_t>);
-        buffer_.emplace(buffer_size);
-        value_ = std::make_unique<MEMORY_BASIC_INFORMATION_IMPL<uint64_t>>(*buffer_, buffer_size);
+        allocation_.emplace(buffer_size);
+        value_ = std::make_unique<MEMORY_BASIC_INFORMATION_IMPL<uint64_t>>(allocation_->ptr(),
+                                                                           buffer_size);
     } else {
         constexpr uint32_t buffer_size = sizeof(structs::_MEMORY_BASIC_INFORMATION<uint32_t>);
-        buffer_.emplace(buffer_size);
-        value_ = std::make_unique<MEMORY_BASIC_INFORMATION_IMPL<uint32_t>>(*buffer_, buffer_size);
+        allocation_.emplace(buffer_size);
+        value_ = std::make_unique<MEMORY_BASIC_INFORMATION_IMPL<uint32_t>>(allocation_->ptr(),
+                                                                           buffer_size);
     }
 }
 

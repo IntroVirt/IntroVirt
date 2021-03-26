@@ -24,7 +24,7 @@ namespace pe {
 
 class VarFileInfoImpl final : public FILE_INFO_IMPL<VarFileInfo> {
   public:
-    VarFileInfoImpl(const GuestVirtualAddress& pVarFileInfo)
+    VarFileInfoImpl(const guest_ptr<void>& pVarFileInfo)
         : FILE_INFO_IMPL<VarFileInfo>(pVarFileInfo) {}
 
   public:

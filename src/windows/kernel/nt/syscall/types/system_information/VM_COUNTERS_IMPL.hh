@@ -47,66 +47,66 @@ struct _VM_COUNTERS {
 template <typename PtrType>
 class VM_COUNTERS_IMPL final : public VM_COUNTERS {
   public:
-    uint64_t PeakVirtualSize() const override { return this->data_->PeakVirtualSize; }
+    uint64_t PeakVirtualSize() const override { return this->ptr_->PeakVirtualSize; }
     void PeakVirtualSize(uint64_t PeakVirtualSize) override {
-        this->data_->PeakVirtualSize = PeakVirtualSize;
+        this->ptr_->PeakVirtualSize = PeakVirtualSize;
     }
 
-    uint64_t VirtualSize() const override { return this->data_->VirtualSize; }
-    void VirtualSize(uint64_t VirtualSize) override { this->data_->VirtualSize = VirtualSize; }
+    uint64_t VirtualSize() const override { return this->ptr_->VirtualSize; }
+    void VirtualSize(uint64_t VirtualSize) override { this->ptr_->VirtualSize = VirtualSize; }
 
-    uint32_t PageFaultCount() const override { return this->data_->PageFaultCount; }
+    uint32_t PageFaultCount() const override { return this->ptr_->PageFaultCount; }
     void PageFaultCount(uint32_t PageFaultCount) override {
-        this->data_->PageFaultCount = PageFaultCount;
+        this->ptr_->PageFaultCount = PageFaultCount;
     }
 
-    uint64_t PeakWorkingSetSize() const override { return this->data_->PeakWorkingSetSize; }
+    uint64_t PeakWorkingSetSize() const override { return this->ptr_->PeakWorkingSetSize; }
     void PeakWorkingSetSize(uint64_t PeakWorkingSetSize) override {
-        this->data_->PeakWorkingSetSize = PeakWorkingSetSize;
+        this->ptr_->PeakWorkingSetSize = PeakWorkingSetSize;
     }
 
-    uint64_t WorkingSetSize() const override { return this->data_->WorkingSetSize; }
+    uint64_t WorkingSetSize() const override { return this->ptr_->WorkingSetSize; }
     void WorkingSetSize(uint64_t WorkingSetSize) override {
-        this->data_->WorkingSetSize = WorkingSetSize;
+        this->ptr_->WorkingSetSize = WorkingSetSize;
     }
 
     uint64_t QuotaPeakPagedPoolUsage() const override {
-        return this->data_->QuotaPeakPagedPoolUsage;
+        return this->ptr_->QuotaPeakPagedPoolUsage;
     }
     void QuotaPeakPagedPoolUsage(uint64_t QuotaPeakPagedPoolUsage) override {
-        this->data_->QuotaPeakPagedPoolUsage = QuotaPeakPagedPoolUsage;
+        this->ptr_->QuotaPeakPagedPoolUsage = QuotaPeakPagedPoolUsage;
     }
 
-    uint64_t QuotaPagedPoolUsage() const override { return this->data_->QuotaPagedPoolUsage; }
+    uint64_t QuotaPagedPoolUsage() const override { return this->ptr_->QuotaPagedPoolUsage; }
     void QuotaPagedPoolUsage(uint64_t QuotaPagedPoolUsage) override {
-        this->data_->QuotaPagedPoolUsage = QuotaPagedPoolUsage;
+        this->ptr_->QuotaPagedPoolUsage = QuotaPagedPoolUsage;
     }
 
     uint64_t QuotaPeakNonPagedPoolUsage() const override {
-        return this->data_->QuotaPeakNonPagedPoolUsage;
+        return this->ptr_->QuotaPeakNonPagedPoolUsage;
     }
     void QuotaPeakNonPagedPoolUsage(uint64_t QuotaPeakNonPagedPoolUsage) override {
-        this->data_->QuotaPeakNonPagedPoolUsage = QuotaPeakNonPagedPoolUsage;
+        this->ptr_->QuotaPeakNonPagedPoolUsage = QuotaPeakNonPagedPoolUsage;
     }
 
-    uint64_t QuotaNonPagedPoolUsage() const override { return this->data_->QuotaNonPagedPoolUsage; }
+    uint64_t QuotaNonPagedPoolUsage() const override { return this->ptr_->QuotaNonPagedPoolUsage; }
     void QuotaNonPagedPoolUsage(uint64_t QuotaNonPagedPoolUsage) override {
-        this->data_->QuotaNonPagedPoolUsage = QuotaNonPagedPoolUsage;
+        this->ptr_->QuotaNonPagedPoolUsage = QuotaNonPagedPoolUsage;
     }
 
-    uint64_t PagefileUsage() const override { return this->data_->PagefileUsage; }
+    uint64_t PagefileUsage() const override { return this->ptr_->PagefileUsage; }
     void PagefileUsage(uint64_t PagefileUsage) override {
-        this->data_->PagefileUsage = PagefileUsage;
+        this->ptr_->PagefileUsage = PagefileUsage;
     }
 
-    uint64_t PeakPagefileUsage() const override { return this->data_->PeakPagefileUsage; }
+    uint64_t PeakPagefileUsage() const override { return this->ptr_->PeakPagefileUsage; }
     void PeakPagefileUsage(uint64_t PeakPagefileUsage) override {
-        this->data_->PeakPagefileUsage = PeakPagefileUsage;
+        this->ptr_->PeakPagefileUsage = PeakPagefileUsage;
     }
 
-    uint64_t PrivatePageCount() const override { return this->data_->PrivatePageCount; }
+    uint64_t PrivatePageCount() const override { return this->ptr_->PrivatePageCount; }
     void PrivatePageCount(uint64_t PrivatePageCount) override {
-        this->data_->PrivatePageCount = PrivatePageCount;
+        this->ptr_->PrivatePageCount = PrivatePageCount;
     }
 
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const override {
@@ -143,13 +143,12 @@ class VM_COUNTERS_IMPL final : public VM_COUNTERS {
         return result;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    VM_COUNTERS_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva_) {}
+    VM_COUNTERS_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_VM_COUNTERS<PtrType>> data_;
+    guest_ptr<structs::_VM_COUNTERS<PtrType>> ptr_;
 };
 
 } // namespace nt

@@ -93,7 +93,7 @@ template <typename PtrType>
 const PEB* PROCESS_IMPL<PtrType>::Peb() const {
     std::lock_guard lock(mtx_);
     if (!peb_) {
-        const auto pPEB = this->gva_.create(eprocess_->Peb.get<PtrType>(buffer_));
+        const auto pPEB = this->ptr_.clone(eprocess_->Peb.get<PtrType>(buffer_));
         // TODO: We shouldn't cache this
         if (pPEB)
             peb_.emplace(pPEB);
@@ -111,7 +111,7 @@ PEB* PROCESS_IMPL<PtrType>::Peb() {
 
 template <typename PtrType>
 std::unique_ptr<const HANDLE_TABLE> PROCESS_IMPL<PtrType>::ObjectTable() const {
-    const auto pObjectTable = this->gva_.create(eprocess_->ObjectTable.get<PtrType>(buffer_));
+    const auto pObjectTable = this->ptr_.clone(eprocess_->ObjectTable.get<PtrType>(buffer_));
 
     if (pObjectTable)
         return std::make_unique<HANDLE_TABLE_IMPL<PtrType>>(kernel_, pObjectTable);
@@ -147,12 +147,12 @@ const TOKEN& PROCESS_IMPL<PtrType>::Token() const {
 
     std::lock_guard lock(mtx_);
 
-    GuestVirtualAddress pToken =
-        this->gva_.create(eprocess_->Token.get<PtrType>(buffer_) & token_ptr_mask);
+    guest_ptr<void> pToken =
+        this->ptr_.clone(eprocess_->Token.get<PtrType>(buffer_) & token_ptr_mask);
 
     if (token_) {
         // Invalidate it if things changed
-        if (token_->address() == pToken)
+        if (token_->ptr() == pToken)
             return *token_;
     }
 
@@ -183,7 +183,7 @@ template <typename PtrType>
 const MM_SESSION_SPACE* PROCESS_IMPL<PtrType>::Session() const {
     std::lock_guard lock(mtx_);
     if (!session_) {
-        const auto pSession = this->gva_.create(eprocess_->Session.get<PtrType>(buffer_));
+        const auto pSession = this->ptr_.clone(eprocess_->Session.get<PtrType>(buffer_));
         if (pSession)
             session_.emplace(kernel_, pSession);
         else
@@ -194,12 +194,12 @@ const MM_SESSION_SPACE* PROCESS_IMPL<PtrType>::Session() const {
 
 template <typename PtrType>
 std::vector<std::shared_ptr<const THREAD>> PROCESS_IMPL<PtrType>::ThreadList() const {
-    const auto pThreadListHead = this->address() + eprocess_->ThreadListHead;
+    const auto pThreadListHead = this->ptr_ + eprocess_->ThreadListHead;
     auto pThreads =
         parse_list_ptrtype<PtrType>(pThreadListHead, ethread_->ThreadListEntry.offset());
 
     std::vector<std::shared_ptr<const THREAD>> result;
-    for (const GuestVirtualAddress& pThread : pThreads) {
+    for (const guest_ptr<void>& pThread : pThreads) {
         result.emplace_back(kernel_.thread(pThread));
     }
     return result;
@@ -207,12 +207,12 @@ std::vector<std::shared_ptr<const THREAD>> PROCESS_IMPL<PtrType>::ThreadList() c
 
 template <typename PtrType>
 std::vector<std::shared_ptr<THREAD>> PROCESS_IMPL<PtrType>::ThreadList() {
-    const auto pThreadListHead = this->address() + eprocess_->ThreadListHead;
+    const auto pThreadListHead = this->ptr_ + eprocess_->ThreadListHead;
     auto pThreads =
         parse_list_ptrtype<PtrType>(pThreadListHead, ethread_->ThreadListEntry.offset());
 
     std::vector<std::shared_ptr<THREAD>> result;
-    for (const GuestVirtualAddress& pThread : pThreads) {
+    for (const guest_ptr<void>& pThread : pThreads) {
         result.emplace_back(kernel_.thread(pThread));
     }
     return result;
@@ -233,10 +233,10 @@ const PEB* PROCESS_IMPL<PtrType>::WoW64Process() const {
     if (!WoW64Process_) {
         if (eprocess_->Wow64Process.exists()) {
             const auto pWoW64Process =
-                this->gva_.create(eprocess_->Wow64Process.get<PtrType>(buffer_));
+                this->ptr_.clone(eprocess_->Wow64Process.get<PtrType>(buffer_));
             if (pWoW64Process) {
                 try {
-                    const auto pPeb32 = this->gva_.create(*guest_ptr<uint64_t>(pWoW64Process));
+                    const auto pPeb32 = this->ptr_.clone(*guest_ptr<uint64_t>(pWoW64Process));
                     if (pPeb32)
                         WoW64Process_.emplace(pPeb32);
                 } catch (VirtualAddressNotPresentException& ex) {
@@ -259,7 +259,7 @@ PEB* PROCESS_IMPL<PtrType>::WoW64Process() {
 
 template <typename PtrType>
 std::shared_ptr<const MMVAD> PROCESS_IMPL<PtrType>::VadRoot() const {
-    const auto pVadTree = this->gva_.create(VadRootNodeAddress());
+    const guest_ptr<void> pVadTree = this->ptr_.clone(VadRootNodeAddress());
     if (pVadTree)
         return std::make_shared<MMVAD_IMPL<PtrType>>(kernel_, pVadTree);
     return nullptr;
@@ -370,8 +370,8 @@ void PROCESS_IMPL<PtrType>::ProtectionLevel(uint8_t Level) {
 }
 
 template <typename PtrType>
-GuestVirtualAddress PROCESS_IMPL<PtrType>::Win32Process() const {
-    return this->gva_.create(eprocess_->Win32Process.get<PtrType>(buffer_));
+guest_ptr<void> PROCESS_IMPL<PtrType>::Win32Process() const {
+    return this->ptr_.clone(eprocess_->Win32Process.get<PtrType>(buffer_));
 }
 
 template <typename PtrType>
@@ -389,24 +389,23 @@ uint64_t PROCESS_IMPL<PtrType>::VadRootNodeAddress() const {
 }
 
 template <typename PtrType>
-void PROCESS_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel,
-                                 const GuestVirtualAddress& gva) {
+void PROCESS_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr) {
     // Load our offsets
     eprocess_ = LoadOffsets<structs::EPROCESS>(kernel);
     ethread_ = LoadOffsets<structs::ETHREAD>(kernel);
 
     // Map in the structure. Doing one mapping is a lot cheaper than mapping every field.
-    buffer_.reset(gva, eprocess_->size());
+    buffer_.reset(ptr, eprocess_->size());
 
-    this->gva_.page_directory(DirectoryTableBase());
+    if (this->ptr_.page_directory() != DirectoryTableBase())
+        this->ptr_.reset(ptr.domain(), ptr.address(), DirectoryTableBase());
 }
 
 template <typename PtrType>
-PROCESS_IMPL<PtrType>::PROCESS_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                    const GuestVirtualAddress& gva)
-    : DISPATCHER_OBJECT_IMPL<PtrType, PROCESS>(kernel, gva, ObjectType::Process), kernel_(kernel) {
+PROCESS_IMPL<PtrType>::PROCESS_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
+    : DISPATCHER_OBJECT_IMPL<PtrType, PROCESS>(kernel, ptr, ObjectType::Process), kernel_(kernel) {
 
-    init(kernel, gva);
+    init(kernel, ptr);
 }
 
 template <typename PtrType>
@@ -416,17 +415,16 @@ PROCESS_IMPL<PtrType>::PROCESS_IMPL(const NtKernelImpl<PtrType>& kernel,
                                                ObjectType::Process),
       kernel_(kernel) {
 
-    init(kernel, OBJECT_IMPL<PtrType, PROCESS>::address());
+    init(kernel, this->ptr_);
 }
 
-std::shared_ptr<PROCESS> PROCESS::make_shared(const NtKernel& kernel,
-                                              const GuestVirtualAddress& gva) {
+std::shared_ptr<PROCESS> PROCESS::make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<PROCESS_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<PROCESS_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<PROCESS> PROCESS::make_shared(const NtKernel& kernel,

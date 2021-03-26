@@ -44,7 +44,7 @@ class OBJECT_HEADER_IMPL final : public OBJECT_HEADER {
     /**
      * @returns The guest address of the object that comes after the header
      */
-    GuestVirtualAddress Body() const override;
+    guest_ptr<void> Body() const override;
 
     /**
      * @brief Get the creator information
@@ -119,22 +119,22 @@ class OBJECT_HEADER_IMPL final : public OBJECT_HEADER {
     /**
      * @returns The address of the OBJECT_HEADER
      */
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override;
 
-    OBJECT_HEADER_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    OBJECT_HEADER_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     ~OBJECT_HEADER_IMPL() override = default;
 
   private:
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
+    const guest_ptr<void> ptr_;
     const structs::OBJECT_HEADER* offsets_;
     guest_ptr<char[]> buffer_;
 
-    GuestVirtualAddress pcreator_info_;
-    GuestVirtualAddress phandle_info_;
-    GuestVirtualAddress pname_info_;
-    GuestVirtualAddress pprocess_info_;
-    GuestVirtualAddress pquota_info_;
+    guest_ptr<void> pcreator_info_;
+    guest_ptr<void> phandle_info_;
+    guest_ptr<void> pname_info_;
+    guest_ptr<void> pprocess_info_;
+    guest_ptr<void> pquota_info_;
 
     mutable std::optional<OBJECT_HEADER_CREATOR_INFO_IMPL<PtrType>> creator_info_;
     mutable std::optional<OBJECT_HEADER_HANDLE_INFO_IMPL<PtrType>> handle_info_;

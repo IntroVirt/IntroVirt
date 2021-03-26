@@ -47,7 +47,7 @@ class TOKEN_USER_IMPL final
 
     Json::Value json() const override;
 
-    TOKEN_USER_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    TOKEN_USER_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
     using TOKEN_USER_IMPL_BASE = TOKEN_INFORMATION_IMPL<TOKEN_USER, structs::_TOKEN_USER<PtrType>>;

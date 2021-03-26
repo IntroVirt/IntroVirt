@@ -98,7 +98,7 @@ class WriteFileTool final : public EventCallback {
             FILE_SHARE_ACCESS(0),                                   // ShareAccess
             FILE_SUPERSEDE,                                         // CreateDisposition
             FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT, // CreateOptions
-            NullGuestAddress(),                                     // pEaBuffer
+            nullptr,                                                // pEaBuffer
             0                                                       // EaLength
         );
 
@@ -122,7 +122,7 @@ class WriteFileTool final : public EventCallback {
         size_t bytes_written = 0;
         while (true) {
             // Read from the source file into our buffer
-            const int count = fread(buffer, 1, BUFFER_SIZE, src_file);
+            const int count = fread(buffer.ptr().get(), 1, BUFFER_SIZE, src_file);
             if (unlikely(count < 0)) {
                 std::cout << "Failed to read from source file: " << strerror(errno) << '\n';
                 break;
@@ -132,9 +132,8 @@ class WriteFileTool final : public EventCallback {
                 break;
             }
 
-            result = inject::system_call<nt::NtWriteFile>(dst_file, 0, NullGuestAddress(),
-                                                          NullGuestAddress(), io_status_block,
-                                                          buffer, count, nullptr, nullptr);
+            result = inject::system_call<nt::NtWriteFile>(
+                dst_file, 0, nullptr, nullptr, io_status_block, buffer, count, nullptr, nullptr);
 
             if (result.NT_SUCCESS()) {
                 // The data was successfully written

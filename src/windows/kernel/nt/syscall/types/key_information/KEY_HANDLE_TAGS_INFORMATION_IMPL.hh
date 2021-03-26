@@ -34,14 +34,14 @@ static_assert(sizeof(_KEY_HANDLE_TAGS_INFORMATION) == 0x4);
 
 class KEY_HANDLE_TAGS_INFORMATION_IMPL final : public KEY_HANDLE_TAGS_INFORMATION {
   public:
-    uint32_t HandleTags() const override { return data_->HandleTags; }
-    void HandleTags(uint32_t value) override { data_->HandleTags = value; }
+    uint32_t HandleTags() const override { return ptr_->HandleTags; }
+    void HandleTags(uint32_t value) override { ptr_->HandleTags = value; }
 
     KEY_INFORMATION_CLASS KeyInformationClass() const override {
         return KEY_INFORMATION_CLASS::KeyHandleTagsInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -49,12 +49,11 @@ class KEY_HANDLE_TAGS_INFORMATION_IMPL final : public KEY_HANDLE_TAGS_INFORMATIO
 
     Json::Value json() const override;
 
-    KEY_HANDLE_TAGS_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    KEY_HANDLE_TAGS_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_KEY_HANDLE_TAGS_INFORMATION> data_;
+    guest_ptr<structs::_KEY_HANDLE_TAGS_INFORMATION> ptr_;
 };
 
 } // namespace nt

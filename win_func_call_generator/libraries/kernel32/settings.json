@@ -1,0 +1,12 @@
+{
+    "library_name": "kernel32",
+    "namespaces": [
+        "introvirt",
+        "windows",
+        "kernel32"
+    ],
+    "includes": [
+        "\"const/const.hh\"",
+        "\"util/util.hh\""
+    ]
+}

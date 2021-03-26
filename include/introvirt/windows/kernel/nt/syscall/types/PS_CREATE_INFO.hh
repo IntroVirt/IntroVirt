@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/json/json.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 #include <introvirt/windows/kernel/nt/types/access_mask/FILE_ACCESS_MASK.hh>
@@ -69,12 +69,12 @@ class PS_CREATE_INFO {
     virtual FILE_ACCESS_MASK AdditionalFileAccess() const = 0;
     virtual void AdditionalFileAccess(FILE_ACCESS_MASK AdditionalFileAccess) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
     virtual Json::Value json() const = 0;
 
     static std::unique_ptr<PS_CREATE_INFO> make_unique(const NtKernel& kernel,
-                                                       const GuestVirtualAddress& gva);
+                                                       const guest_ptr<void>& ptr);
 
     virtual ~PS_CREATE_INFO() = default;
 };

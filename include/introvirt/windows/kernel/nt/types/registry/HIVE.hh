@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <cstdint>
@@ -51,11 +51,11 @@ class HIVE {
     virtual const HBASE_BLOCK& BaseBlock() const = 0;
     virtual const CM_KEY_NODE* RootKeyNode() const = 0;
     virtual const CM_KEY_NODE* KeyNode(uint32_t KeyIndex) const = 0;
-    virtual GuestVirtualAddress CellAddress(uint32_t KeyIndex) const = 0;
+    virtual guest_ptr<void> CellAddress(uint32_t KeyIndex) const = 0;
     virtual const HIVE* PreviousHive() const = 0;
     virtual const HIVE* NextHive() const = 0;
     virtual uint32_t HiveFlags() const = 0;
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual ~HIVE() = default;
 };

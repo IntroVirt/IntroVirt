@@ -37,7 +37,7 @@ class CM_KEY_BODY_IMPL final : public OBJECT_IMPL<PtrType, CM_KEY_BODY> {
     uint64_t ProcessID() const override;
     const std::string& full_key_path() const override;
 
-    CM_KEY_BODY_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    CM_KEY_BODY_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     CM_KEY_BODY_IMPL(const NtKernelImpl<PtrType>& kernel,
                      std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 

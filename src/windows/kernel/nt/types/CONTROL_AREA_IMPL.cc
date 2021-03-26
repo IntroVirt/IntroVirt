@@ -22,14 +22,10 @@ namespace introvirt {
 namespace windows {
 namespace nt {
 
-static log4cxx::LoggerPtr
-    logger(log4cxx::Logger::getLogger("introvirt.windows.kernel.nt.types.CONTROL_AREA"));
-
 template <typename PtrType>
 const SEGMENT* CONTROL_AREA_IMPL<PtrType>::Segment() const {
     if (!Segment_) {
-        const GuestVirtualAddress pSegment =
-            gva_.create(control_area_->Segment.get<PtrType>(buffer_));
+        const guest_ptr<void> pSegment = ptr_.clone(control_area_->Segment.get<PtrType>(buffer_));
 
         if (pSegment) {
             Segment_.emplace(kernel_, pSegment, this);
@@ -48,8 +44,8 @@ const FILE_OBJECT* CONTROL_AREA_IMPL<PtrType>::FileObject() const {
             // Observed to be 3 bits on x86 and 4 bits on x64, but
             // just read it from the structure here to be safe.
             const uint64_t mask = ~(control_area_->FilePointer.RefCnt.mask());
-            const GuestVirtualAddress pFileObject =
-                gva_.create(control_area_->FilePointer.Object.get<PtrType>(buffer_) & mask);
+            const guest_ptr<void> pFileObject =
+                ptr_.clone(control_area_->FilePointer.Object.get<PtrType>(buffer_) & mask);
 
             if (pFileObject)
                 FileObject_.emplace(kernel_, pFileObject);
@@ -65,14 +61,14 @@ const FILE_OBJECT* CONTROL_AREA_IMPL<PtrType>::FileObject() const {
 
 template <typename PtrType>
 CONTROL_AREA_IMPL<PtrType>::CONTROL_AREA_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                              const GuestVirtualAddress& gva)
-    : kernel_(kernel), gva_(gva) {
+                                              const guest_ptr<void>& ptr)
+    : kernel_(kernel), ptr_(ptr) {
 
     // Load our offsets
     control_area_ = LoadOffsets<structs::CONTROL_AREA>(kernel_);
 
     // Map in the structure. Doing one mapping is a lot cheaper than mapping every field.
-    buffer_.reset(gva_, control_area_->size());
+    buffer_.reset(ptr_, control_area_->size());
 }
 
 template class CONTROL_AREA_IMPL<uint32_t>;

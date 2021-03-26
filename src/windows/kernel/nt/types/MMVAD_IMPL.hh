@@ -66,48 +66,45 @@ class MMVAD_IMPL final : public MMVAD, public std::enable_shared_from_this<MMVAD
     uint64_t RegionSize() const override;
 
     /** @returns The starting address of the region (equivalent to StartingVpn() << 12). */
-    GuestVirtualAddress StartingAddress() const override;
+    uint64_t StartingAddress() const override;
 
     /** @returns The last address of the region [((EndingVpn() + 1) << 12) - 1]; */
-    GuestVirtualAddress EndingAddress() const override;
+    uint64_t EndingAddress() const override;
 
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override;
 
     std::vector<std::shared_ptr<const MMVAD>> VadTreeInOrder() const override;
 
-    GuestVirtualAddress FirstPrototypePte() const override;
-    GuestVirtualAddress LastContiguousPte() const override;
+    uint64_t FirstPrototypePte() const override;
+    uint64_t LastContiguousPte() const override;
 
     bool locked() const override;
 
     /**
      * @brief Search for the MMVAD entry for the given address in children
      *
-     * @param VirtualAddress The address to search for
+     * @param virtual_address The address to search for
      * @returns The matching MMVAD entry, or nullptr.
      */
-    std::shared_ptr<const MMVAD> search(const GuestVirtualAddress& gva) const override;
+    std::shared_ptr<const MMVAD> search(uint64_t virtual_address) const override;
 
-    MMVAD_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    MMVAD_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
   private:
-    GuestVirtualAddress ControlAreaPtr() const;
+    guest_ptr<void> ControlAreaPtr() const;
     const CONTROL_AREA* ControlArea() const;
     bool MemCommit() const;
-    GuestVirtualAddress LeftChildPtr() const;
-    GuestVirtualAddress RightChildPtr() const;
-    std::shared_ptr<const MMVAD> search(const GuestVirtualAddress& gva,
-                                        std::set<uint64_t>& seen) const;
+    guest_ptr<void> LeftChildPtr() const;
+    guest_ptr<void> RightChildPtr() const;
+    std::shared_ptr<const MMVAD> search(uint64_t virtual_address, std::set<uint64_t>& seen) const;
 
   private:
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
+    guest_ptr<char[]> ptr_;
 
     const structs::MMVAD_SHORT* mmvad_short_;
     const structs::MMVAD* mmvad_;
     const structs::SUBSECTION* subsection_;
-
-    mutable guest_ptr<char[]> buffer_;
 
     MMVAD::VadType type_{MMVAD::VadNone};
     MEMORY_ALLOCATION_TYPE Allocation_;

@@ -23,6 +23,8 @@
 #include <introvirt/windows/kernel/nt/types/registry/CM_KEY_NODE.hh>
 #include <introvirt/windows/kernel/nt/types/registry/HIVE.hh>
 
+#include <log4cxx/logger.h>
+
 #include <memory>
 #include <optional>
 
@@ -38,6 +40,10 @@ class CM_KEY_NODE_IMPL;
 
 template <typename PtrType>
 class HIVE_IMPL final : public HIVE {
+  private:
+    static const inline log4cxx::LoggerPtr logger =
+        log4cxx::Logger::getLogger("introvirt.windows.kernel.nt.registry.HIVE");
+
   public:
     const std::string& FileFullPath() const override;
     const std::string& FileUserName() const override;
@@ -45,20 +51,20 @@ class HIVE_IMPL final : public HIVE {
     const HBASE_BLOCK& BaseBlock() const override;
     const CM_KEY_NODE* RootKeyNode() const override;
     const CM_KEY_NODE* KeyNode(uint32_t KeyIndex) const override;
-    GuestVirtualAddress CellAddress(uint32_t KeyIndex) const override;
+    guest_ptr<void> CellAddress(uint32_t KeyIndex) const override;
     const HIVE* PreviousHive() const override;
     const HIVE* NextHive() const override;
     uint32_t HiveFlags() const override;
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    HIVE_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    HIVE_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& gva);
     ~HIVE_IMPL() override;
 
   private:
-    GuestVirtualAddress getBlockAddress(GuestVirtualAddress pEntry) const;
+    guest_ptr<void> getBlockAddress(const guest_ptr<void>& pEntry) const;
 
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
+    const guest_ptr<void> ptr_;
 
     const structs::CMHIVE* cmhive_;
     const structs::DUAL* dual_;

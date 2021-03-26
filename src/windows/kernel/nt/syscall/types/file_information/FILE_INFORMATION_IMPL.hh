@@ -25,7 +25,7 @@ class FILE_INFORMATION_IMPL final : public FILE_INFORMATION {
   public:
     FILE_INFORMATION_CLASS FileInformationClass() const override { return class_; }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -33,13 +33,13 @@ class FILE_INFORMATION_IMPL final : public FILE_INFORMATION {
 
     Json::Value json() const override;
 
-    FILE_INFORMATION_IMPL(FILE_INFORMATION_CLASS information_class, const GuestVirtualAddress& gva,
+    FILE_INFORMATION_IMPL(FILE_INFORMATION_CLASS information_class, const guest_ptr<void>& ptr,
                           uint32_t buffer_size)
-        : class_(information_class), gva_(gva), buffer_size_(buffer_size) {}
+        : ptr_(ptr), class_(information_class), buffer_size_(buffer_size) {}
 
   private:
+    const guest_ptr<void> ptr_;
     const FILE_INFORMATION_CLASS class_;
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
 };
 

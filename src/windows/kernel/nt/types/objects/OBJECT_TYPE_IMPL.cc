@@ -34,8 +34,7 @@ template <typename PtrType>
 const std::string& OBJECT_TYPE_IMPL<PtrType>::Name() const {
     std::lock_guard lock(mtx_);
     if (!Name_) {
-        const GuestVirtualAddress pName = this->address() + offsets_->Name.offset();
-        Name_.emplace(pName);
+        Name_.emplace(this->ptr_ + offsets_->Name.offset());
     }
     return Name_->utf8();
 }
@@ -73,11 +72,11 @@ uint8_t OBJECT_TYPE_IMPL<PtrType>::Index() const {
 
 template <typename PtrType>
 OBJECT_TYPE_IMPL<PtrType>::OBJECT_TYPE_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                            const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, OBJECT_TYPE>(kernel, gva, ObjectType::Type), kernel_(kernel),
+                                            const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, OBJECT_TYPE>(kernel, ptr, ObjectType::Type), kernel_(kernel),
       offsets_(LoadOffsets<structs::OBJECT_TYPE>(kernel)) {
 
-    buffer_.reset(gva, offsets_->size());
+    buffer_.reset(ptr, offsets_->size());
 }
 
 template <typename PtrType>
@@ -87,17 +86,17 @@ OBJECT_TYPE_IMPL<PtrType>::OBJECT_TYPE_IMPL(
     : OBJECT_IMPL<PtrType, OBJECT_TYPE>(kernel, std::move(object_header), ObjectType::Type),
       kernel_(kernel), offsets_(LoadOffsets<structs::OBJECT_TYPE>(kernel)) {
 
-    buffer_.reset(OBJECT_IMPL<PtrType, OBJECT_TYPE>::address(), offsets_->size());
+    buffer_.reset(this->ptr_, offsets_->size());
 }
 
 std::shared_ptr<OBJECT_TYPE> OBJECT_TYPE::make_shared(const NtKernel& kernel,
-                                                      const GuestVirtualAddress& gva) {
+                                                      const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<OBJECT_TYPE_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<OBJECT_TYPE_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<OBJECT_TYPE>

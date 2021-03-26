@@ -39,9 +39,9 @@ Json::Value KEY_VALUE_EXPAND_STRING_IMPL::json() const {
     return result;
 }
 
-KEY_VALUE_EXPAND_STRING_IMPL::KEY_VALUE_EXPAND_STRING_IMPL(const GuestVirtualAddress& gva,
+KEY_VALUE_EXPAND_STRING_IMPL::KEY_VALUE_EXPAND_STRING_IMPL(const guest_ptr<void>& ptr,
                                                            uint32_t size)
-    : KEY_VALUE_STRING_IMPL<KEY_VALUE_EXPAND_STRING>(REG_TYPE::REG_EXPAND_SZ, gva, size) {}
+    : KEY_VALUE_STRING_IMPL<KEY_VALUE_EXPAND_STRING>(REG_TYPE::REG_EXPAND_SZ, ptr, size) {}
 
 } /* namespace nt */
 } /* namespace windows */

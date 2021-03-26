@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/libraries/crypt32/types/HCERTSTORE.hh>
 
 #include <cstdint>
@@ -34,16 +34,16 @@ class CRYPT_DECODE_PARA {
     virtual uint32_t cbSize() const = 0;
     virtual void cbSize(uint32_t cbSize) = 0;
 
-    virtual GuestVirtualAddress pfnAlloc() const = 0;
-    virtual void pfnAlloc(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> pfnAlloc() const = 0;
+    virtual void pfnAlloc(const guest_ptr<void>& ptr) = 0;
 
-    virtual GuestVirtualAddress pfnFree() const = 0;
-    virtual void pfnFree(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> pfnFree() const = 0;
+    virtual void pfnFree(const guest_ptr<void>& ptr) = 0;
 
     /**
      * @brief Create a CRYPT_DECODE_PARA
      */
-    static std::unique_ptr<CRYPT_DECODE_PARA> make_unique(const GuestVirtualAddress& gva, bool x64);
+    static std::shared_ptr<CRYPT_DECODE_PARA> make_shared(const guest_ptr<void>& ptr, bool x64);
 
     /**
      * @brief Get the size of the structure

@@ -33,9 +33,10 @@ class offset_iterable : public _BaseClass {
 
     iterator begin() override {
         if (buffer_size_)
-            return iterator(make_shared_func_,
-                            make_shared_func_(first_entry_, buffer_end_ - first_entry_),
-                            buffer_end_);
+            return iterator(
+                make_shared_func_,
+                make_shared_func_(first_entry_, buffer_end_.address() - first_entry_.address()),
+                buffer_end_);
         return end();
     }
     iterator end() override { return iterator(); }
@@ -74,19 +75,19 @@ class offset_iterable : public _BaseClass {
             ++test;
         } while (test != end());
 
-        GuestVirtualAddress entries_end = iter->address() + iter->buffer_size();
+        guest_ptr<void> entries_end = iter->ptr() + iter->buffer_size();
 
-        const GuestVirtualAddress current_gva = position->address();
-        const GuestVirtualAddress next_gva = current_gva + next_entry_offset;
+        const guest_ptr<void> current_ptr = position->ptr();
+        const guest_ptr<void> next_ptr = current_ptr + next_entry_offset;
 
         // Make sure we're not already at the end
         bool last_entry = false;
-        if (next_gva < entries_end) {
-            const size_t map_size = entries_end - current_gva;
-            const size_t copy_size = entries_end - next_gva;
+        if (next_ptr < entries_end) {
+            const size_t map_size = entries_end - current_ptr;
+            const size_t copy_size = entries_end - next_ptr;
 
             // Map in the buffer
-            guest_ptr<char[]> buffer(current_gva, map_size);
+            guest_ptr<char[]> buffer(current_ptr, map_size);
 
             // Shift all of the data towards the start of the buffer
             std::memmove(buffer.get(), buffer.get() + next_entry_offset, copy_size);
@@ -103,8 +104,10 @@ class offset_iterable : public _BaseClass {
         }
 
         // Return a new iterator with the entry at the current address
-        return iterator(make_shared_func_,
-                        make_shared_func_(current_gva, buffer_end_ - current_gva), buffer_end_);
+        return iterator(
+            make_shared_func_,
+            make_shared_func_(current_ptr, buffer_end_.address() - current_ptr.address()),
+            buffer_end_);
     }
 
     const_iterator begin() const override {
@@ -118,16 +121,16 @@ class offset_iterable : public _BaseClass {
 
     template <typename... Args>
     offset_iterable(
-        std::function<std::shared_ptr<_T>(const GuestVirtualAddress&, uint32_t)> make_shared_func,
-        const GuestVirtualAddress& first_entry, uint32_t buffer_size, Args&&... args)
+        std::function<std::shared_ptr<_T>(const guest_ptr<void>&, uint32_t)> make_shared_func,
+        const guest_ptr<void>& first_entry, uint32_t buffer_size, Args&&... args)
         : _BaseClass(std::forward<Args>(args)...), make_shared_func_(make_shared_func),
           first_entry_(first_entry), buffer_end_(first_entry_ + buffer_size),
           buffer_size_(buffer_size) {}
 
   protected:
-    std::function<std::shared_ptr<_T>(const GuestVirtualAddress&, uint32_t)> make_shared_func_;
-    const GuestVirtualAddress first_entry_;
-    GuestVirtualAddress buffer_end_;
+    std::function<std::shared_ptr<_T>(const guest_ptr<void>&, uint32_t)> make_shared_func_;
+    const guest_ptr<void> first_entry_;
+    guest_ptr<void> buffer_end_;
     uint32_t buffer_size_;
 };
 

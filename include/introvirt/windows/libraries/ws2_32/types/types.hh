@@ -15,8 +15,16 @@
  */
 #pragma once
 
+#include "FD_SET.hh"
+#include "FLOWSPEC.hh"
 #include "HOSTENT.hh"
+#include "OVERLAPPED.hh"
+#include "QOS.hh"
 #include "SOCKADDR.hh"
 #include "SOCKADDR_IN.hh"
 #include "SOCKET.hh"
+#include "TIMEVAL.hh"
+#include "TRANSMIT_FILE_BUFFERS.hh"
+#include "WSABUF.hh"
 #include "WSADATA.hh"
+#include "WSAOVERLAPPED.hh"

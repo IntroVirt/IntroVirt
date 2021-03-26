@@ -22,12 +22,12 @@ namespace introvirt {
 namespace windows {
 namespace crypt32 {
 
-std::unique_ptr<CRYPT_DECODE_PARA> CRYPT_DECODE_PARA::make_unique(const GuestVirtualAddress& gva,
+std::shared_ptr<CRYPT_DECODE_PARA> CRYPT_DECODE_PARA::make_shared(const guest_ptr<void>& ptr,
                                                                   bool x64) {
     if (x64) {
-        return std::make_unique<CRYPT_DECODE_PARA_IMPL<uint64_t>>(gva);
+        return std::make_shared<CRYPT_DECODE_PARA_IMPL<uint64_t>>(ptr);
     }
-    return std::make_unique<CRYPT_DECODE_PARA_IMPL<uint32_t>>(gva);
+    return std::make_shared<CRYPT_DECODE_PARA_IMPL<uint32_t>>(ptr);
 }
 
 size_t CRYPT_DECODE_PARA::size(bool x64) {

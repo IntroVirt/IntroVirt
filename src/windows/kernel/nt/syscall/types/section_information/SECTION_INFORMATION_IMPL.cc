@@ -26,30 +26,30 @@ namespace nt {
 
 template <typename PtrType>
 static std::unique_ptr<SECTION_INFORMATION>
-make_unique_impl(SECTION_INFORMATION_CLASS information_class, const GuestVirtualAddress& gva,
+make_unique_impl(SECTION_INFORMATION_CLASS information_class, const guest_ptr<void>& ptr,
                  uint32_t buffer_size) {
 
     switch (information_class) {
     case SECTION_INFORMATION_CLASS::SectionBasicInformation:
-        return std::make_unique<SECTION_BASIC_INFORMATION_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<SECTION_BASIC_INFORMATION_IMPL<PtrType>>(ptr, buffer_size);
     case SECTION_INFORMATION_CLASS::SectionImageInformation:
-        return std::make_unique<SECTION_IMAGE_INFORMATION_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<SECTION_IMAGE_INFORMATION_IMPL<PtrType>>(ptr, buffer_size);
     case SECTION_INFORMATION_CLASS::SectionRelocationInformation:
-        return std::make_unique<SECTION_RELOCATION_INFORMATION_IMPL<PtrType>>(gva, buffer_size);
+        return std::make_unique<SECTION_RELOCATION_INFORMATION_IMPL<PtrType>>(ptr, buffer_size);
     }
 
-    return std::make_unique<SECTION_INFORMATION_IMPL<>>(information_class, gva, buffer_size);
+    return std::make_unique<SECTION_INFORMATION_IMPL<>>(information_class, ptr, buffer_size);
 }
 
 std::unique_ptr<SECTION_INFORMATION>
 SECTION_INFORMATION::make_unique(const NtKernel& kernel,
                                  SECTION_INFORMATION_CLASS information_class,
-                                 const GuestVirtualAddress& gva, uint32_t buffer_size) {
+                                 const guest_ptr<void>& ptr, uint32_t buffer_size) {
 
     if (kernel.x64()) {
-        return make_unique_impl<uint64_t>(information_class, gva, buffer_size);
+        return make_unique_impl<uint64_t>(information_class, ptr, buffer_size);
     } else {
-        return make_unique_impl<uint32_t>(information_class, gva, buffer_size);
+        return make_unique_impl<uint32_t>(information_class, ptr, buffer_size);
     }
 }
 

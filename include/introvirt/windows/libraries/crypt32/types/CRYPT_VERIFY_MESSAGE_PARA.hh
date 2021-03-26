@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/libraries/crypt32/types/HCRYPTPROV_LEGACY.hh>
 
 #include <cstdint>
@@ -41,13 +41,16 @@ class CRYPT_VERIFY_MESSAGE_PARA {
     virtual HCRYPTPROV_LEGACY hCryptProv() const = 0;
     virtual void hCryptProv(HCRYPTPROV_LEGACY hCryptProv) = 0;
 
-    virtual GuestVirtualAddress pfnGetSignerCertificate() const = 0;
-    virtual void pfnGetSignerCertificate(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> pfnGetSignerCertificate() const = 0;
+    virtual void pfnGetSignerCertificate(const guest_ptr<void>& ptr) = 0;
 
-    virtual GuestVirtualAddress pvGetArg() const = 0;
-    virtual void pvGetArg(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> pvGetArg() const = 0;
+    virtual void pvGetArg(const guest_ptr<void>& ptr) = 0;
 
-    static std::unique_ptr<CRYPT_VERIFY_MESSAGE_PARA> make_unique(const GuestVirtualAddress& gva,
+    virtual guest_ptr<void> pStrongSignPara() const = 0;
+    virtual void pStrongSignPara(const guest_ptr<void>& ptr) = 0;
+
+    static std::shared_ptr<CRYPT_VERIFY_MESSAGE_PARA> make_shared(const guest_ptr<void>& ptr,
                                                                   bool x64);
 
     /**

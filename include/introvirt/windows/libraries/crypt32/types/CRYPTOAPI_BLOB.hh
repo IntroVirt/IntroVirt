@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 
@@ -32,13 +32,13 @@ class CRYPTOAPI_BLOB {
     virtual uint32_t cbData() const = 0;
     virtual void cbData(uint32_t cbData) = 0;
 
-    virtual GuestVirtualAddress pbData() const = 0;
-    virtual void pbData(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> pbData() const = 0;
+    virtual void pbData(const guest_ptr<void>& ptr) = 0;
 
     /**
      * @brief Create a CRYPTOAPI_BLOB
      */
-    static std::unique_ptr<CRYPTOAPI_BLOB> make_unique(const GuestVirtualAddress& gva, bool x64);
+    static std::shared_ptr<CRYPTOAPI_BLOB> make_shared(const guest_ptr<void>& ptr, bool x64);
 
     /**
      * @brief Get the size of the structure

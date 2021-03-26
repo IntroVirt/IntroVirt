@@ -15,8 +15,12 @@
  */
 #pragma once
 
+#include <introvirt/core/exception/BufferTooSmallException.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
+#include <introvirt/util/compiler.hh>
 #include <introvirt/windows/kernel/nt/syscall/types/file_information/FILE_ALIGNMENT_INFORMATION.hh>
+
+#include <boost/io/ios_state.hpp>
 
 namespace introvirt {
 namespace windows {
@@ -32,27 +36,44 @@ struct _FILE_ALIGNMENT_INFORMATION {
 
 class FILE_ALIGNMENT_INFORMATION_IMPL final : public FILE_ALIGNMENT_INFORMATION {
   public:
-    uint32_t AlignmentRequirement() const override { return data_->AlignmentRequirement; }
-    void AlignmentRequirement(uint32_t value) override { data_->AlignmentRequirement = value; }
+    uint32_t AlignmentRequirement() const override { return ptr_->AlignmentRequirement; }
+    void AlignmentRequirement(uint32_t value) override { ptr_->AlignmentRequirement = value; }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileAlignmentInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
-    void write(std::ostream& os, const std::string& linePrefix = "") const override;
+    void write(std::ostream& os, const std::string& linePrefix = "") const override {
+        boost::io::ios_flags_saver ifs(os);
+        os << std::hex;
+        os << linePrefix << "FileInformationClass: " << FileInformationClass() << '\n';
+        os << linePrefix << "AlignmentRequirement: 0x" << AlignmentRequirement() << '\n';
+    }
 
-    Json::Value json() const override;
+    Json::Value json() const override {
+        Json::Value result;
+        result["FileInformationClass"] = to_string(FileInformationClass());
+        result["AlignmentRequirement"] = AlignmentRequirement();
+        return result;
+    }
 
-    FILE_ALIGNMENT_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_ALIGNMENT_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
+        : buffer_size_(buffer_size) {
+
+        if (unlikely(buffer_size < sizeof(structs::_FILE_ALIGNMENT_INFORMATION)))
+            throw BufferTooSmallException(sizeof(structs::_FILE_ALIGNMENT_INFORMATION),
+                                          buffer_size);
+
+        ptr_.reset(ptr);
+    }
 
   private:
-    const GuestVirtualAddress gva_;
+    guest_ptr<structs::_FILE_ALIGNMENT_INFORMATION> ptr_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_ALIGNMENT_INFORMATION> data_;
 };
 
 } // namespace nt

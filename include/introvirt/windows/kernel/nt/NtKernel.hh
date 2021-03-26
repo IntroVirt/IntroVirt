@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/types/LDR_DATA_TABLE_ENTRY.hh>
 
 #include <introvirt/core/fwd.hh>
@@ -136,13 +136,13 @@ class NtKernel {
      * @return The address of the symbol
      * @throws SymbolNotFoundException If the symbol does not exist
      */
-    virtual GuestVirtualAddress symbol(const std::string& name) const = 0;
+    virtual guest_ptr<void> symbol(const std::string& name) const = 0;
 
     /**
      * @brief Get the base address of the kernel
      * @returns The base address of the kernel
      */
-    virtual GuestVirtualAddress base_address() const = 0;
+    virtual const guest_ptr<void>& ptr() const = 0;
 
     /**
      * @brief Get the value of the InvalidPteMask field from MI_SYSTEM_INFORMATION
@@ -254,7 +254,7 @@ class NtKernel {
      * @param address
      * @return std::shared_ptr<nt::PROCESS>
      */
-    virtual std::shared_ptr<THREAD> thread(const GuestVirtualAddress& address) const = 0;
+    virtual std::shared_ptr<THREAD> thread(const guest_ptr<void>& ptr) const = 0;
 
     /**
      * @brief Get the PROCESS at the given address
@@ -262,7 +262,7 @@ class NtKernel {
      * @param address
      * @return std::shared_ptr<nt::PROCESS>
      */
-    virtual std::shared_ptr<PROCESS> process(const GuestVirtualAddress& address) const = 0;
+    virtual std::shared_ptr<PROCESS> process(const guest_ptr<void>& ptr) const = 0;
 
     /**
      * @brief Get the introvirt profile directory for this kernel

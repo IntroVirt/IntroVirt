@@ -21,10 +21,10 @@ namespace windows {
 namespace pe {
 
 IMAGE_RESOURCE_DIRECTORY_IMPL::IMAGE_RESOURCE_DIRECTORY_IMPL(
-    const GuestVirtualAddress& pImageBase, const GuestVirtualAddress& pResourceBase,
-    const GuestVirtualAddress& pResourceDirectory)
+    const guest_ptr<void>& pImageBase, const guest_ptr<void>& pResourceBase,
+    const guest_ptr<void>& pResourceDirectory)
 
-    : data_(pResourceDirectory) {
+    : ptr_(pResourceDirectory) {
 
     // const bool isTopLevel = (pResourceDirectory == pResourceBase);
 
@@ -34,11 +34,11 @@ IMAGE_RESOURCE_DIRECTORY_IMPL::IMAGE_RESOURCE_DIRECTORY_IMPL(
     const unsigned int total_entries = NumberOfNamedEntries() + NumberOfIdEntries();
     entries_.reserve(total_entries);
 
-    const GuestVirtualAddress pFirstEntry =
+    const guest_ptr<void> pFirstEntry =
         pResourceDirectory + sizeof(structs::_IMAGE_RESOURCE_DIRECTORY);
 
     for (unsigned int i = 0; i < total_entries; ++i) {
-        const GuestVirtualAddress pEntry =
+        const guest_ptr<void> pEntry =
             pFirstEntry + (i * sizeof(structs::_IMAGE_RESOURCE_DIRECTORY_ENTRY));
 
         entries_.push_back(std::make_unique<const IMAGE_RESOURCE_DIRECTORY_ENTRY_IMPL>(

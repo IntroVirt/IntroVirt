@@ -41,7 +41,7 @@ class TEB {
     virtual WinError LastErrorValue() const = 0;
     virtual void LastErrorValue(WinError LastErrorValue) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 };
 
 } // namespace nt

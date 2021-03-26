@@ -19,7 +19,6 @@
 #include "HIVE_IMPL.hh"
 #include "windows/kernel/nt/structs/structs.hh"
 
-#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/fwd.hh>
 #include <introvirt/windows/kernel/nt/types/registry/CM_KEY_NODE.hh>
 
@@ -38,18 +37,19 @@ class CM_KEY_NODE_IMPL final : public CM_KEY_NODE {
     const std::vector<std::unique_ptr<CM_KEY_NODE>>& StableSubKeys() const override;
     const std::vector<std::unique_ptr<CM_KEY_NODE>>& VolatileSubKeys() const override;
     const std::vector<std::unique_ptr<CM_KEY_VALUE>>& Values() const override;
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override { return cm_key_node_buffer_; }
 
     CM_KEY_NODE_IMPL(const NtKernelImpl<PtrType>& kernel, const HIVE_IMPL<PtrType>& hive,
-                     const GuestVirtualAddress& gva);
+                     const guest_ptr<void>& ptr);
+
     ~CM_KEY_NODE_IMPL() override;
 
   private:
-    void addLfLhList(const GuestVirtualAddress& pList,
+    void addLfLhList(const guest_ptr<void>& pList,
                      std::vector<std::unique_ptr<CM_KEY_NODE>>& output) const;
-    void addLiList(const GuestVirtualAddress& pList,
+    void addLiList(const guest_ptr<void>& pList,
                    std::vector<std::unique_ptr<CM_KEY_NODE>>& output) const;
-    void addRiList(const GuestVirtualAddress& pList,
+    void addRiList(const guest_ptr<void>& pList,
                    std::vector<std::unique_ptr<CM_KEY_NODE>>& output) const;
     void getSubKeys(unsigned int listIndex,
                     std::vector<std::unique_ptr<CM_KEY_NODE>>& output) const;
@@ -57,15 +57,15 @@ class CM_KEY_NODE_IMPL final : public CM_KEY_NODE {
   private:
     const NtKernelImpl<PtrType>& kernel_;
     const HIVE_IMPL<PtrType>& hive_;
-    const GuestVirtualAddress gva_;
+    guest_ptr<void> ptr_;
 
-    const structs::CM_KEY_NODE* cm_key_node;
-    const structs::CM_KEY_INDEX* cm_key_index;
+    const structs::CM_KEY_NODE* cm_key_node_;
+    const structs::CM_KEY_INDEX* cm_key_index_;
 
-    guest_ptr<char[]> cm_key_node_buffer;
+    guest_ptr<char[]> cm_key_node_buffer_;
 
-    mutable std::vector<std::unique_ptr<CM_KEY_NODE>> stableSubKeys;
-    mutable std::vector<std::unique_ptr<CM_KEY_NODE>> volatileSubKeys;
+    mutable std::vector<std::unique_ptr<CM_KEY_NODE>> stableSubKeys_;
+    mutable std::vector<std::unique_ptr<CM_KEY_NODE>> volatileSubKeys_;
     mutable std::vector<std::unique_ptr<CM_KEY_VALUE>> Values_;
 
     mutable std::string Name_;

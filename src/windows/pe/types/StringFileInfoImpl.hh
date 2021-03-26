@@ -34,10 +34,10 @@ class StringFileInfoImpl final : public FILE_INFO_IMPL<StringFileInfo> {
         return nullptr;
     };
 
-    StringFileInfoImpl(const GuestVirtualAddress& pStringFileInfo)
+    StringFileInfoImpl(const guest_ptr<void>& pStringFileInfo)
         : FILE_INFO_IMPL<StringFileInfo>(pStringFileInfo) {
 
-        assert(this->szKey() == "StringFileInfo");
+        introvirt_assert(this->szKey() == "StringFileInfo", "");
         StringTable_.emplace(this->pChildren());
     }
 

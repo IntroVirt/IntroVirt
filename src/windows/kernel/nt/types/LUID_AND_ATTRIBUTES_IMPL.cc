@@ -21,17 +21,12 @@ namespace introvirt {
 namespace windows {
 namespace nt {
 
-LUID_AND_ATTRIBUTES_IMPL::LUID_AND_ATTRIBUTES_IMPL(const GuestVirtualAddress& gva)
-    : gva_(gva), luid_(gva), luid_and_attributes_(gva) {}
-
-std::unique_ptr<LUID_AND_ATTRIBUTES>
-LUID_AND_ATTRIBUTES::make_unique(const GuestVirtualAddress& gva) {
-    return std::make_unique<LUID_AND_ATTRIBUTES_IMPL>(gva);
+std::unique_ptr<LUID_AND_ATTRIBUTES> LUID_AND_ATTRIBUTES::make_unique(const guest_ptr<void>& ptr) {
+    return std::make_unique<LUID_AND_ATTRIBUTES_IMPL>(ptr);
 }
 
-std::shared_ptr<LUID_AND_ATTRIBUTES>
-LUID_AND_ATTRIBUTES::make_shared(const GuestVirtualAddress& gva) {
-    return std::make_shared<LUID_AND_ATTRIBUTES_IMPL>(gva);
+std::shared_ptr<LUID_AND_ATTRIBUTES> LUID_AND_ATTRIBUTES::make_shared(const guest_ptr<void>& ptr) {
+    return std::make_shared<LUID_AND_ATTRIBUTES_IMPL>(ptr);
 }
 
 const std::string& to_string(LUID_ATTRIBUTE_FLAGS flag) {

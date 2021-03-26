@@ -15,4 +15,7 @@
  */
 #pragma once
 
+#include "fwd.hh"
+
+#include "SECURITY_STATUS.hh"
 #include "SecBufferDesc.hh"

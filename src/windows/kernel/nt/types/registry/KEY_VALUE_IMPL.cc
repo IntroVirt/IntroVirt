@@ -25,7 +25,7 @@ namespace windows {
 namespace nt {
 
 std::unique_ptr<KEY_VALUE>
-KEY_VALUE::make_unique(REG_TYPE regType, const GuestVirtualAddress& pKeyValue, uint32_t dataSize) {
+KEY_VALUE::make_unique(REG_TYPE regType, const guest_ptr<void>& pKeyValue, uint32_t dataSize) {
     if (unlikely(dataSize == 0))
         return nullptr;
 
@@ -33,7 +33,7 @@ KEY_VALUE::make_unique(REG_TYPE regType, const GuestVirtualAddress& pKeyValue, u
     case REG_TYPE::REG_DWORD_LITTLE_ENDIAN:
         return std::make_unique<KEY_VALUE_DWORD_IMPL>(pKeyValue, dataSize);
     case REG_TYPE::REG_EXPAND_SZ:
-        return std::make_unique<KEY_VALUE_EXPAND_STRING_IMPL>(pKeyValue, dataSize);
+        return std::make_unique<KEY_VALUE_EXPAND_STRING_IMPL>(guest_ptr<void>(pKeyValue), dataSize);
     case REG_TYPE::REG_MULTI_SZ:
         return std::make_unique<KEY_VALUE_MULTI_STRING_IMPL>(pKeyValue, dataSize);
     case REG_TYPE::REG_QWORD_LITTLE_ENDIAN:

@@ -39,17 +39,16 @@ struct _WSADATA {
 template <typename PtrType>
 class WSADATA_IMPL final : public WSADATA {
   public:
-    uint16_t wVersion() const override { return data_->wVersion; }
-    void wVersion(uint16_t wVersion) override { data_->wVersion = wVersion; }
+    uint16_t wVersion() const override { return ptr_->wVersion; }
+    void wVersion(uint16_t wVersion) override { ptr_->wVersion = wVersion; }
 
-    uint16_t wHighVersion() const override { return data_->wHighVersion; }
-    void wHighVersion(uint16_t wHighVersion) override { data_->wHighVersion = wHighVersion; }
+    uint16_t wHighVersion() const override { return ptr_->wHighVersion; }
+    void wHighVersion(uint16_t wHighVersion) override { ptr_->wHighVersion = wHighVersion; }
 
-    WSADATA_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    WSADATA_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_WSADATA<PtrType>> data_;
+    guest_ptr<structs::_WSADATA<PtrType>> ptr_;
 };
 
 } // namespace ws2_32

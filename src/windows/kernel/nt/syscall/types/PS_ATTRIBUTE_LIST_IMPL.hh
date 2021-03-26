@@ -40,7 +40,7 @@ class PS_ATTRIBUTE_LIST_IMPL final
                             sizeof(structs::_PS_ATTRIBUTE<PtrType>), PtrType, true,
                             offsetof(structs::_PS_ATTRIBUTE_LIST<PtrType>, Attributes)> {
   public:
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -48,14 +48,14 @@ class PS_ATTRIBUTE_LIST_IMPL final
 
     Json::Value json() const override;
 
-    PS_ATTRIBUTE_LIST_IMPL(const GuestVirtualAddress& gva);
+    PS_ATTRIBUTE_LIST_IMPL(const guest_ptr<void>& ptr);
 
   private:
     using array_iterable_type = array_iterable<PS_ATTRIBUTE_IMPL<PtrType>, PS_ATTRIBUTE_LIST,
                                                sizeof(structs::_PS_ATTRIBUTE<PtrType>), PtrType,
                                                true, sizeof(structs::_PS_ATTRIBUTE_LIST<PtrType>)>;
 
-    const GuestVirtualAddress gva_;
+    const guest_ptr<void> ptr_;
     const PtrType buffer_size_;
 };
 

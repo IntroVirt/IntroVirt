@@ -22,11 +22,11 @@ namespace introvirt {
 namespace windows {
 namespace ws2_32 {
 
-std::unique_ptr<HOSTENT> HOSTENT::make_unique(const GuestVirtualAddress& gva, bool x64) {
+std::shared_ptr<HOSTENT> HOSTENT::make_shared(const guest_ptr<void>& ptr, bool x64) {
     if (x64) {
-        return std::make_unique<HOSTENT_IMPL<uint64_t>>(gva);
+        return std::make_shared<HOSTENT_IMPL<uint64_t>>(ptr);
     }
-    return std::make_unique<HOSTENT_IMPL<uint32_t>>(gva);
+    return std::make_shared<HOSTENT_IMPL<uint32_t>>(ptr);
 }
 
 size_t HOSTENT::size(bool x64) {

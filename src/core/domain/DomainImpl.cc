@@ -742,7 +742,7 @@ void DomainImpl::resume_all_other_vcpus(const Vcpu& v) {
     }
 }
 
-std::shared_ptr<Breakpoint> DomainImpl::create_breakpoint(const GuestAddress& address,
+std::shared_ptr<Breakpoint> DomainImpl::create_breakpoint(const guest_ptr<void>& address,
                                                           std::function<void(Event&)> callback) {
 
     auto result = std::make_shared<BreakpointImpl>(address, callback);
@@ -750,7 +750,7 @@ std::shared_ptr<Breakpoint> DomainImpl::create_breakpoint(const GuestAddress& ad
     return result;
 }
 
-std::unique_ptr<Watchpoint> DomainImpl::create_watchpoint(const GuestAddress& address,
+std::unique_ptr<Watchpoint> DomainImpl::create_watchpoint(const guest_ptr<void>& address,
                                                           uint64_t length, bool read, bool write,
                                                           bool execute,
                                                           std::function<void(Event&)> callback) {
@@ -778,7 +778,7 @@ void DomainImpl::start_injection(Event& event) {
     {
         std::lock_guard lock(injection_tids_.mtx_);
         auto [iter, inserted] = injection_tids_.set_.insert(event.task().tid());
-        assert(inserted);
+        introvirt_assert(inserted, "");
     }
 
     LOG4CXX_DEBUG(logger, "Starting injection on TID " << event.task().tid()
@@ -810,7 +810,7 @@ void DomainImpl::end_injection(Event& event) {
         std::lock_guard lock(injection_tids_.mtx_);
         LOG4CXX_DEBUG(logger, "Searching for injection on TID " << event.task().tid());
         auto iter = injection_tids_.set_.find(event.task().tid());
-        assert(iter != injection_tids_.set_.end());
+        introvirt_assert(iter != injection_tids_.set_.end(), "");
         injection_tids_.set_.erase(iter);
     }
 
@@ -834,7 +834,7 @@ void DomainImpl::end_injection(Event& event) {
     breakpoint_manager_.end_injection();
 
     injection_.count_--;
-    assert(injection_.count_ >= 0);
+    introvirt_assert(injection_.count_ >= 0, "");
     if (injection_.count_ == 0) {
         injection_.cv_.notify_all();
     }

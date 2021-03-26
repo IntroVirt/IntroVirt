@@ -25,7 +25,7 @@ namespace windows {
 namespace nt {
 
 const uint32_t KEY_VALUE_DWORD_IMPL::DWORDValue() const {
-    return *(reinterpret_cast<const uint32_t*>(Data()));
+    return *(reinterpret_cast<const uint32_t*>(Data().get()));
 }
 
 void KEY_VALUE_DWORD_IMPL::write(std::ostream& os, const std::string& linePrefix) const {
@@ -41,11 +41,11 @@ Json::Value KEY_VALUE_DWORD_IMPL::json() const {
     return result;
 }
 
-KEY_VALUE_DWORD_IMPL::KEY_VALUE_DWORD_IMPL(const GuestVirtualAddress& gva, uint32_t size)
-    : KEY_VALUE_IMPL<KEY_VALUE_DWORD>(REG_TYPE::REG_DWORD_LITTLE_ENDIAN, gva, size) {
+KEY_VALUE_DWORD_IMPL::KEY_VALUE_DWORD_IMPL(const guest_ptr<void>& ptr, uint32_t size)
+    : KEY_VALUE_IMPL<KEY_VALUE_DWORD>(REG_TYPE::REG_DWORD_LITTLE_ENDIAN, ptr, size) {
 
-    if (unlikely(DataSize() < sizeof(uint32_t)))
-        throw BufferTooSmallException(sizeof(uint32_t), DataSize());
+    if (unlikely(size < sizeof(uint32_t)))
+        throw BufferTooSmallException(sizeof(uint32_t), size);
 }
 
 } // namespace nt

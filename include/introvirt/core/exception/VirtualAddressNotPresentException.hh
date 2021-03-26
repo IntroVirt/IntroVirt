@@ -31,37 +31,34 @@ namespace introvirt {
 class VirtualAddressNotPresentException final : public MemoryException {
   public:
     /**
-     * @brief Gets the guest virtual address that was marked as not present
+     * @brief Get the guest virtual address that was marked as not present
      *
-     * @return The GuestVirtualAddress that was marked as not present
+     * @return The virtual address that failed to translate
      */
-    GuestVirtualAddress virtual_address() const;
+    uint64_t virtual_address() const;
+
+    /**
+     * @brief Get the page directory in use
+     *
+     * @return uint64_t
+     */
+    uint64_t page_directory() const;
 
     /**
      * @brief Construct a new Virtual Address Not Present Exception object
      *
-     * @param gva The virtual address that was not present
+     * @param virtual_address The virtual address that was not present
+     * @param page_directory The paging directory that was used
      */
-    VirtualAddressNotPresentException(const GuestVirtualAddress& gva);
+    VirtualAddressNotPresentException(uint64_t virtual_address, uint64_t page_directory);
 
-    /**
-     * @brief Move constructor
-     */
     VirtualAddressNotPresentException(VirtualAddressNotPresentException&&) noexcept;
-
-    /**
-     * @brief Move assignment operator
-     */
     VirtualAddressNotPresentException& operator=(VirtualAddressNotPresentException&&) noexcept;
-
-    /**
-     * @brief Destructor
-     */
     ~VirtualAddressNotPresentException() noexcept override;
 
   private:
-    class IMPL;
-    std::unique_ptr<IMPL> pImpl_;
+    uint64_t virtual_address_;
+    uint64_t page_directory_;
 };
 
 } // namespace introvirt

@@ -16,15 +16,14 @@
 #pragma once
 
 #include <introvirt/core/fwd.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <introvirt/util/json/json.hh>
 
 #include <cstdint>
-#include <memory>
 #include <ostream>
 #include <string>
-#include <vector>
 
 namespace introvirt {
 namespace windows {
@@ -36,8 +35,8 @@ namespace nt {
 class SID {
   public:
     virtual uint8_t Revision() const = 0;
-    virtual const std::vector<uint8_t>& IdentifierAuthority() const = 0;
-    virtual const std::vector<uint32_t>& SubAuthorities() const = 0;
+    virtual guest_ptr<const uint8_t[]> IdentifierAuthority() const = 0;
+    virtual guest_ptr<const uint32_t[]> SubAuthorities() const = 0;
 
     virtual Json::Value json() const = 0;
 

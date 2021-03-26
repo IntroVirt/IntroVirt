@@ -66,9 +66,9 @@ class PE {
     /**
      * @returns The base address of the image
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
-    static std::unique_ptr<PE> make_unique(const GuestVirtualAddress& gva);
+    static std::unique_ptr<PE> make_unique(const guest_ptr<void>& ptr);
 
     virtual ~PE() = default;
 };

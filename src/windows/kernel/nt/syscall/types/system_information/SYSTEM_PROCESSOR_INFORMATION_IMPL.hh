@@ -42,37 +42,37 @@ using SYSTEM_PROCESSOR_INFORMATION_IMPL_BASE =
 
 class SYSTEM_PROCESSOR_INFORMATION_IMPL final : public SYSTEM_PROCESSOR_INFORMATION_IMPL_BASE {
   public:
-    uint16_t ProcessorArchitecture() const override { return this->data_->ProcessorArchitecture; }
+    uint16_t ProcessorArchitecture() const override { return this->ptr_->ProcessorArchitecture; }
     void ProcessorArchitecture(uint16_t ProcessorArchitecture) override {
-        this->data_->ProcessorArchitecture = ProcessorArchitecture;
+        this->ptr_->ProcessorArchitecture = ProcessorArchitecture;
     }
 
-    uint16_t ProcessorLevel() const override { return this->data_->ProcessorLevel; }
+    uint16_t ProcessorLevel() const override { return this->ptr_->ProcessorLevel; }
     void ProcessorLevel(uint16_t ProcessorLevel) override {
-        this->data_->ProcessorLevel = ProcessorLevel;
+        this->ptr_->ProcessorLevel = ProcessorLevel;
     }
 
-    uint16_t ProcessorRevision() const override { return this->data_->ProcessorRevision; }
+    uint16_t ProcessorRevision() const override { return this->ptr_->ProcessorRevision; }
     void ProcessorRevision(uint16_t ProcessorRevision) override {
-        this->data_->ProcessorRevision = ProcessorRevision;
+        this->ptr_->ProcessorRevision = ProcessorRevision;
     }
 
-    uint16_t MaximumProcessors() const override { return this->data_->MaximumProcessors; }
+    uint16_t MaximumProcessors() const override { return this->ptr_->MaximumProcessors; }
     void MaximumProcessors(uint16_t MaximumProcessors) override {
-        this->data_->MaximumProcessors = MaximumProcessors;
+        this->ptr_->MaximumProcessors = MaximumProcessors;
     }
 
-    uint32_t ProcessorFeatureBits() const override { return this->data_->ProcessorFeatureBits; }
+    uint32_t ProcessorFeatureBits() const override { return this->ptr_->ProcessorFeatureBits; }
     void ProcessorFeatureBits(uint32_t ProcessorFeatureBits) override {
-        this->data_->ProcessorFeatureBits = ProcessorFeatureBits;
+        this->ptr_->ProcessorFeatureBits = ProcessorFeatureBits;
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    SYSTEM_PROCESSOR_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    SYSTEM_PROCESSOR_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : SYSTEM_PROCESSOR_INFORMATION_IMPL_BASE(
-              SYSTEM_INFORMATION_CLASS::SystemProcessorInformation, gva, buffer_size) {}
+              SYSTEM_INFORMATION_CLASS::SystemProcessorInformation, ptr, buffer_size) {}
 };
 
 } // namespace nt

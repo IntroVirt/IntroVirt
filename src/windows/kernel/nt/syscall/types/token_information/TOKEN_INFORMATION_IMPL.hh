@@ -28,7 +28,7 @@ class TOKEN_INFORMATION_IMPL : public _BaseClass {
   public:
     TOKEN_INFORMATION_CLASS TokenInformationClass() const final { return class_; }
 
-    GuestVirtualAddress address() const final { return gva_; }
+    guest_ptr<void> ptr() const final { return ptr_; }
 
     uint32_t buffer_size() const final { return buffer_size_; }
 
@@ -43,28 +43,26 @@ class TOKEN_INFORMATION_IMPL : public _BaseClass {
     }
 
     // No length checking version
-    TOKEN_INFORMATION_IMPL(TOKEN_INFORMATION_CLASS information_class,
-                           const GuestVirtualAddress& gva)
-        : class_(information_class), gva_(gva) {
+    TOKEN_INFORMATION_IMPL(TOKEN_INFORMATION_CLASS information_class, const guest_ptr<void>& ptr)
+        : class_(information_class) {
 
-        data_.reset(gva_);
+        ptr_.reset(ptr);
     }
 
-    TOKEN_INFORMATION_IMPL(TOKEN_INFORMATION_CLASS information_class,
-                           const GuestVirtualAddress& gva, uint32_t buffer_size)
-        : class_(information_class), gva_(gva), buffer_size_(buffer_size) {
+    TOKEN_INFORMATION_IMPL(TOKEN_INFORMATION_CLASS information_class, const guest_ptr<void>& ptr,
+                           uint32_t buffer_size)
+        : class_(information_class), buffer_size_(buffer_size) {
 
         if (unlikely(buffer_size < sizeof(_StructType)))
             throw BufferTooSmallException(sizeof(_StructType), buffer_size);
 
-        data_.reset(gva_);
+        ptr_.reset(ptr);
     }
 
   protected:
     const TOKEN_INFORMATION_CLASS class_;
-    const GuestVirtualAddress gva_;
+    guest_ptr<_StructType> ptr_;
     uint32_t buffer_size_; // Not const just for TOKEN_PRIVILEGES_IMPL
-    guest_ptr<_StructType> data_;
 };
 
 } // namespace nt

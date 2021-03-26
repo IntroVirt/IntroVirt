@@ -16,6 +16,7 @@
 #pragma once
 
 #include "ServiceTableImpl.hh"
+
 #include <introvirt/windows/kernel/ServiceDescriptorTable.hh>
 
 namespace introvirt {
@@ -26,7 +27,7 @@ class ServiceDescriptorTableEntryImpl final : public ServiceDescriptorTableEntry
   public:
     const ServiceTableImpl<PtrType>& service_table() const override;
 
-    ServiceDescriptorTableEntryImpl(const GuestVirtualAddress& p_service_table, PtrType count);
+    ServiceDescriptorTableEntryImpl(const guest_ptr<void>& ptr, PtrType count);
 
   private:
     ServiceTableImpl<PtrType> service_table_;
@@ -39,7 +40,7 @@ class ServiceDescriptorTableImpl final : public ServiceDescriptorTable {
 
     unsigned int count() const override;
 
-    ServiceDescriptorTableImpl(GuestVirtualAddress gva);
+    ServiceDescriptorTableImpl(const guest_ptr<void>& ptr);
 
   private:
     std::vector<ServiceDescriptorTableEntryImpl<PtrType>> entries_;

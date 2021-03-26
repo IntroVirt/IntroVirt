@@ -116,386 +116,386 @@ using SYSTEM_PERFORMANCE_INFORMATION_IMPL_BASE =
 
 class SYSTEM_PERFORMANCE_INFORMATION_IMPL final : public SYSTEM_PERFORMANCE_INFORMATION_IMPL_BASE {
   public:
-    int64_t IdleProcessTime() const override { return this->data_->IdleProcessTime; }
+    int64_t IdleProcessTime() const override { return this->ptr_->IdleProcessTime; }
     void IdleProcessTime(int64_t IdleProcessTime) override {
-        this->data_->IdleProcessTime = IdleProcessTime;
+        this->ptr_->IdleProcessTime = IdleProcessTime;
     }
 
-    int64_t IoReadTransferCount() const override { return this->data_->IoReadTransferCount; }
+    int64_t IoReadTransferCount() const override { return this->ptr_->IoReadTransferCount; }
     void IoReadTransferCount(int64_t IoReadTransferCount) override {
-        this->data_->IoReadTransferCount = IoReadTransferCount;
+        this->ptr_->IoReadTransferCount = IoReadTransferCount;
     }
 
-    int64_t IoWriteTransferCount() const override { return this->data_->IoWriteTransferCount; }
+    int64_t IoWriteTransferCount() const override { return this->ptr_->IoWriteTransferCount; }
     void IoWriteTransferCount(int64_t IoWriteTransferCount) override {
-        this->data_->IoWriteTransferCount = IoWriteTransferCount;
+        this->ptr_->IoWriteTransferCount = IoWriteTransferCount;
     }
 
-    int64_t IoOtherTransferCount() const override { return this->data_->IoOtherTransferCount; }
+    int64_t IoOtherTransferCount() const override { return this->ptr_->IoOtherTransferCount; }
     void IoOtherTransferCount(int64_t IoOtherTransferCount) override {
-        this->data_->IoOtherTransferCount = IoOtherTransferCount;
+        this->ptr_->IoOtherTransferCount = IoOtherTransferCount;
     }
 
-    uint32_t IoReadOperationCount() const override { return this->data_->IoReadOperationCount; }
+    uint32_t IoReadOperationCount() const override { return this->ptr_->IoReadOperationCount; }
     void IoReadOperationCount(uint32_t IoReadOperationCount) override {
-        this->data_->IoReadOperationCount = IoReadOperationCount;
+        this->ptr_->IoReadOperationCount = IoReadOperationCount;
     }
 
-    uint32_t IoWriteOperationCount() const override { return this->data_->IoWriteOperationCount; }
+    uint32_t IoWriteOperationCount() const override { return this->ptr_->IoWriteOperationCount; }
     void IoWriteOperationCount(uint32_t IoWriteOperationCount) override {
-        this->data_->IoWriteOperationCount = IoWriteOperationCount;
+        this->ptr_->IoWriteOperationCount = IoWriteOperationCount;
     }
 
-    uint32_t IoOtherOperationCount() const override { return this->data_->IoOtherOperationCount; }
+    uint32_t IoOtherOperationCount() const override { return this->ptr_->IoOtherOperationCount; }
     void IoOtherOperationCount(uint32_t IoOtherOperationCount) override {
-        this->data_->IoOtherOperationCount = IoOtherOperationCount;
+        this->ptr_->IoOtherOperationCount = IoOtherOperationCount;
     }
 
-    uint32_t AvailablePages() const override { return this->data_->AvailablePages; }
+    uint32_t AvailablePages() const override { return this->ptr_->AvailablePages; }
     void AvailablePages(uint32_t AvailablePages) override {
-        this->data_->AvailablePages = AvailablePages;
+        this->ptr_->AvailablePages = AvailablePages;
     }
 
-    uint32_t CommittedPages() const override { return this->data_->CommittedPages; }
+    uint32_t CommittedPages() const override { return this->ptr_->CommittedPages; }
     void CommittedPages(uint32_t CommittedPages) override {
-        this->data_->CommittedPages = CommittedPages;
+        this->ptr_->CommittedPages = CommittedPages;
     }
 
-    uint32_t CommitLimit() const override { return this->data_->CommitLimit; }
-    void CommitLimit(uint32_t CommitLimit) override { this->data_->CommitLimit = CommitLimit; }
+    uint32_t CommitLimit() const override { return this->ptr_->CommitLimit; }
+    void CommitLimit(uint32_t CommitLimit) override { this->ptr_->CommitLimit = CommitLimit; }
 
-    uint32_t PeakCommitment() const override { return this->data_->PeakCommitment; }
+    uint32_t PeakCommitment() const override { return this->ptr_->PeakCommitment; }
     void PeakCommitment(uint32_t PeakCommitment) override {
-        this->data_->PeakCommitment = PeakCommitment;
+        this->ptr_->PeakCommitment = PeakCommitment;
     }
 
-    uint32_t PageFaultCount() const override { return this->data_->PageFaultCount; }
+    uint32_t PageFaultCount() const override { return this->ptr_->PageFaultCount; }
     void PageFaultCount(uint32_t PageFaultCount) override {
-        this->data_->PageFaultCount = PageFaultCount;
+        this->ptr_->PageFaultCount = PageFaultCount;
     }
 
-    uint32_t CopyOnWriteCount() const override { return this->data_->CopyOnWriteCount; }
+    uint32_t CopyOnWriteCount() const override { return this->ptr_->CopyOnWriteCount; }
     void CopyOnWriteCount(uint32_t CopyOnWriteCount) override {
-        this->data_->CopyOnWriteCount = CopyOnWriteCount;
+        this->ptr_->CopyOnWriteCount = CopyOnWriteCount;
     }
 
-    uint32_t TransitionCount() const override { return this->data_->TransitionCount; }
+    uint32_t TransitionCount() const override { return this->ptr_->TransitionCount; }
     void TransitionCount(uint32_t TransitionCount) override {
-        this->data_->TransitionCount = TransitionCount;
+        this->ptr_->TransitionCount = TransitionCount;
     }
 
-    uint32_t CacheTransitionCount() const override { return this->data_->CacheTransitionCount; }
+    uint32_t CacheTransitionCount() const override { return this->ptr_->CacheTransitionCount; }
     void CacheTransitionCount(uint32_t CacheTransitionCount) override {
-        this->data_->CacheTransitionCount = CacheTransitionCount;
+        this->ptr_->CacheTransitionCount = CacheTransitionCount;
     }
 
-    uint32_t DemandZeroCount() const override { return this->data_->DemandZeroCount; }
+    uint32_t DemandZeroCount() const override { return this->ptr_->DemandZeroCount; }
     void DemandZeroCount(uint32_t DemandZeroCount) override {
-        this->data_->DemandZeroCount = DemandZeroCount;
+        this->ptr_->DemandZeroCount = DemandZeroCount;
     }
 
-    uint32_t PageReadCount() const override { return this->data_->PageReadCount; }
+    uint32_t PageReadCount() const override { return this->ptr_->PageReadCount; }
     void PageReadCount(uint32_t PageReadCount) override {
-        this->data_->PageReadCount = PageReadCount;
+        this->ptr_->PageReadCount = PageReadCount;
     }
 
-    uint32_t PageReadIoCount() const override { return this->data_->PageReadIoCount; }
+    uint32_t PageReadIoCount() const override { return this->ptr_->PageReadIoCount; }
     void PageReadIoCount(uint32_t PageReadIoCount) override {
-        this->data_->PageReadIoCount = PageReadIoCount;
+        this->ptr_->PageReadIoCount = PageReadIoCount;
     }
 
-    uint32_t CacheReadCount() const override { return this->data_->CacheReadCount; }
+    uint32_t CacheReadCount() const override { return this->ptr_->CacheReadCount; }
     void CacheReadCount(uint32_t CacheReadCount) override {
-        this->data_->CacheReadCount = CacheReadCount;
+        this->ptr_->CacheReadCount = CacheReadCount;
     }
 
-    uint32_t CacheIoCount() const override { return this->data_->CacheIoCount; }
-    void CacheIoCount(uint32_t CacheIoCount) override { this->data_->CacheIoCount = CacheIoCount; }
+    uint32_t CacheIoCount() const override { return this->ptr_->CacheIoCount; }
+    void CacheIoCount(uint32_t CacheIoCount) override { this->ptr_->CacheIoCount = CacheIoCount; }
 
-    uint32_t DirtyPagesWriteCount() const override { return this->data_->DirtyPagesWriteCount; }
+    uint32_t DirtyPagesWriteCount() const override { return this->ptr_->DirtyPagesWriteCount; }
     void DirtyPagesWriteCount(uint32_t DirtyPagesWriteCount) override {
-        this->data_->DirtyPagesWriteCount = DirtyPagesWriteCount;
+        this->ptr_->DirtyPagesWriteCount = DirtyPagesWriteCount;
     }
 
-    uint32_t DirtyWriteIoCount() const override { return this->data_->DirtyWriteIoCount; }
+    uint32_t DirtyWriteIoCount() const override { return this->ptr_->DirtyWriteIoCount; }
     void DirtyWriteIoCount(uint32_t DirtyWriteIoCount) override {
-        this->data_->DirtyWriteIoCount = DirtyWriteIoCount;
+        this->ptr_->DirtyWriteIoCount = DirtyWriteIoCount;
     }
 
-    uint32_t MappedPagesWriteCount() const override { return this->data_->MappedPagesWriteCount; }
+    uint32_t MappedPagesWriteCount() const override { return this->ptr_->MappedPagesWriteCount; }
     void MappedPagesWriteCount(uint32_t MappedPagesWriteCount) override {
-        this->data_->MappedPagesWriteCount = MappedPagesWriteCount;
+        this->ptr_->MappedPagesWriteCount = MappedPagesWriteCount;
     }
 
-    uint32_t MappedWriteIoCount() const override { return this->data_->MappedWriteIoCount; }
+    uint32_t MappedWriteIoCount() const override { return this->ptr_->MappedWriteIoCount; }
     void MappedWriteIoCount(uint32_t MappedWriteIoCount) override {
-        this->data_->MappedWriteIoCount = MappedWriteIoCount;
+        this->ptr_->MappedWriteIoCount = MappedWriteIoCount;
     }
 
-    uint32_t PagedPoolPages() const override { return this->data_->PagedPoolPages; }
+    uint32_t PagedPoolPages() const override { return this->ptr_->PagedPoolPages; }
     void PagedPoolPages(uint32_t PagedPoolPages) override {
-        this->data_->PagedPoolPages = PagedPoolPages;
+        this->ptr_->PagedPoolPages = PagedPoolPages;
     }
 
-    uint32_t NonPagedPoolPages() const override { return this->data_->NonPagedPoolPages; }
+    uint32_t NonPagedPoolPages() const override { return this->ptr_->NonPagedPoolPages; }
     void NonPagedPoolPages(uint32_t NonPagedPoolPages) override {
-        this->data_->NonPagedPoolPages = NonPagedPoolPages;
+        this->ptr_->NonPagedPoolPages = NonPagedPoolPages;
     }
 
-    uint32_t PagedPoolAllocs() const override { return this->data_->PagedPoolAllocs; }
+    uint32_t PagedPoolAllocs() const override { return this->ptr_->PagedPoolAllocs; }
     void PagedPoolAllocs(uint32_t PagedPoolAllocs) override {
-        this->data_->PagedPoolAllocs = PagedPoolAllocs;
+        this->ptr_->PagedPoolAllocs = PagedPoolAllocs;
     }
 
-    uint32_t PagedPoolFrees() const override { return this->data_->PagedPoolFrees; }
+    uint32_t PagedPoolFrees() const override { return this->ptr_->PagedPoolFrees; }
     void PagedPoolFrees(uint32_t PagedPoolFrees) override {
-        this->data_->PagedPoolFrees = PagedPoolFrees;
+        this->ptr_->PagedPoolFrees = PagedPoolFrees;
     }
 
-    uint32_t NonPagedPoolAllocs() const override { return this->data_->NonPagedPoolAllocs; }
+    uint32_t NonPagedPoolAllocs() const override { return this->ptr_->NonPagedPoolAllocs; }
     void NonPagedPoolAllocs(uint32_t NonPagedPoolAllocs) override {
-        this->data_->NonPagedPoolAllocs = NonPagedPoolAllocs;
+        this->ptr_->NonPagedPoolAllocs = NonPagedPoolAllocs;
     }
 
-    uint32_t NonPagedPoolFrees() const override { return this->data_->NonPagedPoolFrees; }
+    uint32_t NonPagedPoolFrees() const override { return this->ptr_->NonPagedPoolFrees; }
     void NonPagedPoolFrees(uint32_t NonPagedPoolFrees) override {
-        this->data_->NonPagedPoolFrees = NonPagedPoolFrees;
+        this->ptr_->NonPagedPoolFrees = NonPagedPoolFrees;
     }
 
-    uint32_t FreeSystemPtes() const override { return this->data_->FreeSystemPtes; }
+    uint32_t FreeSystemPtes() const override { return this->ptr_->FreeSystemPtes; }
     void FreeSystemPtes(uint32_t FreeSystemPtes) override {
-        this->data_->FreeSystemPtes = FreeSystemPtes;
+        this->ptr_->FreeSystemPtes = FreeSystemPtes;
     }
 
-    uint32_t ResidentSystemCodePage() const override { return this->data_->ResidentSystemCodePage; }
+    uint32_t ResidentSystemCodePage() const override { return this->ptr_->ResidentSystemCodePage; }
     void ResidentSystemCodePage(uint32_t ResidentSystemCodePage) override {
-        this->data_->ResidentSystemCodePage = ResidentSystemCodePage;
+        this->ptr_->ResidentSystemCodePage = ResidentSystemCodePage;
     }
 
-    uint32_t TotalSystemDriverPages() const override { return this->data_->TotalSystemDriverPages; }
+    uint32_t TotalSystemDriverPages() const override { return this->ptr_->TotalSystemDriverPages; }
     void TotalSystemDriverPages(uint32_t TotalSystemDriverPages) override {
-        this->data_->TotalSystemDriverPages = TotalSystemDriverPages;
+        this->ptr_->TotalSystemDriverPages = TotalSystemDriverPages;
     }
 
-    uint32_t TotalSystemCodePages() const override { return this->data_->TotalSystemCodePages; }
+    uint32_t TotalSystemCodePages() const override { return this->ptr_->TotalSystemCodePages; }
     void TotalSystemCodePages(uint32_t TotalSystemCodePages) override {
-        this->data_->TotalSystemCodePages = TotalSystemCodePages;
+        this->ptr_->TotalSystemCodePages = TotalSystemCodePages;
     }
 
     uint32_t NonPagedPoolLookasideHits() const override {
-        return this->data_->NonPagedPoolLookasideHits;
+        return this->ptr_->NonPagedPoolLookasideHits;
     }
     void NonPagedPoolLookasideHits(uint32_t NonPagedPoolLookasideHits) override {
-        this->data_->NonPagedPoolLookasideHits = NonPagedPoolLookasideHits;
+        this->ptr_->NonPagedPoolLookasideHits = NonPagedPoolLookasideHits;
     }
 
-    uint32_t PagedPoolLookasideHits() const override { return this->data_->PagedPoolLookasideHits; }
+    uint32_t PagedPoolLookasideHits() const override { return this->ptr_->PagedPoolLookasideHits; }
     void PagedPoolLookasideHits(uint32_t PagedPoolLookasideHits) override {
-        this->data_->PagedPoolLookasideHits = PagedPoolLookasideHits;
+        this->ptr_->PagedPoolLookasideHits = PagedPoolLookasideHits;
     }
 
     uint32_t AvailablePagedPoolPages() const override {
-        return this->data_->AvailablePagedPoolPages;
+        return this->ptr_->AvailablePagedPoolPages;
     }
     void AvailablePagedPoolPages(uint32_t AvailablePagedPoolPages) override {
-        this->data_->AvailablePagedPoolPages = AvailablePagedPoolPages;
+        this->ptr_->AvailablePagedPoolPages = AvailablePagedPoolPages;
     }
 
     uint32_t ResidentSystemCachePage() const override {
-        return this->data_->ResidentSystemCachePage;
+        return this->ptr_->ResidentSystemCachePage;
     }
     void ResidentSystemCachePage(uint32_t ResidentSystemCachePage) override {
-        this->data_->ResidentSystemCachePage = ResidentSystemCachePage;
+        this->ptr_->ResidentSystemCachePage = ResidentSystemCachePage;
     }
 
-    uint32_t ResidentPagedPoolPage() const override { return this->data_->ResidentPagedPoolPage; }
+    uint32_t ResidentPagedPoolPage() const override { return this->ptr_->ResidentPagedPoolPage; }
     void ResidentPagedPoolPage(uint32_t ResidentPagedPoolPage) override {
-        this->data_->ResidentPagedPoolPage = ResidentPagedPoolPage;
+        this->ptr_->ResidentPagedPoolPage = ResidentPagedPoolPage;
     }
 
     uint32_t ResidentSystemDriverPage() const override {
-        return this->data_->ResidentSystemDriverPage;
+        return this->ptr_->ResidentSystemDriverPage;
     }
     void ResidentSystemDriverPage(uint32_t ResidentSystemDriverPage) override {
-        this->data_->ResidentSystemDriverPage = ResidentSystemDriverPage;
+        this->ptr_->ResidentSystemDriverPage = ResidentSystemDriverPage;
     }
 
-    uint32_t CcFastReadNoWait() const override { return this->data_->CcFastReadNoWait; }
+    uint32_t CcFastReadNoWait() const override { return this->ptr_->CcFastReadNoWait; }
     void CcFastReadNoWait(uint32_t CcFastReadNoWait) override {
-        this->data_->CcFastReadNoWait = CcFastReadNoWait;
+        this->ptr_->CcFastReadNoWait = CcFastReadNoWait;
     }
 
-    uint32_t CcFastReadWait() const override { return this->data_->CcFastReadWait; }
+    uint32_t CcFastReadWait() const override { return this->ptr_->CcFastReadWait; }
     void CcFastReadWait(uint32_t CcFastReadWait) override {
-        this->data_->CcFastReadWait = CcFastReadWait;
+        this->ptr_->CcFastReadWait = CcFastReadWait;
     }
 
-    uint32_t CcFastReadResourceMiss() const override { return this->data_->CcFastReadResourceMiss; }
+    uint32_t CcFastReadResourceMiss() const override { return this->ptr_->CcFastReadResourceMiss; }
     void CcFastReadResourceMiss(uint32_t CcFastReadResourceMiss) override {
-        this->data_->CcFastReadResourceMiss = CcFastReadResourceMiss;
+        this->ptr_->CcFastReadResourceMiss = CcFastReadResourceMiss;
     }
 
-    uint32_t CcFastReadNotPossible() const override { return this->data_->CcFastReadNotPossible; }
+    uint32_t CcFastReadNotPossible() const override { return this->ptr_->CcFastReadNotPossible; }
     void CcFastReadNotPossible(uint32_t CcFastReadNotPossible) override {
-        this->data_->CcFastReadNotPossible = CcFastReadNotPossible;
+        this->ptr_->CcFastReadNotPossible = CcFastReadNotPossible;
     }
 
-    uint32_t CcFastMdlReadNoWait() const override { return this->data_->CcFastMdlReadNoWait; }
+    uint32_t CcFastMdlReadNoWait() const override { return this->ptr_->CcFastMdlReadNoWait; }
     void CcFastMdlReadNoWait(uint32_t CcFastMdlReadNoWait) override {
-        this->data_->CcFastMdlReadNoWait = CcFastMdlReadNoWait;
+        this->ptr_->CcFastMdlReadNoWait = CcFastMdlReadNoWait;
     }
 
-    uint32_t CcFastMdlReadWait() const override { return this->data_->CcFastMdlReadWait; }
+    uint32_t CcFastMdlReadWait() const override { return this->ptr_->CcFastMdlReadWait; }
     void CcFastMdlReadWait(uint32_t CcFastMdlReadWait) override {
-        this->data_->CcFastMdlReadWait = CcFastMdlReadWait;
+        this->ptr_->CcFastMdlReadWait = CcFastMdlReadWait;
     }
 
     uint32_t CcFastMdlReadResourceMiss() const override {
-        return this->data_->CcFastMdlReadResourceMiss;
+        return this->ptr_->CcFastMdlReadResourceMiss;
     }
     void CcFastMdlReadResourceMiss(uint32_t CcFastMdlReadResourceMiss) override {
-        this->data_->CcFastMdlReadResourceMiss = CcFastMdlReadResourceMiss;
+        this->ptr_->CcFastMdlReadResourceMiss = CcFastMdlReadResourceMiss;
     }
 
     uint32_t CcFastMdlReadNotPossible() const override {
-        return this->data_->CcFastMdlReadNotPossible;
+        return this->ptr_->CcFastMdlReadNotPossible;
     }
     void CcFastMdlReadNotPossible(uint32_t CcFastMdlReadNotPossible) override {
-        this->data_->CcFastMdlReadNotPossible = CcFastMdlReadNotPossible;
+        this->ptr_->CcFastMdlReadNotPossible = CcFastMdlReadNotPossible;
     }
 
-    uint32_t CcMapDataNoWait() const override { return this->data_->CcMapDataNoWait; }
+    uint32_t CcMapDataNoWait() const override { return this->ptr_->CcMapDataNoWait; }
     void CcMapDataNoWait(uint32_t CcMapDataNoWait) override {
-        this->data_->CcMapDataNoWait = CcMapDataNoWait;
+        this->ptr_->CcMapDataNoWait = CcMapDataNoWait;
     }
 
-    uint32_t CcMapDataWait() const override { return this->data_->CcMapDataWait; }
+    uint32_t CcMapDataWait() const override { return this->ptr_->CcMapDataWait; }
     void CcMapDataWait(uint32_t CcMapDataWait) override {
-        this->data_->CcMapDataWait = CcMapDataWait;
+        this->ptr_->CcMapDataWait = CcMapDataWait;
     }
 
-    uint32_t CcMapDataNoWaitMiss() const override { return this->data_->CcMapDataNoWaitMiss; }
+    uint32_t CcMapDataNoWaitMiss() const override { return this->ptr_->CcMapDataNoWaitMiss; }
     void CcMapDataNoWaitMiss(uint32_t CcMapDataNoWaitMiss) override {
-        this->data_->CcMapDataNoWaitMiss = CcMapDataNoWaitMiss;
+        this->ptr_->CcMapDataNoWaitMiss = CcMapDataNoWaitMiss;
     }
 
-    uint32_t CcMapDataWaitMiss() const override { return this->data_->CcMapDataWaitMiss; }
+    uint32_t CcMapDataWaitMiss() const override { return this->ptr_->CcMapDataWaitMiss; }
     void CcMapDataWaitMiss(uint32_t CcMapDataWaitMiss) override {
-        this->data_->CcMapDataWaitMiss = CcMapDataWaitMiss;
+        this->ptr_->CcMapDataWaitMiss = CcMapDataWaitMiss;
     }
 
-    uint32_t CcPinMappedDataCount() const override { return this->data_->CcPinMappedDataCount; }
+    uint32_t CcPinMappedDataCount() const override { return this->ptr_->CcPinMappedDataCount; }
     void CcPinMappedDataCount(uint32_t CcPinMappedDataCount) override {
-        this->data_->CcPinMappedDataCount = CcPinMappedDataCount;
+        this->ptr_->CcPinMappedDataCount = CcPinMappedDataCount;
     }
 
-    uint32_t CcPinReadNoWait() const override { return this->data_->CcPinReadNoWait; }
+    uint32_t CcPinReadNoWait() const override { return this->ptr_->CcPinReadNoWait; }
     void CcPinReadNoWait(uint32_t CcPinReadNoWait) override {
-        this->data_->CcPinReadNoWait = CcPinReadNoWait;
+        this->ptr_->CcPinReadNoWait = CcPinReadNoWait;
     }
 
-    uint32_t CcPinReadWait() const override { return this->data_->CcPinReadWait; }
+    uint32_t CcPinReadWait() const override { return this->ptr_->CcPinReadWait; }
     void CcPinReadWait(uint32_t CcPinReadWait) override {
-        this->data_->CcPinReadWait = CcPinReadWait;
+        this->ptr_->CcPinReadWait = CcPinReadWait;
     }
 
-    uint32_t CcPinReadNoWaitMiss() const override { return this->data_->CcPinReadNoWaitMiss; }
+    uint32_t CcPinReadNoWaitMiss() const override { return this->ptr_->CcPinReadNoWaitMiss; }
     void CcPinReadNoWaitMiss(uint32_t CcPinReadNoWaitMiss) override {
-        this->data_->CcPinReadNoWaitMiss = CcPinReadNoWaitMiss;
+        this->ptr_->CcPinReadNoWaitMiss = CcPinReadNoWaitMiss;
     }
 
-    uint32_t CcPinReadWaitMiss() const override { return this->data_->CcPinReadWaitMiss; }
+    uint32_t CcPinReadWaitMiss() const override { return this->ptr_->CcPinReadWaitMiss; }
     void CcPinReadWaitMiss(uint32_t CcPinReadWaitMiss) override {
-        this->data_->CcPinReadWaitMiss = CcPinReadWaitMiss;
+        this->ptr_->CcPinReadWaitMiss = CcPinReadWaitMiss;
     }
 
-    uint32_t CcCopyReadNoWait() const override { return this->data_->CcCopyReadNoWait; }
+    uint32_t CcCopyReadNoWait() const override { return this->ptr_->CcCopyReadNoWait; }
     void CcCopyReadNoWait(uint32_t CcCopyReadNoWait) override {
-        this->data_->CcCopyReadNoWait = CcCopyReadNoWait;
+        this->ptr_->CcCopyReadNoWait = CcCopyReadNoWait;
     }
 
-    uint32_t CcCopyReadWait() const override { return this->data_->CcCopyReadWait; }
+    uint32_t CcCopyReadWait() const override { return this->ptr_->CcCopyReadWait; }
     void CcCopyReadWait(uint32_t CcCopyReadWait) override {
-        this->data_->CcCopyReadWait = CcCopyReadWait;
+        this->ptr_->CcCopyReadWait = CcCopyReadWait;
     }
 
-    uint32_t CcCopyReadNoWaitMiss() const override { return this->data_->CcCopyReadNoWaitMiss; }
+    uint32_t CcCopyReadNoWaitMiss() const override { return this->ptr_->CcCopyReadNoWaitMiss; }
     void CcCopyReadNoWaitMiss(uint32_t CcCopyReadNoWaitMiss) override {
-        this->data_->CcCopyReadNoWaitMiss = CcCopyReadNoWaitMiss;
+        this->ptr_->CcCopyReadNoWaitMiss = CcCopyReadNoWaitMiss;
     }
 
-    uint32_t CcCopyReadWaitMiss() const override { return this->data_->CcCopyReadWaitMiss; }
+    uint32_t CcCopyReadWaitMiss() const override { return this->ptr_->CcCopyReadWaitMiss; }
     void CcCopyReadWaitMiss(uint32_t CcCopyReadWaitMiss) override {
-        this->data_->CcCopyReadWaitMiss = CcCopyReadWaitMiss;
+        this->ptr_->CcCopyReadWaitMiss = CcCopyReadWaitMiss;
     }
 
-    uint32_t CcMdlReadNoWait() const override { return this->data_->CcMdlReadNoWait; }
+    uint32_t CcMdlReadNoWait() const override { return this->ptr_->CcMdlReadNoWait; }
     void CcMdlReadNoWait(uint32_t CcMdlReadNoWait) override {
-        this->data_->CcMdlReadNoWait = CcMdlReadNoWait;
+        this->ptr_->CcMdlReadNoWait = CcMdlReadNoWait;
     }
 
-    uint32_t CcMdlReadWait() const override { return this->data_->CcMdlReadWait; }
+    uint32_t CcMdlReadWait() const override { return this->ptr_->CcMdlReadWait; }
     void CcMdlReadWait(uint32_t CcMdlReadWait) override {
-        this->data_->CcMdlReadWait = CcMdlReadWait;
+        this->ptr_->CcMdlReadWait = CcMdlReadWait;
     }
 
-    uint32_t CcMdlReadNoWaitMiss() const override { return this->data_->CcMdlReadNoWaitMiss; }
+    uint32_t CcMdlReadNoWaitMiss() const override { return this->ptr_->CcMdlReadNoWaitMiss; }
     void CcMdlReadNoWaitMiss(uint32_t CcMdlReadNoWaitMiss) override {
-        this->data_->CcMdlReadNoWaitMiss = CcMdlReadNoWaitMiss;
+        this->ptr_->CcMdlReadNoWaitMiss = CcMdlReadNoWaitMiss;
     }
 
-    uint32_t CcMdlReadWaitMiss() const override { return this->data_->CcMdlReadWaitMiss; }
+    uint32_t CcMdlReadWaitMiss() const override { return this->ptr_->CcMdlReadWaitMiss; }
     void CcMdlReadWaitMiss(uint32_t CcMdlReadWaitMiss) override {
-        this->data_->CcMdlReadWaitMiss = CcMdlReadWaitMiss;
+        this->ptr_->CcMdlReadWaitMiss = CcMdlReadWaitMiss;
     }
 
-    uint32_t CcReadAheadIos() const override { return this->data_->CcReadAheadIos; }
+    uint32_t CcReadAheadIos() const override { return this->ptr_->CcReadAheadIos; }
     void CcReadAheadIos(uint32_t CcReadAheadIos) override {
-        this->data_->CcReadAheadIos = CcReadAheadIos;
+        this->ptr_->CcReadAheadIos = CcReadAheadIos;
     }
 
-    uint32_t CcLazyWriteIos() const override { return this->data_->CcLazyWriteIos; }
+    uint32_t CcLazyWriteIos() const override { return this->ptr_->CcLazyWriteIos; }
     void CcLazyWriteIos(uint32_t CcLazyWriteIos) override {
-        this->data_->CcLazyWriteIos = CcLazyWriteIos;
+        this->ptr_->CcLazyWriteIos = CcLazyWriteIos;
     }
 
-    uint32_t CcLazyWritePages() const override { return this->data_->CcLazyWritePages; }
+    uint32_t CcLazyWritePages() const override { return this->ptr_->CcLazyWritePages; }
     void CcLazyWritePages(uint32_t CcLazyWritePages) override {
-        this->data_->CcLazyWritePages = CcLazyWritePages;
+        this->ptr_->CcLazyWritePages = CcLazyWritePages;
     }
 
-    uint32_t CcDataFlushes() const override { return this->data_->CcDataFlushes; }
+    uint32_t CcDataFlushes() const override { return this->ptr_->CcDataFlushes; }
     void CcDataFlushes(uint32_t CcDataFlushes) override {
-        this->data_->CcDataFlushes = CcDataFlushes;
+        this->ptr_->CcDataFlushes = CcDataFlushes;
     }
 
-    uint32_t CcDataPages() const override { return this->data_->CcDataPages; }
-    void CcDataPages(uint32_t CcDataPages) override { this->data_->CcDataPages = CcDataPages; }
+    uint32_t CcDataPages() const override { return this->ptr_->CcDataPages; }
+    void CcDataPages(uint32_t CcDataPages) override { this->ptr_->CcDataPages = CcDataPages; }
 
-    uint32_t ContextSwitches() const override { return this->data_->ContextSwitches; }
+    uint32_t ContextSwitches() const override { return this->ptr_->ContextSwitches; }
     void ContextSwitches(uint32_t ContextSwitches) override {
-        this->data_->ContextSwitches = ContextSwitches;
+        this->ptr_->ContextSwitches = ContextSwitches;
     }
 
-    uint32_t FirstLevelTbFills() const override { return this->data_->FirstLevelTbFills; }
+    uint32_t FirstLevelTbFills() const override { return this->ptr_->FirstLevelTbFills; }
     void FirstLevelTbFills(uint32_t FirstLevelTbFills) override {
-        this->data_->FirstLevelTbFills = FirstLevelTbFills;
+        this->ptr_->FirstLevelTbFills = FirstLevelTbFills;
     }
 
-    uint32_t SecondLevelTbFills() const override { return this->data_->SecondLevelTbFills; }
+    uint32_t SecondLevelTbFills() const override { return this->ptr_->SecondLevelTbFills; }
     void SecondLevelTbFills(uint32_t SecondLevelTbFills) override {
-        this->data_->SecondLevelTbFills = SecondLevelTbFills;
+        this->ptr_->SecondLevelTbFills = SecondLevelTbFills;
     }
 
-    uint32_t SystemCalls() const override { return this->data_->SystemCalls; }
-    void SystemCalls(uint32_t SystemCalls) override { this->data_->SystemCalls = SystemCalls; }
+    uint32_t SystemCalls() const override { return this->ptr_->SystemCalls; }
+    void SystemCalls(uint32_t SystemCalls) override { this->ptr_->SystemCalls = SystemCalls; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    SYSTEM_PERFORMANCE_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    SYSTEM_PERFORMANCE_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : SYSTEM_PERFORMANCE_INFORMATION_IMPL_BASE(
-              SYSTEM_INFORMATION_CLASS::SystemPerformanceInformation, gva, buffer_size) {}
+              SYSTEM_INFORMATION_CLASS::SystemPerformanceInformation, ptr, buffer_size) {}
 };
 
 } // namespace nt

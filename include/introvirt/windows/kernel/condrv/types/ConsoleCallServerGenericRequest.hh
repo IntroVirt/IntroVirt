@@ -34,13 +34,12 @@ class ConsoleCallServerGenericRequest final {
     uint32_t Data2() const;
     guest_ptr<uint8_t[]> RequestData();
 
-    GuestVirtualAddress header_address() const;
-    GuestVirtualAddress data_address() const;
+    guest_ptr<void> header_address() const;
+    guest_ptr<void> data_address() const;
 
     ConsoleCallServerGenericRequest(const WindowsGuest& guest,
-                                    const GuestVirtualAddress& pRequestHeader,
-                                    const GuestVirtualAddress& pRequestData,
-                                    uint32_t requestDataLen);
+                                    const guest_ptr<void>& pRequestHeader,
+                                    const guest_ptr<void>& pRequestData, uint32_t requestDataLen);
     ~ConsoleCallServerGenericRequest();
 
   private:

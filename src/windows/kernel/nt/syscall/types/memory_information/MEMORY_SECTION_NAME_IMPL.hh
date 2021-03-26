@@ -50,13 +50,13 @@ class MEMORY_SECTION_NAME_IMPL final : public MEMORY_SECTION_NAME_IMPL_BASE<PtrT
     const std::string& SectionFileName() const override { return SectionFileName_->utf8(); }
     void SectionFileName(const std::string& value) override {
         SectionFileName_->set(value);
-        this->data_->SectionFileName.Length = SectionFileName_->Length();
+        this->ptr_->SectionFileName.Length = SectionFileName_->Length();
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    MEMORY_SECTION_NAME_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    MEMORY_SECTION_NAME_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
     std::optional<WStr> SectionFileName_;

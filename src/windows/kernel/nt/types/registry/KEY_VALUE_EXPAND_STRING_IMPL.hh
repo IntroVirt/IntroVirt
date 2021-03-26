@@ -30,7 +30,7 @@ class KEY_VALUE_EXPAND_STRING_IMPL final : public KEY_VALUE_STRING_IMPL<KEY_VALU
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    KEY_VALUE_EXPAND_STRING_IMPL(const GuestVirtualAddress& gva, uint32_t size);
+    KEY_VALUE_EXPAND_STRING_IMPL(const guest_ptr<void>& ptr, uint32_t size);
 
   private:
     std::string ExpandedValue_;

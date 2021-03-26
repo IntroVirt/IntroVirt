@@ -46,12 +46,12 @@ Json::Value IO_STATUS_BLOCK_IMPL<PtrType>::json() const {
 }
 
 std::unique_ptr<IO_STATUS_BLOCK> IO_STATUS_BLOCK::make_unique(const NtKernel& kernel,
-                                                              const GuestVirtualAddress& gva) {
+                                                              const guest_ptr<void>& ptr) {
 
     if (kernel.x64()) {
-        return std::make_unique<IO_STATUS_BLOCK_IMPL<uint64_t>>(gva);
+        return std::make_unique<IO_STATUS_BLOCK_IMPL<uint64_t>>(ptr);
     } else {
-        return std::make_unique<IO_STATUS_BLOCK_IMPL<uint32_t>>(gva);
+        return std::make_unique<IO_STATUS_BLOCK_IMPL<uint32_t>>(ptr);
     }
 }
 
@@ -69,7 +69,7 @@ GuestAllocation<windows::nt::IO_STATUS_BLOCK>::GuestAllocation() {
 
     auto& domain = Domain::thread_local_domain();
     auto* guest = static_cast<windows::WindowsGuest*>(domain.guest());
-    assert(guest != nullptr);
+    introvirt_assert(guest != nullptr, "");
     auto& kernel = guest->kernel();
 
     // Get the size required for the structure
@@ -77,16 +77,17 @@ GuestAllocation<windows::nt::IO_STATUS_BLOCK>::GuestAllocation() {
                                                : sizeof(structs::_IO_STATUS_BLOCK<uint32_t>);
 
     // Allocate memory for the size of the structure plus the size of the string
-    buffer_.emplace(structure_size);
+    allocation_.emplace(structure_size);
+    auto& ptr = allocation_->ptr();
 
     // Zero the buffer
-    memset(buffer_->get(), 0, structure_size);
+    memset(ptr.get(), 0, structure_size);
 
     // Create the string
     if (kernel.x64()) {
-        value_ = std::make_unique<IO_STATUS_BLOCK_IMPL<uint64_t>>(buffer_->address());
+        value_ = std::make_unique<IO_STATUS_BLOCK_IMPL<uint64_t>>(ptr);
     } else {
-        value_ = std::make_unique<IO_STATUS_BLOCK_IMPL<uint32_t>>(buffer_->address());
+        value_ = std::make_unique<IO_STATUS_BLOCK_IMPL<uint32_t>>(ptr);
     }
 }
 

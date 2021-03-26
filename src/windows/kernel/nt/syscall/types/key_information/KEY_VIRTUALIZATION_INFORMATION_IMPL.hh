@@ -39,26 +39,26 @@ static_assert(sizeof(_KEY_VIRTUALIZATION_INFORMATION) == 0x4);
 
 class KEY_VIRTUALIZATION_INFORMATION_IMPL final : public KEY_VIRTUALIZATION_INFORMATION {
   public:
-    bool VirtualizationCandidate() const override { return data_->VirtualizationCandidate; }
-    void VirtualizationCandidate(bool value) override { data_->VirtualizationCandidate = value; }
+    bool VirtualizationCandidate() const override { return ptr_->VirtualizationCandidate; }
+    void VirtualizationCandidate(bool value) override { ptr_->VirtualizationCandidate = value; }
 
-    bool VirtualizationEnabled() const override { return data_->VirtualizationEnabled; }
-    void VirtualizationEnabled(bool value) override { data_->VirtualizationEnabled = value; }
+    bool VirtualizationEnabled() const override { return ptr_->VirtualizationEnabled; }
+    void VirtualizationEnabled(bool value) override { ptr_->VirtualizationEnabled = value; }
 
-    bool VirtualTarget() const override { return data_->VirtualTarget; }
-    void VirtualTarget(bool value) override { data_->VirtualTarget = value; }
+    bool VirtualTarget() const override { return ptr_->VirtualTarget; }
+    void VirtualTarget(bool value) override { ptr_->VirtualTarget = value; }
 
-    bool VirtualStore() const override { return data_->VirtualStore; }
-    void VirtualStore(bool value) override { data_->VirtualStore = value; }
+    bool VirtualStore() const override { return ptr_->VirtualStore; }
+    void VirtualStore(bool value) override { ptr_->VirtualStore = value; }
 
-    bool VirtualSource() const override { return data_->VirtualSource; }
-    void VirtualSource(bool value) override { data_->VirtualSource = value; }
+    bool VirtualSource() const override { return ptr_->VirtualSource; }
+    void VirtualSource(bool value) override { ptr_->VirtualSource = value; }
 
     KEY_INFORMATION_CLASS KeyInformationClass() const override {
         return KEY_INFORMATION_CLASS::KeyVirtualizationInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -66,12 +66,11 @@ class KEY_VIRTUALIZATION_INFORMATION_IMPL final : public KEY_VIRTUALIZATION_INFO
 
     Json::Value json() const override;
 
-    KEY_VIRTUALIZATION_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    KEY_VIRTUALIZATION_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_KEY_VIRTUALIZATION_INFORMATION> data_;
+    guest_ptr<structs::_KEY_VIRTUALIZATION_INFORMATION> ptr_;
 };
 
 } // namespace nt

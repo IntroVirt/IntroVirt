@@ -38,14 +38,14 @@ Json::Value KEY_HANDLE_TAGS_INFORMATION_IMPL::json() const {
     return result;
 }
 
-KEY_HANDLE_TAGS_INFORMATION_IMPL::KEY_HANDLE_TAGS_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+KEY_HANDLE_TAGS_INFORMATION_IMPL::KEY_HANDLE_TAGS_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                                    uint32_t buffer_size)
-    : gva_(gva), buffer_size_(buffer_size) {
+    : buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_KEY_HANDLE_TAGS_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_KEY_HANDLE_TAGS_INFORMATION), buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 }
 
 } // namespace nt

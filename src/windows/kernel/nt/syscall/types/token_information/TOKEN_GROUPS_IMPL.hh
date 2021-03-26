@@ -54,7 +54,7 @@ class TOKEN_GROUPS_IMPL final
 
     Json::Value json() const override;
 
-    TOKEN_GROUPS_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    TOKEN_GROUPS_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
     using array_iterable_type =

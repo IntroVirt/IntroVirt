@@ -41,25 +41,24 @@ struct _IMAGE_FILE_HEADER {
 
 class IMAGE_FILE_HEADER_IMPL final : public IMAGE_FILE_HEADER {
   public:
-    MachineType Machine() const override { return data_->Machine; }
-    uint16_t NumberOfSections() const override { return data_->NumberOfSections; }
-    uint32_t TimeDateStamp() const override { return data_->TimeDateStamp; }
-    uint32_t PointerToSymbolTable() const override { return data_->PointerToSymbolTable; }
-    uint32_t NumberOfSymbols() const override { return data_->NumberOfSymbols; }
-    uint16_t SizeOfOptionalHeader() const override { return data_->SizeOfOptionalHeader; }
-    uint16_t Characteristics() const override { return data_->Characteristics; }
+    MachineType Machine() const override { return ptr_->Machine; }
+    uint16_t NumberOfSections() const override { return ptr_->NumberOfSections; }
+    uint32_t TimeDateStamp() const override { return ptr_->TimeDateStamp; }
+    uint32_t PointerToSymbolTable() const override { return ptr_->PointerToSymbolTable; }
+    uint32_t NumberOfSymbols() const override { return ptr_->NumberOfSymbols; }
+    uint16_t SizeOfOptionalHeader() const override { return ptr_->SizeOfOptionalHeader; }
+    uint16_t Characteristics() const override { return ptr_->Characteristics; }
 
-    GuestVirtualAddress address() const { return gva_; }
+    guest_ptr<void> ptr() const { return ptr_; }
 
-    IMAGE_FILE_HEADER_IMPL(const GuestVirtualAddress& image_base, const DOS_HEADER_IMPL& dos_header)
-        : gva_(image_base + dos_header.e_lfanew()), data_(gva_) {
-        if (unlikely(data_->Signature != 0x4550)) // 0x4550 == "PE\0\0"
+    IMAGE_FILE_HEADER_IMPL(const guest_ptr<void>& image_base, const DOS_HEADER_IMPL& dos_header)
+        : ptr_(image_base + dos_header.e_lfanew()) {
+        if (unlikely(ptr_->Signature != 0x4550)) // 0x4550 == "PE\0\0"
             throw PeException("Bad PE signature");
     }
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_IMAGE_FILE_HEADER> data_;
+    const guest_ptr<structs::_IMAGE_FILE_HEADER> ptr_;
 };
 
 } // namespace pe

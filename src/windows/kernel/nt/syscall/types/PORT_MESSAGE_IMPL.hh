@@ -45,7 +45,7 @@ class PORT_MESSAGE_IMPL final : public PORT_MESSAGE {
 
     uint32_t CallbackId() const override;
 
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override;
 
     uint64_t HeaderSize() const override;
 
@@ -53,11 +53,11 @@ class PORT_MESSAGE_IMPL final : public PORT_MESSAGE {
 
     Json::Value json() const override;
 
-    PORT_MESSAGE_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    PORT_MESSAGE_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
   private:
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
+    const guest_ptr<void> ptr_;
     const structs::PORT_MESSAGE* port_message_;
     std::optional<CLIENT_ID_IMPL<PtrType>> client_id_;
     guest_ptr<char[]> buffer;

@@ -16,7 +16,7 @@
 #pragma once
 
 #include <introvirt/core/injection/GuestAllocation.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/json/json.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
@@ -47,10 +47,10 @@ class CLIENT_ID {
     virtual Json::Value json() const = 0;
     virtual operator Json::Value() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     static std::unique_ptr<CLIENT_ID> make_unique(const NtKernel& kernel,
-                                                  const GuestVirtualAddress& gva);
+                                                  const guest_ptr<void>& ptr);
 
     virtual ~CLIENT_ID() = default;
 };
@@ -63,14 +63,11 @@ std::ostream& operator<<(std::ostream& os, const CLIENT_ID& cid);
 namespace inject {
 
 template <>
-class GuestAllocation<windows::nt::CLIENT_ID>
+class GuestAllocation<windows::nt::CLIENT_ID> final
     : public GuestAllocationComplexBase<windows::nt::CLIENT_ID> {
   public:
-    explicit GuestAllocation();
-    explicit GuestAllocation(uint64_t UniqueProcess, uint64_t UniqueThread);
-
-  private:
-    std::optional<GuestAllocation<uint8_t[]>> buffer_;
+    GuestAllocation();
+    GuestAllocation(uint64_t UniqueProcess, uint64_t UniqueThread);
 };
 
 } // namespace inject

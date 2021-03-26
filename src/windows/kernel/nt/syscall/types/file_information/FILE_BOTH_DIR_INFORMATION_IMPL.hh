@@ -48,83 +48,79 @@ struct _FILE_BOTH_DIR_INFORMATION {
 
 class FILE_BOTH_DIR_INFORMATION_ENTRY_IMPL : public FILE_BOTH_DIR_INFORMATION_ENTRY {
   public:
-    uint32_t NextEntryOffset() const override { return data_->NextEntryOffset; }
-    void NextEntryOffset(uint32_t value) override { data_->NextEntryOffset = value; }
+    uint32_t NextEntryOffset() const override { return ptr_->NextEntryOffset; }
+    void NextEntryOffset(uint32_t value) override { ptr_->NextEntryOffset = value; }
 
     const std::string& FileName() const override { return FileName_.utf8(); }
     void FileName(const std::string& FileName) override {
         FileName_.set(FileName);
-        data_->FileNameLength = FileName_.Length();
+        ptr_->FileNameLength = FileName_.Length();
     }
 
     const std::string ShortName() const override { return ShortName_.utf8(); }
     void ShortName(const std::string& ShortName) override {
         ShortName_.set(ShortName);
-        data_->ShortNameLength = ShortName_.Length();
+        ptr_->ShortNameLength = ShortName_.Length();
     }
 
-    uint32_t FileIndex() const override { return data_->FileIndex; }
+    uint32_t FileIndex() const override { return ptr_->FileIndex; }
     void FileIndex(uint32_t FileIndex) override {}
 
     WindowsTime CreationTime() const override {
-        return WindowsTime::from_windows_time(data_->CreationTime);
+        return WindowsTime::from_windows_time(ptr_->CreationTime);
     }
     void CreationTime(WindowsTime CreationTime) override {
-        data_->CreationTime = CreationTime.windows_time();
+        ptr_->CreationTime = CreationTime.windows_time();
     }
 
     WindowsTime LastAccessTime() const override {
-        return WindowsTime::from_windows_time(data_->LastAccessTime);
+        return WindowsTime::from_windows_time(ptr_->LastAccessTime);
     }
     void LastAccessTime(WindowsTime LastAccessTime) override {
-        data_->LastAccessTime = LastAccessTime.windows_time();
+        ptr_->LastAccessTime = LastAccessTime.windows_time();
     }
 
     WindowsTime LastWriteTime() const override {
-        return WindowsTime::from_windows_time(data_->LastWriteTime);
+        return WindowsTime::from_windows_time(ptr_->LastWriteTime);
     }
     void LastWriteTime(WindowsTime LastWriteTime) override {
-        data_->LastWriteTime = LastWriteTime.windows_time();
+        ptr_->LastWriteTime = LastWriteTime.windows_time();
     }
 
     WindowsTime ChangeTime() const override {
-        return WindowsTime::from_windows_time(data_->ChangeTime);
+        return WindowsTime::from_windows_time(ptr_->ChangeTime);
     }
     void ChangeTime(WindowsTime ChangeTime) override {
-        data_->ChangeTime = ChangeTime.windows_time();
+        ptr_->ChangeTime = ChangeTime.windows_time();
     }
 
-    uint64_t EndOfFile() const override { return data_->EndOfFile; }
-    void EndOfFile(uint64_t EndOfFile) override { data_->EndOfFile = EndOfFile; }
+    uint64_t EndOfFile() const override { return ptr_->EndOfFile; }
+    void EndOfFile(uint64_t EndOfFile) override { ptr_->EndOfFile = EndOfFile; }
 
-    uint64_t AllocationSize() const override { return data_->AllocationSize; }
-    void AllocationSize(uint64_t AllocationSize) override {
-        data_->AllocationSize = AllocationSize;
-    }
+    uint64_t AllocationSize() const override { return ptr_->AllocationSize; }
+    void AllocationSize(uint64_t AllocationSize) override { ptr_->AllocationSize = AllocationSize; }
 
-    FILE_ATTRIBUTES FileAttributes() const override { return data_->FileAttributes; }
+    FILE_ATTRIBUTES FileAttributes() const override { return ptr_->FileAttributes; }
     void FileAttributes(FILE_ATTRIBUTES FileAttributes) override {
-        data_->FileAttributes = FileAttributes;
+        ptr_->FileAttributes = FileAttributes;
     }
 
-    uint32_t EaSize() const override { return data_->EaSize; }
-    void EaSize(uint32_t EaSize) override { data_->EaSize = EaSize; }
+    uint32_t EaSize() const override { return ptr_->EaSize; }
+    void EaSize(uint32_t EaSize) override { ptr_->EaSize = EaSize; }
 
-    GuestVirtualAddress address() const override { return gva_; }
-    uint32_t buffer_size() const override { return FileNameOffset + data_->FileNameLength; }
+    guest_ptr<void> ptr() const override { return ptr_; }
+    uint32_t buffer_size() const override { return FileNameOffset + ptr_->FileNameLength; }
 
-    FILE_BOTH_DIR_INFORMATION_ENTRY_IMPL(const GuestVirtualAddress& gva)
-        : gva_(gva), data_(gva),
-          ShortName_(gva_ + ShortNameOffset, data_->ShortNameLength, ShortNameMaxLen),
-          FileName_(gva_ + FileNameOffset, data_->FileNameLength) {}
+    FILE_BOTH_DIR_INFORMATION_ENTRY_IMPL(const guest_ptr<void>& ptr)
+        : ptr_(ptr), ShortName_(ptr + ShortNameOffset, ShortNameMaxLen, ptr_->ShortNameLength),
+          FileName_(ptr + FileNameOffset, ptr_->FileNameLength) {}
 
   private:
     static constexpr int ShortNameOffset = offsetof(structs::_FILE_BOTH_DIR_INFORMATION, ShortName);
     static constexpr int ShortNameMaxLen = sizeof(structs::_FILE_BOTH_DIR_INFORMATION::ShortName);
     static constexpr int FileNameOffset = offsetof(structs::_FILE_BOTH_DIR_INFORMATION, FileName);
 
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_FILE_BOTH_DIR_INFORMATION> data_;
+    guest_ptr<structs::_FILE_BOTH_DIR_INFORMATION> ptr_;
     WStr ShortName_;
     WStr FileName_;
 };
@@ -136,7 +132,7 @@ class FILE_BOTH_DIR_INFORMATION_IMPL final
         return FILE_INFORMATION_CLASS::FileBothDirectoryInformation;
     }
 
-    GuestVirtualAddress address() const override { return first_entry_; }
+    guest_ptr<void> ptr() const override { return first_entry_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -144,7 +140,7 @@ class FILE_BOTH_DIR_INFORMATION_IMPL final
 
     Json::Value json() const override;
 
-    FILE_BOTH_DIR_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_BOTH_DIR_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
 };

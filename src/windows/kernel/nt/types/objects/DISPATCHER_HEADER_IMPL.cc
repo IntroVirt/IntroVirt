@@ -53,11 +53,11 @@ int32_t DISPATCHER_HEADER_IMPL<PtrType>::SignalState() const {
 
 template <typename PtrType>
 DISPATCHER_HEADER_IMPL<PtrType>::DISPATCHER_HEADER_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                                        const GuestVirtualAddress& gva)
+                                                        const guest_ptr<void>& ptr)
     : offsets_(LoadOffsets<structs::DISPATCHER_HEADER>(kernel)) {
 
     // Map in the structure. Doing one mapping is a lot cheaper than mapping every field.
-    buffer_.reset(gva, offsets_->size());
+    buffer_.reset(ptr, offsets_->size());
 }
 
 template class DISPATCHER_HEADER_IMPL<uint32_t>;

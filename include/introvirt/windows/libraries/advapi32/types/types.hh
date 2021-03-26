@@ -15,19 +15,11 @@
  */
 #pragma once
 
+#include "fwd.hh"
+
+#include <introvirt/core/memory/guest_size_t_ptr.hh>
 #include <introvirt/windows/libraries/advapi32/types/ALG_ID.hh>
 #include <introvirt/windows/libraries/advapi32/types/BLOB.hh>
 #include <introvirt/windows/libraries/advapi32/types/BLOB_TYPE.hh>
 #include <introvirt/windows/libraries/advapi32/types/KP_VALUE.hh>
 #include <introvirt/windows/libraries/advapi32/types/PLAINTEXTKEYBLOB.hh>
-
-namespace introvirt {
-namespace windows {
-namespace advapi32 {
-
-typedef uint64_t HCRYPTKEY;
-typedef uint64_t HCRYPTPROV;
-
-} // namespace advapi32
-} // namespace windows
-} // namespace introvirt

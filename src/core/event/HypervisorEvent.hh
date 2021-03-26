@@ -20,7 +20,7 @@
 #include <introvirt/core/event/EventType.hh>
 #include <introvirt/core/event/SystemCallEvent.hh>
 #include <introvirt/core/fwd.hh>
-#include <introvirt/core/memory/GuestPhysicalAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 namespace introvirt {
 
@@ -129,7 +129,7 @@ class HypervisorEvent {
      *
      * @return The faulting guest physical address
      */
-    virtual GuestPhysicalAddress mem_access_physical_address() const = 0;
+    virtual guest_phys_ptr<void> mem_access_physical_address() const = 0;
 
     /**
      * @brief Returns true if the event was caused by a read attempt

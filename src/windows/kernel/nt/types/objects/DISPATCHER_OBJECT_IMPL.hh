@@ -33,16 +33,16 @@ class DISPATCHER_OBJECT_IMPL : public OBJECT_IMPL<PtrType, _BaseType> {
     DISPATCHER_HEADER& DispatcherHeader() final { return dispatcher_header_; }
     const DISPATCHER_HEADER& DispatcherHeader() const final { return dispatcher_header_; }
 
-    DISPATCHER_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva,
+    DISPATCHER_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr,
                            ObjectType expected)
-        : OBJECT_IMPL<PtrType, _BaseType>(kernel, gva, expected),
-          dispatcher_header_(kernel, OBJECT_IMPL<PtrType, _BaseType>::address()) {}
+        : OBJECT_IMPL<PtrType, _BaseType>(kernel, ptr, expected),
+          dispatcher_header_(kernel, this->ptr_) {}
 
     DISPATCHER_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel,
                            std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header,
                            ObjectType expected)
         : OBJECT_IMPL<PtrType, _BaseType>(kernel, std::move(object_header), expected),
-          dispatcher_header_(kernel, OBJECT_IMPL<PtrType, _BaseType>::address()) {}
+          dispatcher_header_(kernel, this->ptr_) {}
 
   private:
     DISPATCHER_HEADER_IMPL<PtrType> dispatcher_header_;

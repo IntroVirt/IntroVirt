@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <cstdint>
@@ -97,9 +97,11 @@ class CM_KEY_CONTROL_BLOCK {
     virtual const CM_KEY_CONTROL_BLOCK::KeyExtFlags ExtFlags() const = 0;
 
     /**
-     * @returns The virtual address of this CM_KEY_CONTROL_BLOCK instance
+     * @brief Get a guest pointer to this structure
+     *
+     * @return const guest_ptr<void>&
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual const guest_ptr<void>& ptr() const = 0;
 
     virtual ~CM_KEY_CONTROL_BLOCK() = default;
 };

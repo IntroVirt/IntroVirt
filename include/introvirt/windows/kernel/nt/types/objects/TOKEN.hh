@@ -77,8 +77,7 @@ class TOKEN : public OBJECT {
     virtual uint64_t PrivilegesEnabled() const = 0;
     virtual void PrivilegesEnabled(uint64_t Privileges) = 0;
 
-    static std::shared_ptr<TOKEN> make_shared(const NtKernel& kernel,
-                                              const GuestVirtualAddress& gva);
+    static std::shared_ptr<TOKEN> make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr);
 
     static std::shared_ptr<TOKEN> make_shared(const NtKernel& kernel,
                                               std::unique_ptr<OBJECT_HEADER>&& object_header);

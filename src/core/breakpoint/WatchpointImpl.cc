@@ -22,7 +22,7 @@
 namespace introvirt {
 
 void WatchpointImpl::callback(std::function<void(Event&)> callback) { callback_ = callback; }
-const GuestAddress& WatchpointImpl::address() const { return *address_; }
+const guest_ptr<void>& WatchpointImpl::ptr() const { return ptr_; }
 uint64_t WatchpointImpl::length() const { return length_; }
 bool WatchpointImpl::read() const { return read_; }
 bool WatchpointImpl::write() const { return write_; }
@@ -40,16 +40,16 @@ void WatchpointImpl::deliver_event(Event& event) {
         return;
 
     // Check if the target address is in our range
-    auto addr = event.mem_access().physical_address();
-    const uint64_t pfn = addr.page_number();
+    guest_phys_ptr<void> addr = event.mem_access().physical_address();
+    const uint64_t pfn = addr.address() >> PageDirectory::PAGE_SHIFT;
 
     // Check if we're in range
     if (pfn == first_pfn_ || pfn == last_pfn_) {
         if (pfn == first_pfn_)
-            if (addr.value() < first_pfn_start_)
+            if (addr.address() < first_pfn_start_)
                 return;
         if (pfn == last_pfn_)
-            if (addr.value() > last_pfn_end_)
+            if (addr.address() > last_pfn_end_)
                 return;
     }
 
@@ -59,34 +59,26 @@ void WatchpointImpl::deliver_event(Event& event) {
     callback_(event);
 }
 
-WatchpointImpl::WatchpointImpl(const GuestAddress& address, uint64_t length, bool read, bool write,
+WatchpointImpl::WatchpointImpl(const guest_ptr<void>& ptr, uint64_t length, bool read, bool write,
                                bool execute, std::function<void(Event&)> callback)
-    : address_(address.clone()), length_(length), read_(read), write_(write), execute_(execute),
+    : ptr_(ptr), length_(length), read_(read), write_(write), execute_(execute),
       callback_(callback) {
 
     if (unlikely(length == 0))
         throw BufferTooSmallException(1, 0);
 
-    // Translate the physical address
-    address_->physical_address();
+    // Translate the physical address of the first frame
+    first_pfn_start_ = ptr.domain().page_directory().translate(ptr.address(), ptr.page_directory());
+    first_pfn_ = first_pfn_start_ >> PageDirectory::PAGE_SHIFT;
 
-    auto addr_copy = address_->clone();
-
-    // Do math
-    GuestPhysicalAddress first_gpa(*addr_copy);
-    first_pfn_ = first_gpa.page_number();
-    first_pfn_start_ = first_gpa.value();
-
-    *addr_copy += (length - 1);
-    GuestPhysicalAddress last_gpa(*addr_copy);
-
-    last_pfn_ = last_gpa.page_number();
-    last_pfn_end_ = last_gpa.value();
+    last_pfn_end_ =
+        ptr.domain().page_directory().translate(ptr.address() + (length - 1), ptr.page_directory());
+    last_pfn_ = last_pfn_end_ >> PageDirectory::PAGE_SHIFT;
 }
 
 WatchpointImpl::~WatchpointImpl() {
     // Notify the watchpoint manager that we're done
-    auto& domain = const_cast<DomainImpl&>(static_cast<const DomainImpl&>(address_->domain()));
+    auto& domain = const_cast<DomainImpl&>(static_cast<const DomainImpl&>(ptr_.domain()));
     domain.watchpoint_manager().remove_ref(*this);
 }
 

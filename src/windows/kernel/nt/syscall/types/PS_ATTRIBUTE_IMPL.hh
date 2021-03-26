@@ -30,7 +30,7 @@ struct _PS_ATTRIBUTE {
     PtrType Size;
     union {
         PtrType Value;
-        PtrType ValuePtr;
+        guest_member_ptr<void, PtrType> ValuePtr;
     };
     PtrType ReturnLength;
 };
@@ -49,57 +49,54 @@ class PS_ATTRIBUTE_IMPL final : public PS_ATTRIBUTE {
   public:
     // The attribute number
     PS_ATTRIBUTE_NUM AttributeNumber() const override {
-        return static_cast<PS_ATTRIBUTE_NUM>(data_->Attribute & PS_ATTRIBUTE_NUMBER_MASK);
+        return static_cast<PS_ATTRIBUTE_NUM>(ptr_->Attribute & PS_ATTRIBUTE_NUMBER_MASK);
     }
     void AttributeNumber(PS_ATTRIBUTE_NUM num) override {
-        data_->Attribute &= ~PS_ATTRIBUTE_NUMBER_MASK;
-        data_->Attribute |= num;
+        ptr_->Attribute &= ~PS_ATTRIBUTE_NUMBER_MASK;
+        ptr_->Attribute |= num;
     }
 
-    uint32_t AttributeFlags() const override {
-        return data_->Attribute & ~PS_ATTRIBUTE_NUMBER_MASK;
-    }
+    uint32_t AttributeFlags() const override { return ptr_->Attribute & ~PS_ATTRIBUTE_NUMBER_MASK; }
     void AttributeFlags(uint32_t flags) override {
-        data_->Attribute &= PS_ATTRIBUTE_NUMBER_MASK;
-        data_->Attribute |= flags;
+        ptr_->Attribute &= PS_ATTRIBUTE_NUMBER_MASK;
+        ptr_->Attribute |= flags;
     }
 
-    uint64_t Size() const override { return data_->Size; }
-    void Size(uint64_t size) override { data_->Size = size; }
+    uint64_t Size() const override { return ptr_->Size; }
+    void Size(uint64_t size) override { ptr_->Size = size; }
 
-    uint64_t Value() const override { return data_->Value; }
-    void Value(uint64_t value) override { data_->Value = value; }
+    uint64_t Value() const override { return ptr_->Value; }
+    void Value(uint64_t value) override { ptr_->Value = value; }
 
-    uint64_t ReturnLength() const override { return data_->ReturnLength; }
-    void ReturnLength(uint64_t len) override { data_->ReturnLength = len; }
+    uint64_t ReturnLength() const override { return ptr_->ReturnLength; }
+    void ReturnLength(uint64_t len) override { ptr_->ReturnLength = len; }
 
-    bool AttributeInputOnly() const override { return data_->Attribute & PS_ATTRIBUTE_INPUT; }
+    bool AttributeInputOnly() const override { return ptr_->Attribute & PS_ATTRIBUTE_INPUT; }
     void AttributeInputOnly(bool input) override {
         if (input)
-            data_->Attribute |= PS_ATTRIBUTE_INPUT;
+            ptr_->Attribute |= PS_ATTRIBUTE_INPUT;
         else
-            data_->Attribute &= ~PS_ATTRIBUTE_INPUT;
+            ptr_->Attribute &= ~PS_ATTRIBUTE_INPUT;
     }
 
-    bool AttributeThreads() const override { return data_->Attribute & PS_ATTRIBUTE_THREAD; }
+    bool AttributeThreads() const override { return ptr_->Attribute & PS_ATTRIBUTE_THREAD; }
     void AttributeThreads(bool threads) override {
         if (threads)
-            data_->Attribute |= PS_ATTRIBUTE_THREAD;
+            ptr_->Attribute |= PS_ATTRIBUTE_THREAD;
         else
-            data_->Attribute &= ~PS_ATTRIBUTE_THREAD;
+            ptr_->Attribute &= ~PS_ATTRIBUTE_THREAD;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
 
     Json::Value json() const override;
 
-    PS_ATTRIBUTE_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
+    PS_ATTRIBUTE_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_PS_ATTRIBUTE<PtrType>> data_;
+    guest_ptr<structs::_PS_ATTRIBUTE<PtrType>> ptr_;
 };
 
 } // namespace nt

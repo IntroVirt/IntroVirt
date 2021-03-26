@@ -49,9 +49,12 @@ union _ULARGE_INTEGER { // 0x8 bytes
 
 template <typename PtrType>
 struct _LIST_ENTRY {
-    PtrType /* _LIST_ENTRY<PtrType> */ Flink; // offset   0x0 size   0x4
-    PtrType /* _LIST_ENTRY<PtrType> */ Blink; // offset   0x4 size   0x4
-} __attribute__((packed, aligned(sizeof(PtrType))));
+    guest_member_ptr<_LIST_ENTRY<PtrType>, PtrType> Flink;
+    guest_member_ptr<_LIST_ENTRY<PtrType>, PtrType> Blink;
+};
+
+static_assert(sizeof(_LIST_ENTRY<uint32_t>) == 8);
+static_assert(sizeof(_LIST_ENTRY<uint64_t>) == 16);
 
 using _LIST_ENTRY32 = _LIST_ENTRY<uint32_t>;
 using _LIST_ENTRY64 = _LIST_ENTRY<uint64_t>;

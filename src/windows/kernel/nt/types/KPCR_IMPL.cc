@@ -27,7 +27,6 @@
 #include <introvirt/core/arch/arch.hh>
 #include <introvirt/core/domain/Vcpu.hh>
 #include <introvirt/core/exception/GuestDetectionException.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 
 #include <log4cxx/logger.h>
 
@@ -110,7 +109,7 @@ void KPCR_IMPL<PtrType>::reset() {
     if (!dtb)
         dtb = vcpu_.registers().cr3();
 
-    const GuestVirtualAddress pcurrent_thread(vcpu_.domain(), current_thread_address(), dtb);
+    const guest_ptr<void> pcurrent_thread(vcpu_.domain(), current_thread_address(), dtb);
 
     current_thread_ = kernel_.thread(pcurrent_thread);
     vcpu_.os_data(&current_thread_->Process());
@@ -126,26 +125,23 @@ KPCR_IMPL<PtrType>::KPCR_IMPL(NtKernelImpl<PtrType>& kernel, Vcpu& vcpu, uint64_
     // Load structure information
     offsets_ = LoadOffsets<structs::KPCR>(kernel_);
 
+    const Domain& domain = vcpu.domain();
     const auto& registers = vcpu.registers();
 
-    GuestVirtualAddress gva;
-
-    // Find the address of the current KPCR
+    // Find the address of the current KPCR and map it in
     if constexpr (std::is_same_v<uint64_t, PtrType>) {
         // Long-mode enabled, 64-bit mode
         // The GS base address should hold the KPCR
         // The kernel GS base will be in one of these two spots, depending on state
-        gva = GuestVirtualAddress(vcpu_, std::max(registers.msr(x86::Msr::MSR_KERNEL_GS_BASE),
-                                                  registers.msr(x86::Msr::MSR_GS_BASE)));
+        buffer_.reset(domain,
+                      std::max(registers.msr(x86::Msr::MSR_KERNEL_GS_BASE),
+                               registers.msr(x86::Msr::MSR_GS_BASE)),
+                      dtb, offsets_->size());
     } else {
         // In 32-bit mode, the KPCR is held in a GDT entry at offset 0x30
         const x86::Segment segment = vcpu.segment(KGDT_R0_PCR);
-        gva = GuestVirtualAddress(vcpu, segment.base());
+        buffer_.reset(domain, segment.base(), dtb, offsets_->size());
     }
-    gva.page_directory(dtb);
-
-    // Map in the KPCR structure
-    buffer_.reset(gva, offsets_->size());
 
     // Create pointers for fast access
     pcurrent_thread_ = reinterpret_cast<PtrType*>(buffer_.get() + offsets_->Prcb.CurrentThread);
@@ -157,11 +153,13 @@ KPCR_IMPL<PtrType>::KPCR_IMPL(NtKernelImpl<PtrType>& kernel, Vcpu& vcpu, uint64_
     }
 
     // Validate it
-    if (offsets_->Self.template get<PtrType>(buffer_) != gva.virtual_address()) {
-        throw GuestDetectionException(vcpu, "Failed to validate 64-bit KPCR " + to_string(gva));
+    if (unlikely(offsets_->Self.template get<PtrType>(buffer_) != buffer_.address())) {
+        throw GuestDetectionException(vcpu, "Failed to validate 64-bit KPCR " +
+                                                n2hexstr(buffer_.address()));
     }
 
-    LOG4CXX_DEBUG(logger, "Detected Vcpu " << vcpu.id() << " KPCR at " << gva);
+    LOG4CXX_DEBUG(logger,
+                  "Detected Vcpu " << vcpu.id() << " KPCR at " << n2hexstr(buffer_.address()));
 }
 
 template <typename PtrType>

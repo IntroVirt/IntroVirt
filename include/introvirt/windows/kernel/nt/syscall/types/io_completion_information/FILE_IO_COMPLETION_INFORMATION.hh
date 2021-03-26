@@ -15,9 +15,9 @@
  */
 #pragma once
 
-#include <introvirt/windows/kernel/nt/syscall/types/IO_STATUS_BLOCK.hh>
-
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/json/json.hh>
+#include <introvirt/windows/kernel/nt/syscall/types/IO_STATUS_BLOCK.hh>
 
 #include <memory>
 
@@ -36,13 +36,13 @@ class FILE_IO_COMPLETION_INFORMATION {
     virtual const IO_STATUS_BLOCK* IoStatusBlock() const = 0;
     virtual IO_STATUS_BLOCK* IoStatusBlock() = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
     virtual Json::Value json() const = 0;
 
-    static std::unique_ptr<FILE_IO_COMPLETION_INFORMATION>
-    make_unique(const NtKernel& kernel, const GuestVirtualAddress& gva);
+    static std::unique_ptr<FILE_IO_COMPLETION_INFORMATION> make_unique(const NtKernel& kernel,
+                                                                       const guest_ptr<void>& ptr);
 
     virtual ~FILE_IO_COMPLETION_INFORMATION() = default;
 };

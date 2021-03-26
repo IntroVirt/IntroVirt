@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include "ServiceDescriptorTableImpl.hh"
-#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/NtKernel.hh>
 
 #include <log4cxx/logger.h>
@@ -27,7 +26,7 @@ static log4cxx::LoggerPtr
 
 template <typename PtrType>
 struct ServiceDescriptorEntry {
-    PtrType ServiceTable;
+    guest_member_ptr<void, PtrType> ServiceTable;
     PtrType CounterTable; // Unused generally
     PtrType ServiceLimit;
     PtrType ArgumentTable;
@@ -40,8 +39,8 @@ const ServiceTableImpl<PtrType>& ServiceDescriptorTableEntryImpl<PtrType>::servi
 
 template <typename PtrType>
 ServiceDescriptorTableEntryImpl<PtrType>::ServiceDescriptorTableEntryImpl(
-    const GuestVirtualAddress& p_service_table, PtrType count)
-    : service_table_(p_service_table, count) {}
+    const guest_ptr<void>& ptr, PtrType count)
+    : service_table_(ptr, count) {}
 
 template <typename PtrType>
 const ServiceDescriptorTableEntry&
@@ -55,23 +54,27 @@ unsigned int ServiceDescriptorTableImpl<PtrType>::count() const {
 }
 
 template <typename PtrType>
-ServiceDescriptorTableImpl<PtrType>::ServiceDescriptorTableImpl(GuestVirtualAddress gva) {
-
-    guest_ptr<ServiceDescriptorEntry<PtrType>> entry(gva);
-    while (entry->ServiceTable && entry->ServiceLimit && count() < 2) {
-        entries_.emplace_back(gva.create(entry->ServiceTable), entry->ServiceLimit);
-
-        gva += sizeof(ServiceDescriptorEntry<PtrType>);
-        entry.reset(gva);
+ServiceDescriptorTableImpl<PtrType>::ServiceDescriptorTableImpl(const guest_ptr<void>& ptr) {
+    guest_ptr<ServiceDescriptorEntry<PtrType>> entry(ptr);
+    // As far as I know there can only be two
+    for (int i = 0; i < 2; ++i) {
+        if (entry->ServiceTable && entry->ServiceLimit) {
+            // Add it to our list
+            entries_.emplace_back(entry->ServiceTable.get(ptr), entry->ServiceLimit);
+        } else {
+            // Reached the end
+            break;
+        }
+        ++entry;
     }
 }
 
-std::unique_ptr<ServiceDescriptorTable>
-ServiceDescriptorTable::create(const nt::NtKernel& kernel, const GuestVirtualAddress& gva) {
+std::unique_ptr<ServiceDescriptorTable> ServiceDescriptorTable::create(const nt::NtKernel& kernel,
+                                                                       const guest_ptr<void>& ptr) {
     if (kernel.x64()) {
-        return std::make_unique<ServiceDescriptorTableImpl<uint64_t>>(gva);
+        return std::make_unique<ServiceDescriptorTableImpl<uint64_t>>(ptr);
     } else {
-        return std::make_unique<ServiceDescriptorTableImpl<uint32_t>>(gva);
+        return std::make_unique<ServiceDescriptorTableImpl<uint32_t>>(ptr);
     }
 }
 

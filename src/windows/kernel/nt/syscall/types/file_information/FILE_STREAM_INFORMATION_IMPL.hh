@@ -41,39 +41,39 @@ static_assert(sizeof(_FILE_STREAM_INFORMATION) == 0x18);
 
 class FILE_STREAM_INFORMATION_ENTRY_IMPL final : public FILE_STREAM_INFORMATION_ENTRY {
   public:
-    uint32_t NextEntryOffset() const override { return data_->NextEntryOffset; }
-    void NextEntryOffset(uint32_t value) override { data_->NextEntryOffset = value; }
+    uint32_t NextEntryOffset() const override { return ptr_->NextEntryOffset; }
+    void NextEntryOffset(uint32_t value) override { ptr_->NextEntryOffset = value; }
 
     const std::string& StreamName() const override { return StreamName_.utf8(); }
     void StreamName(const std::string& StreamName) override {
         StreamName_.set(StreamName);
-        data_->StreamNameLength = StreamName_.Length();
+        ptr_->StreamNameLength = StreamName_.Length();
     }
 
-    int64_t StreamSize() const override { return data_->StreamSize; }
-    void StreamSize(int64_t StreamSize) override { data_->StreamSize = StreamSize; }
+    int64_t StreamSize() const override { return ptr_->StreamSize; }
+    void StreamSize(int64_t StreamSize) override { ptr_->StreamSize = StreamSize; }
 
-    int64_t StreamAllocationSize() const override { return data_->StreamAllocationSize; };
+    int64_t StreamAllocationSize() const override { return ptr_->StreamAllocationSize; };
     void StreamAllocationSize(int64_t StreamAllocationSize) override {
-        data_->StreamAllocationSize = StreamAllocationSize;
+        ptr_->StreamAllocationSize = StreamAllocationSize;
     };
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
     uint32_t buffer_size() const override {
-        return offsetof(structs::_FILE_STREAM_INFORMATION, StreamName) + data_->StreamSize;
+        return offsetof(structs::_FILE_STREAM_INFORMATION, StreamName) + ptr_->StreamSize;
     }
 
     FILE_STREAM_INFORMATION_ENTRY_IMPL&
     operator=(const FILE_STREAM_INFORMATION_ENTRY& src) override;
 
-    FILE_STREAM_INFORMATION_ENTRY_IMPL(const GuestVirtualAddress& gva)
-        : gva_(gva), data_(gva_),
-          StreamName_(gva_ + offsetof(structs::_FILE_STREAM_INFORMATION, StreamName),
-                      data_->StreamNameLength) {}
+    FILE_STREAM_INFORMATION_ENTRY_IMPL(const guest_ptr<void>& ptr)
+        : base_(ptr), ptr_(ptr),
+          StreamName_(ptr + offsetof(structs::_FILE_STREAM_INFORMATION, StreamName),
+                      ptr_->StreamNameLength) {}
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_FILE_STREAM_INFORMATION> data_;
+    guest_ptr<void> base_;
+    guest_ptr<structs::_FILE_STREAM_INFORMATION> ptr_;
     WStr StreamName_;
 };
 
@@ -84,7 +84,7 @@ class FILE_STREAM_INFORMATION_IMPL final
         return FILE_INFORMATION_CLASS::FileStreamInformation;
     }
 
-    GuestVirtualAddress address() const override { return first_entry_; }
+    guest_ptr<void> ptr() const override { return first_entry_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -92,7 +92,7 @@ class FILE_STREAM_INFORMATION_IMPL final
 
     Json::Value json() const override;
 
-    FILE_STREAM_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_STREAM_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
 };

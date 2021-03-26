@@ -19,7 +19,7 @@
 #include <introvirt/windows/pe/const/SubsystemType.hh>
 #include <introvirt/windows/pe/fwd.hh>
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 #include <string>
@@ -36,9 +36,9 @@ class IMAGE_OPTIONAL_HEADER {
     virtual uint32_t SizeOfCode() const = 0;
     virtual uint32_t SizeOfInitializedData() const = 0;
     virtual uint32_t SizeOfUninitializedData() const = 0;
-    virtual GuestVirtualAddress AddressOfEntryPoint() const = 0;
-    virtual GuestVirtualAddress BaseOfCode() const = 0;
-    virtual GuestVirtualAddress BaseOfData() const = 0;
+    virtual guest_ptr<void> AddressOfEntryPoint() const = 0;
+    virtual guest_ptr<void> BaseOfCode() const = 0;
+    virtual guest_ptr<void> BaseOfData() const = 0;
     virtual uint64_t ImageBase() const = 0;
     virtual uint32_t SectionAlignment() const = 0;
     virtual uint32_t FileAlignment() const = 0;
@@ -71,9 +71,9 @@ class IMAGE_OPTIONAL_HEADER {
     /**
      * @brief Get the address of the IMAGE_OPTIONAL_HEADER
      *
-     * @return GuestVirtualAddress
+     * @return guest_ptr<void>
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     /**
      * @brief Check if the PE is 32 or 64 bit
@@ -83,7 +83,7 @@ class IMAGE_OPTIONAL_HEADER {
      */
     virtual bool x64() const = 0;
 
-    static std::unique_ptr<IMAGE_OPTIONAL_HEADER> make_unique(const GuestVirtualAddress& image_base,
+    static std::unique_ptr<IMAGE_OPTIONAL_HEADER> make_unique(const guest_ptr<void>& image_base,
                                                               const IMAGE_FILE_HEADER& file_header);
 
     virtual ~IMAGE_OPTIONAL_HEADER() = default;

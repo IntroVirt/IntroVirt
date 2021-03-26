@@ -17,8 +17,7 @@
 
 #include "FILE_INFO_IMPL.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
-#include <introvirt/windows/common/WStr.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/pe/types/StringTable.hh>
 
 #include <string>
@@ -34,7 +33,7 @@ class StringTableImpl final : public FILE_INFO_IMPL<StringTable> {
 
     const std::map<std::string, std::string>& entries() const override { return entries_; }
 
-    StringTableImpl(const GuestVirtualAddress& pStringTable)
+    StringTableImpl(const guest_ptr<void>& pStringTable)
         : FILE_INFO_IMPL<StringTable>(pStringTable) {
 
         // The Key UNICODE_STRING holds an 8-digit hex number
@@ -47,12 +46,12 @@ class StringTableImpl final : public FILE_INFO_IMPL<StringTable> {
         // The four least significant digits are the code page
         code_page_ = dwKey & 0xFFFF;
 
-        GuestVirtualAddress pChildren = this->pChildren();
-        GuestVirtualAddress pEndChildren = pChildren + (wLength() - (pChildren - pStringTable));
+        guest_ptr<void> pChildren = this->pChildren();
+        guest_ptr<void> pEndChildren = pChildren + (wLength() - (pChildren - pStringTable));
 
         while (pChildren < pEndChildren) {
             FILE_INFO_IMPL<> fi(pChildren);
-            entries_.try_emplace(fi.szKey(), Utf16String::convert(map_guest_wstr(fi.pChildren())));
+            entries_.try_emplace(fi.szKey(), map_guest_wstring(fi.pChildren()).str());
             pChildren = dword_align(pChildren + fi.wLength());
         }
     }

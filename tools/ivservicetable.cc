@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
         const auto& entry = nt_table.entry(i);
         std::cout << "0x" << std::setw(4) << std::setfill('0') << i << "  " << entry << " ";
 
-        const uint64_t rva = entry - kernel.base_address();
+        const uint64_t rva = entry.address() - kernel.ptr().address();
         const auto* symbol = pdb.rva_to_symbol(rva);
         if (!symbol)
             continue;
@@ -98,10 +98,10 @@ int main(int argc, char** argv) {
 
     // Win32k
     // First get the address of the win32k module
-    GuestVirtualAddress pWin32k;
+    guest_ptr<void> pWin32k;
     for (auto& module : kernel.PsLoadedModuleList()) {
         if (module->BaseDllName() == "win32k.sys") {
-            pWin32k = module->DllBase();
+            pWin32k = kernel.ptr().clone(module->DllBase());
             break;
         }
     }
@@ -127,8 +127,8 @@ int main(int argc, char** argv) {
             auto process = kernel.process(header->Body());
             if (process->Win32Process()) {
                 try {
-                    pWin32k.page_directory(process->DirectoryTableBase());
-                    auto win32k = pe::PE::make_unique(pWin32k);
+                    auto win32k = pe::PE::make_unique(guest_ptr<void>(
+                        pWin32k.domain(), pWin32k.address(), process->DirectoryTableBase()));
 
                     std::cout << std::hex;
                     for (unsigned int i = 0; i < win32k_table.length(); ++i) {
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
                         std::cout << "0x" << std::setw(4) << std::setfill('0') << (i + 0x1000)
                                   << "  " << entry << " ";
 
-                        const uint64_t rva = entry - pWin32k;
+                        const uint64_t rva = entry.address() - pWin32k.address();
                         const auto* symbol = win32k->pdb().rva_to_symbol(rva);
                         std::cout << ": " << symbol->name() << '\n';
                     }

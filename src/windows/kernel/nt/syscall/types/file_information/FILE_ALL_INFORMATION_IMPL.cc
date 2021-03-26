@@ -188,73 +188,71 @@ Json::Value FILE_ALL_INFORMATION_IMPL::json() const {
     return result;
 }
 
-FILE_ALL_INFORMATION_IMPL::FILE_ALL_INFORMATION_IMPL(const GuestVirtualAddress& base_address,
-                                                     uint32_t buffer_size)
-    : gva_(base_address), buffer_size_(buffer_size) {
+FILE_ALL_INFORMATION_IMPL::FILE_ALL_INFORMATION_IMPL(guest_ptr<void> ptr, uint32_t buffer_size)
+    : ptr_(ptr), buffer_size_(buffer_size) {
 
     // Read each possible field and parse it, as long as data is remaining
-    auto gva = base_address;
 
     // _FILE_BASIC_INFORMATION
     if (buffer_size < sizeof(structs::_FILE_BASIC_INFORMATION))
         return;
-    BasicInformation_.emplace(gva, sizeof(structs::_FILE_BASIC_INFORMATION));
+    BasicInformation_.emplace(ptr, sizeof(structs::_FILE_BASIC_INFORMATION));
     buffer_size -= sizeof(structs::_FILE_BASIC_INFORMATION);
-    gva += sizeof(structs::_FILE_BASIC_INFORMATION);
+    ptr += sizeof(structs::_FILE_BASIC_INFORMATION);
 
     // _FILE_STANDARD_INFORMATION
     if (buffer_size < sizeof(structs::_FILE_STANDARD_INFORMATION))
         return;
-    StandardInformation_.emplace(gva, sizeof(structs::_FILE_STANDARD_INFORMATION));
+    StandardInformation_.emplace(ptr, sizeof(structs::_FILE_STANDARD_INFORMATION));
     buffer_size -= sizeof(structs::_FILE_STANDARD_INFORMATION);
-    gva += sizeof(structs::_FILE_STANDARD_INFORMATION);
+    ptr += sizeof(structs::_FILE_STANDARD_INFORMATION);
 
     // _FILE_INTERNAL_INFORMATION
     if (buffer_size < sizeof(structs::_FILE_INTERNAL_INFORMATION))
         return;
-    InternalInformation_.emplace(gva, sizeof(structs::_FILE_INTERNAL_INFORMATION));
+    InternalInformation_.emplace(ptr, sizeof(structs::_FILE_INTERNAL_INFORMATION));
     buffer_size -= sizeof(structs::_FILE_INTERNAL_INFORMATION);
-    gva += sizeof(structs::_FILE_INTERNAL_INFORMATION);
+    ptr += sizeof(structs::_FILE_INTERNAL_INFORMATION);
 
     // _FILE_EA_INFORMATION
     if (buffer_size < sizeof(structs::_FILE_EA_INFORMATION))
         return;
-    EaInformation_.emplace(gva, sizeof(structs::_FILE_EA_INFORMATION));
+    EaInformation_.emplace(ptr, sizeof(structs::_FILE_EA_INFORMATION));
     buffer_size -= sizeof(structs::_FILE_EA_INFORMATION);
-    gva += sizeof(structs::_FILE_EA_INFORMATION);
+    ptr += sizeof(structs::_FILE_EA_INFORMATION);
 
     // _FILE_ACCESS_INFORMATION
     if (buffer_size < sizeof(structs::_FILE_ACCESS_INFORMATION))
         return;
-    AccessInformation_.emplace(gva, sizeof(structs::_FILE_ACCESS_INFORMATION));
+    AccessInformation_.emplace(ptr, sizeof(structs::_FILE_ACCESS_INFORMATION));
     buffer_size -= sizeof(structs::_FILE_ACCESS_INFORMATION);
-    gva += sizeof(structs::_FILE_ACCESS_INFORMATION);
+    ptr += sizeof(structs::_FILE_ACCESS_INFORMATION);
 
     // _FILE_POSITION_INFORMATION
     if (buffer_size < sizeof(structs::_FILE_POSITION_INFORMATION))
         return;
-    PositionInformation_.emplace(gva, sizeof(structs::_FILE_POSITION_INFORMATION));
+    PositionInformation_.emplace(ptr, sizeof(structs::_FILE_POSITION_INFORMATION));
     buffer_size -= sizeof(structs::_FILE_POSITION_INFORMATION);
-    gva += sizeof(structs::_FILE_POSITION_INFORMATION);
+    ptr += sizeof(structs::_FILE_POSITION_INFORMATION);
 
     // _FILE_MODE_INFORMATION
     if (buffer_size < sizeof(structs::_FILE_MODE_INFORMATION))
         return;
-    ModeInformation_.emplace(gva, sizeof(structs::_FILE_MODE_INFORMATION));
+    ModeInformation_.emplace(ptr, sizeof(structs::_FILE_MODE_INFORMATION));
     buffer_size -= sizeof(structs::_FILE_MODE_INFORMATION);
-    gva += sizeof(structs::_FILE_MODE_INFORMATION);
+    ptr += sizeof(structs::_FILE_MODE_INFORMATION);
 
     // _FILE_ALIGNMENT_INFORMATION
     if (buffer_size < sizeof(structs::_FILE_ALIGNMENT_INFORMATION))
         return;
-    AlignmentInformation_.emplace(gva, sizeof(structs::_FILE_ALIGNMENT_INFORMATION));
+    AlignmentInformation_.emplace(ptr, sizeof(structs::_FILE_ALIGNMENT_INFORMATION));
     buffer_size -= sizeof(structs::_FILE_ALIGNMENT_INFORMATION);
-    gva += sizeof(structs::_FILE_ALIGNMENT_INFORMATION);
+    ptr += sizeof(structs::_FILE_ALIGNMENT_INFORMATION);
 
     // _FILE_NAME_INFORMATION
     if (buffer_size < sizeof(structs::_FILE_NAME_INFORMATION))
         return;
-    NameInformation_.emplace(gva, buffer_size);
+    NameInformation_.emplace(ptr, buffer_size);
 }
 
 } // namespace nt

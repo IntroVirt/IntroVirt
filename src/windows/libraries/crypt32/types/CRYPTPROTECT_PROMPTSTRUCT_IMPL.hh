@@ -37,26 +37,26 @@ struct _CRYPTPROTECT_PROMPTSTRUCT {
 template <typename PtrType>
 class CRYPTPROTECT_PROMPTSTRUCT_IMPL final : public CRYPTPROTECT_PROMPTSTRUCT {
   public:
-    uint32_t cbSize() const override { return data_->cbSize; }
-    void cbSize(uint32_t cbSize) override { data_->cbSize = cbSize; }
+    uint32_t cbSize() const override { return ptr_->cbSize; }
+    void cbSize(uint32_t cbSize) override { ptr_->cbSize = cbSize; }
 
-    uint32_t dwPromptFlags() const override { return data_->dwPromptFlags; }
-    void dwPromptFlags(uint32_t dwPromptFlags) override { data_->dwPromptFlags = dwPromptFlags; }
+    uint32_t dwPromptFlags() const override { return ptr_->dwPromptFlags; }
+    void dwPromptFlags(uint32_t dwPromptFlags) override { ptr_->dwPromptFlags = dwPromptFlags; }
 
-    uint64_t hwndApp() const override { return data_->hwndApp; }
-    void hwndApp(uint64_t hwndApp) override { data_->hwndApp = hwndApp; }
+    uint64_t hwndApp() const override { return ptr_->hwndApp; }
+    void hwndApp(uint64_t hwndApp) override { ptr_->hwndApp = hwndApp; }
 
-    std::string szPrompt() const override {
-        const size_t strlen = data_->cbSize - sizeof(structs::_CRYPTPROTECT_PROMPTSTRUCT<PtrType>);
-        guest_ptr<char[]> mapping(gva_, strlen);
-        return std::string(mapping.get(), strlen);
+    guest_ptr<char[]> szPrompt() const override { return szPrompt_; }
+
+    CRYPTPROTECT_PROMPTSTRUCT_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {
+        const size_t strlen = ptr_->cbSize - sizeof(_CRYPTPROTECT_PROMPTSTRUCT);
+        szPrompt_.reset(ptr + offsetof(_CRYPTPROTECT_PROMPTSTRUCT, szPrompt), strlen);
     }
 
-    CRYPTPROTECT_PROMPTSTRUCT_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva) {}
-
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_CRYPTPROTECT_PROMPTSTRUCT<PtrType>> data_;
+    using _CRYPTPROTECT_PROMPTSTRUCT = structs::_CRYPTPROTECT_PROMPTSTRUCT<PtrType>;
+    guest_ptr<_CRYPTPROTECT_PROMPTSTRUCT> ptr_;
+    guest_ptr<char[]> szPrompt_;
 };
 
 } // namespace crypt32

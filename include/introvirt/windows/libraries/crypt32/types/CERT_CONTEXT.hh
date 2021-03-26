@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/libraries/crypt32/types/HCERTSTORE.hh>
 
 #include <cstdint>
@@ -34,14 +34,14 @@ class CERT_CONTEXT {
     virtual uint32_t dwCertEncodingType() const = 0;
     virtual void dwCertEncodingType(uint32_t dwCertEncodingType) = 0;
 
-    virtual GuestVirtualAddress pbCertEncoded() const = 0;
-    virtual void pbCertEncoded(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<uint8_t[]> pbCertEncoded() const = 0;
+    virtual void pbCertEncoded(const guest_ptr<uint8_t[]>& ptr) = 0;
 
     virtual uint32_t cbCertEncoded() const = 0;
     virtual void cbCertEncoded(uint32_t cbCertEncoded) = 0;
 
-    virtual GuestVirtualAddress pCertInfo() const = 0;
-    virtual void pCertInfo(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> pCertInfo() const = 0;
+    virtual void pCertInfo(const guest_ptr<void>& ptr) = 0;
 
     virtual HCERTSTORE hCertStore() const = 0;
     virtual void hCertStore(HCERTSTORE hCertStore) = 0;
@@ -49,7 +49,7 @@ class CERT_CONTEXT {
     /**
      * @brief Create a CERT_CONTEXT
      */
-    static std::unique_ptr<CERT_CONTEXT> make_unique(const GuestVirtualAddress& gva, bool x64);
+    static std::shared_ptr<CERT_CONTEXT> make_shared(const guest_ptr<void>& ptr, bool x64);
 
     /**
      * @brief Get the size of the structure

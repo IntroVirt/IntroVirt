@@ -1,0 +1,356 @@
+{
+    "CryptAcquireContextA": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptacquirecontexta",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTPROV",
+                "name": "hProv",
+                "pointer": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "cstring",
+                "name": "szContainer",
+                "pointer": true
+            },
+            {
+                "type": "cstring",
+                "name": "szProvider",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwProvType"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            }
+        ]
+    },
+    "CryptAcquireContextW": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptacquirecontextw",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTPROV",
+                "name": "hProv",
+                "pointer": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "wstring",
+                "name": "szContainer",
+                "pointer": true
+            },
+            {
+                "type": "wstring",
+                "name": "szProvider",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwProvType"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            }
+        ]
+    },
+    "CryptCreateHash": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptcreatehash",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTPROV",
+                "name": "hProv"
+            },
+            {
+                "type": "ALG_ID",
+                "name": "Algid"
+            },
+            {
+                "type": "HCRYPTKEY",
+                "name": "hKey"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            },
+            {
+                "type": "HCRYPTHASH",
+                "name": "hHash",
+                "pointer": true,
+                "in": false,
+                "out": true
+            }
+        ]
+    },
+    "CryptDecrypt": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptdecrypt",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTKEY",
+                "name": "hKey"
+            },
+            {
+                "type": "HCRYPTHASH",
+                "name": "hHash"
+            },
+            {
+                "type": "bool",
+                "name": "Final"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bData",
+                "pointer": true,
+                "in": true,
+                "out": true,
+                "length": "*pdwDataLen()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwDataLen",
+                "pointer": true,
+                "in": true,
+                "out": true
+            }
+        ]
+    },
+    "CryptEncrypt": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptencrypt",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTKEY",
+                "name": "hKey"
+            },
+            {
+                "type": "HCRYPTHASH",
+                "name": "hHash"
+            },
+            {
+                "type": "bool",
+                "name": "Final"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bData",
+                "pointer": true,
+                "in": true,
+                "out": true,
+                "length": "dwBufLen()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwDataLen",
+                "in": true,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwBufLen"
+            }
+        ]
+    },
+    "CryptExportKey": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptexportkey",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTKEY",
+                "name": "hKey"
+            },
+            {
+                "type": "HCRYPTKEY",
+                "name": "hExpKey"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwBlobType"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bData",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "length": "dwDataLen()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwDataLen",
+                "in": true,
+                "out": true
+            }
+        ]
+    },
+    "CryptGenKey": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptgenkey",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTPROV",
+                "name": "hProv"
+            },
+            {
+                "type": "ALG_ID",
+                "name": "Algid"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            },
+            {
+                "type": "HCRYPTKEY",
+                "name": "hKey",
+                "pointer": true,
+                "in": false,
+                "out": true
+            }
+        ]
+    },
+    "CryptGenRandom": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptgenrandom",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTPROV",
+                "name": "hProv"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwLen"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bBuffer",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "length": "dwLen()"
+            }
+        ]
+    },
+    "CryptGetKeyParam": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptgetkeyparam",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTKEY",
+                "name": "hKey"
+            },
+            {
+                "type": "KP_VALUE",
+                "name": "dwParam"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bData",
+                "pointer": true,
+                "in": false,
+                "out": true,
+                "optional": true,
+                "length": "*pdwDataLen()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwDataLen",
+                "pointer": true,
+                "in": false,
+                "out": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            }
+        ]
+    },
+    "CryptHashData": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-crypthashdata",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTHASH",
+                "name": "hHash"
+            },
+            {
+                "type": "guest_ptr<uint8_t[]>",
+                "name": "bData",
+                "pointer": true,
+                "length": "dwDataLen()"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwDataLen"
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            }
+        ]
+    },
+    "CryptSetKeyParam": {
+        "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptsetkeyparam",
+        "result": {
+            "type": "bool"
+        },
+        "arguments": [
+            {
+                "type": "HCRYPTKEY",
+                "name": "hKey"
+            },
+            {
+                "type": "KP_VALUE",
+                "name": "dwParam"
+            },
+            {
+                "type": "void",
+                "name": "bData",
+                "pointer": true
+            },
+            {
+                "type": "uint32_t",
+                "name": "dwFlags"
+            }
+        ]
+    }
+}

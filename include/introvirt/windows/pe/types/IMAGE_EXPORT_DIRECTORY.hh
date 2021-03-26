@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/pe/fwd.hh>
 
 #include <cstdint>
@@ -32,7 +32,7 @@ enum ExportType { EXPORT_TYPE_CODE, EXPORT_TYPE_DATA, EXPORT_TYPE_FORWARD };
 struct Export {
     std::string name;
     ExportType exportType;
-    GuestVirtualAddress address;
+    guest_ptr<void> address;
 };
 
 /**
@@ -49,7 +49,7 @@ class IMAGE_EXPORT_DIRECTORY {
     /**
      * @returns A map of address to export information
      */
-    virtual const std::map<GuestVirtualAddress, Export>& AddressToExportMap() const = 0;
+    virtual const std::map<guest_ptr<void>, Export>& AddressToExportMap() const = 0;
 
     /**
      * @returns A map of symbol names to export information

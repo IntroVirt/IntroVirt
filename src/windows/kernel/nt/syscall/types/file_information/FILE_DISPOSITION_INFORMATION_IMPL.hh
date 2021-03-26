@@ -34,14 +34,14 @@ static_assert(sizeof(_FILE_DISPOSITION_INFORMATION) == 1);
 
 class FILE_DISPOSITION_INFORMATION_IMPL final : public FILE_DISPOSITION_INFORMATION {
   public:
-    bool DeleteFile() const override { return data_->DeleteFile; }
-    void DeleteFile(bool value) override { data_->DeleteFile = value; }
+    bool DeleteFile() const override { return ptr_->DeleteFile; }
+    void DeleteFile(bool value) override { ptr_->DeleteFile = value; }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileDispositionInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -49,12 +49,11 @@ class FILE_DISPOSITION_INFORMATION_IMPL final : public FILE_DISPOSITION_INFORMAT
 
     Json::Value json() const override;
 
-    FILE_DISPOSITION_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_DISPOSITION_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
+    guest_ptr<structs::_FILE_DISPOSITION_INFORMATION> ptr_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_DISPOSITION_INFORMATION> data_;
 };
 
 } // namespace nt

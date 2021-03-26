@@ -43,18 +43,18 @@ class THREAD_IMPERSONATION_INFORMATION_IMPL final
     : public THREAD_IMPERSONATION_INFORMATION_IMPL_BASE<PtrType> {
   public:
     uint64_t ThreadImpersonationToken() const override {
-        return this->data_->ThreadImpersonationToken;
+        return this->ptr_->ThreadImpersonationToken;
     }
     void ThreadImpersonationToken(uint64_t ThreadImpersonationToken) override {
-        this->data_->ThreadImpersonationToken = ThreadImpersonationToken;
+        this->ptr_->ThreadImpersonationToken = ThreadImpersonationToken;
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    THREAD_IMPERSONATION_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    THREAD_IMPERSONATION_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : THREAD_IMPERSONATION_INFORMATION_IMPL_BASE<PtrType>(
-              THREAD_INFORMATION_CLASS::ThreadImpersonationToken, gva, buffer_size) {}
+              THREAD_INFORMATION_CLASS::ThreadImpersonationToken, ptr, buffer_size) {}
 };
 
 } // namespace nt

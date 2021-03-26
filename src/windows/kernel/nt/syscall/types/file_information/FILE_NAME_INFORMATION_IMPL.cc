@@ -16,6 +16,7 @@
 #include "FILE_NAME_INFORMATION_IMPL.hh"
 
 #include <introvirt/core/exception/BufferTooSmallException.hh>
+#include <introvirt/util/HexDump.hh>
 #include <introvirt/util/compiler.hh>
 
 #include <boost/io/ios_state.hpp>
@@ -36,20 +37,23 @@ Json::Value FILE_NAME_INFORMATION_IMPL::json() const {
     return result;
 }
 
-FILE_NAME_INFORMATION_IMPL::FILE_NAME_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+FILE_NAME_INFORMATION_IMPL::FILE_NAME_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                        uint32_t buffer_size)
-    : gva_(gva), buffer_size_(buffer_size) {
+    : buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_FILE_NAME_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_FILE_NAME_INFORMATION), buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 
-    auto pFileName = gva_ + offsetof(structs::_FILE_NAME_INFORMATION, FileName);
+    auto pFileName = ptr + offsetof(structs::_FILE_NAME_INFORMATION, FileName);
     buffer_size -= sizeof(structs::_FILE_NAME_INFORMATION);
 
-    const uint32_t FileNameLength = std::min(data_->FileNameLength, buffer_size);
-    FileName_.emplace(pFileName, FileNameLength, buffer_size);
+    const uint32_t FileNameLength = std::min(ptr_->FileNameLength, buffer_size);
+
+    HexDump(pFileName, FileNameLength).write();
+
+    FileName_.emplace(pFileName, buffer_size, FileNameLength);
 }
 
 } // namespace nt

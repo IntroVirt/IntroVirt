@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <cstdint>
@@ -34,12 +34,12 @@ class LDR_DATA_TABLE_ENTRY {
     /**
      * @returns The base address of this entry
      */
-    virtual GuestVirtualAddress DllBase() const = 0;
+    virtual uint64_t DllBase() const = 0;
 
     /**
      * @returns The entry point of this entry
      */
-    virtual GuestVirtualAddress EntryPoint() const = 0;
+    virtual uint64_t EntryPoint() const = 0;
 
     /**
      * @returns The size of this entry
@@ -55,6 +55,11 @@ class LDR_DATA_TABLE_ENTRY {
      * @returns The base dll name of this entry, or NULL if unavailable
      */
     virtual std::string BaseDllName() const = 0;
+
+    /**
+     * @brief Get a pointer to this structure
+     */
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual ~LDR_DATA_TABLE_ENTRY() = default;
 };

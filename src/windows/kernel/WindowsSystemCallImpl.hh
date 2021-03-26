@@ -62,13 +62,13 @@ class WindowsSystemCallImpl : public SystemCallImpl<_BaseClass> {
         // TODO: Would be nice if we knew the number of arguments per-call instead of hardcoding
         static constexpr unsigned int ArgumentCount = 16;
 
-        GuestVirtualAddress sp;
+        guest_ptr<void> sp;
         if constexpr (std::is_same_v<PtrType, uint64_t>) {
             // Stack is held in RSP for 64-bit SYSCALL
-            sp = GuestVirtualAddress(event.vcpu().registers().rsp());
+            sp.reset(event.vcpu(), event.vcpu().registers().rsp());
         } else {
             // Stack is held in RDX for 32-bit SYSENTER
-            sp = GuestVirtualAddress(event.vcpu().registers().rdx());
+            sp.reset(event.vcpu(), event.vcpu().registers().rdx());
         }
         stack_.reset(sp, ArgumentCount);
     }
@@ -93,6 +93,10 @@ class WindowsSystemCallImpl : public SystemCallImpl<_BaseClass> {
 
     WindowsGuest& guest() { return event_->guest(); }
     const WindowsGuest& guest() const { return event_->guest(); }
+
+    void set_address_argument(unsigned int index, const guest_ptr<void>& ptr) {
+        set_argument(index, ptr.address());
+    }
 
     void set_argument(unsigned int index, uint64_t value) {
         if (unlikely(has_return_event_))
@@ -125,6 +129,10 @@ class WindowsSystemCallImpl : public SystemCallImpl<_BaseClass> {
             // stack32_[1] is the return stack
             stack_[index + 2] = (value & 0xFFFFFFFF);
         }
+    }
+
+    guest_ptr<void> get_address_argument(unsigned int index) {
+        return stack_.clone(get_argument(index));
     }
 
     uint64_t get_argument(unsigned int index) const {

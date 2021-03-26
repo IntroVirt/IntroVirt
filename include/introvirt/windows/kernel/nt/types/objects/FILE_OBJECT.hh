@@ -91,7 +91,7 @@ class FILE_OBJECT : public OBJECT {
     virtual std::string full_path() const = 0;
 
     static std::shared_ptr<FILE_OBJECT> make_shared(const NtKernel& kernel,
-                                                    const GuestVirtualAddress& gva);
+                                                    const guest_ptr<void>& ptr);
 
     static std::shared_ptr<FILE_OBJECT> make_shared(const NtKernel& kernel,
                                                     std::unique_ptr<OBJECT_HEADER>&& object_header);

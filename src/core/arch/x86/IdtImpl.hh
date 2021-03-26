@@ -18,17 +18,20 @@
 #include <introvirt/core/arch/x86/Idt.hh>
 
 #include <introvirt/core/domain/Vcpu.hh>
-#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/compiler.hh>
+
+#include <cassert>
 
 namespace introvirt {
 namespace x86 {
 
+namespace structs {
+
 template <typename PtrType>
-struct IDTDescr {};
+struct _IDTDescr {};
 
 template <>
-struct IDTDescr<uint32_t> {
+struct _IDTDescr<uint32_t> {
     uint16_t offset_1; // offset bits 0..15
     uint16_t selector; // a code segment selector in GDT or LDT
     uint8_t zero;      // unused, set to 0
@@ -37,7 +40,7 @@ struct IDTDescr<uint32_t> {
 };
 
 template <>
-struct IDTDescr<uint64_t> {
+struct _IDTDescr<uint64_t> {
     uint16_t offset_1; // offset bits 0..15
     uint16_t selector; // a code segment selector in GDT or LDT
     uint8_t ist;       // bits 0..2 holds Interrupt Stack Table offset, rest of bits zero.
@@ -47,59 +50,61 @@ struct IDTDescr<uint64_t> {
     uint32_t zero;     // reserved
 };
 
+} // namespace structs
+
 template <typename PtrType>
 class IdtEntryImpl final : public IdtEntry {
-  public:
-    GuestVirtualAddress entry_point() const override { return entry_point_; }
-    bool present() const override { return type_attr_ & 0x80; }
-    uint8_t dpl() const override { return (type_attr_ & 0x60) >> 4; }
-    bool storage_segment() const override { return type_attr_ & 0x10; }
-    IdtEntryType type() const override { return static_cast<IdtEntryType>(type_attr_ & 0xF); }
-    uint16_t selector() const override { return selector_; }
+    using _IDTDescr = structs::_IDTDescr<PtrType>;
 
-    IdtEntryImpl(const GuestVirtualAddress& entry_point, uint16_t selector, uint16_t type_attr)
-        : entry_point_(entry_point), selector_(selector), type_attr_(type_attr) {}
+  public:
+    guest_ptr<void> entry_point() const override {
+        PtrType entry_address = static_cast<PtrType>(ptr_->offset_2) << 16 | ptr_->offset_1;
+        if constexpr (std::is_same_v<PtrType, uint64_t>) {
+            entry_address |= (static_cast<PtrType>(ptr_->offset_3) << 32);
+        }
+        // Copy the original pointer as context and update it's address
+        guest_ptr<void> result = ptr_;
+        result.reset(entry_address);
+        return result;
+    }
+    bool present() const override { return ptr_->type_attr & 0x80; }
+    uint8_t dpl() const override { return (ptr_->type_attr & 0x60) >> 4; }
+    bool storage_segment() const override { return ptr_->type_attr & 0x10; }
+    IdtEntryType type() const override { return static_cast<IdtEntryType>(ptr_->type_attr & 0xF); }
+    uint16_t selector() const override { return ptr_->selector; }
+
+    IdtEntryImpl(guest_ptr<_IDTDescr>&& ptr) : ptr_(ptr) {}
 
   private:
-    GuestVirtualAddress entry_point_;
-    uint16_t selector_;
-    uint8_t type_attr_;
+    guest_ptr<_IDTDescr> ptr_;
 };
 
 template <typename PtrType>
 class IdtImpl final : public Idt {
+    using _IDTDescr = structs::_IDTDescr<PtrType>;
+    using _IdtEntryImpl = IdtEntryImpl<PtrType>;
+
   public:
-    std::unique_ptr<const IdtEntry> entry(uint index) const override {
-        // Make sure the index is okay
-        auto& registers = vcpu_.registers();
+    std::unique_ptr<const IdtEntry> entry(size_t index) const override {
+        // Crash if index is out of bounds
+        introvirt_assert(index < count(), "");
 
-        if (unlikely(index > count())) {
-            // TODO: Throw an exception
-            return std::make_unique<IdtEntryImpl<PtrType>>(NullGuestAddress(), 0, 0);
-        }
+        // Calculate the address of the entry
+        auto& regs = vcpu_.registers();
+        guest_ptr<_IDTDescr> pEntry(vcpu_, regs.idtr_base() + (sizeof(_IDTDescr) * index));
 
-        GuestVirtualAddress pEntry(vcpu_, registers.idtr_base() + (sizeof(IDTDescr) * index));
-        guest_ptr<IDTDescr> entry(pEntry);
-
-        PtrType entry_address_ = static_cast<PtrType>(entry->offset_2) << 16 | entry->offset_1;
-
-        if constexpr (std::is_same_v<PtrType, uint64_t>) {
-            entry_address_ |= (static_cast<PtrType>(entry->offset_3) << 32);
-        }
-
-        return std::make_unique<const IdtEntryImpl<PtrType>>(
-            GuestVirtualAddress(vcpu_, entry_address_), entry->selector, entry->type_attr);
+        // Create the instance
+        return std::make_unique<const _IdtEntryImpl>(std::move(pEntry));
     }
 
     uint count() const override {
         auto& registers = vcpu_.registers();
-        return registers.idtr_limit() / sizeof(IDTDescr);
+        return registers.idtr_limit() / sizeof(_IDTDescr);
     };
 
     IdtImpl(const Vcpu& vcpu) : vcpu_(vcpu) {}
 
   private:
-    using IDTDescr = struct IDTDescr<PtrType>;
     const Vcpu& vcpu_;
 };
 

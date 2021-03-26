@@ -51,6 +51,7 @@ class MemDumpTool final : public EventCallback {
     MemDumpTool(const std::string& output_file) : output_file_(output_file) {}
 
     void dump(Event& event) {
+        auto& vcpu = event.vcpu();
         auto& wevent = static_cast<WindowsEvent&>(event);
         auto& current_process = wevent.task().pcr().CurrentThread().Process();
 
@@ -84,7 +85,7 @@ class MemDumpTool final : public EventCallback {
 
         auto mbi = inject::allocate<MEMORY_BASIC_INFORMATION>();
 
-        std::vector<std::pair<GuestVirtualAddress, GuestVirtualAddress>> dump_regions;
+        std::vector<std::pair<guest_ptr<void>, guest_ptr<void>>> dump_regions;
         for (const auto& entry : mmvad->VadTreeInOrder()) {
             // Skip regions that are completely inaccessible
             if ((entry->Protection().value() & PAGE_PROTECTION::PAGE_NOACCESS))
@@ -92,20 +93,21 @@ class MemDumpTool final : public EventCallback {
 
             if (pid == current_process.UniqueProcessId()) {
                 // Reading from the process itself, so we have to skip anything we allocated
-                if (object_attributes.address().page_number() == entry->StartingVpn())
+                if (object_attributes.ptr().page_number() == entry->StartingVpn())
                     continue;
-                if (client_id.address().page_number() == entry->StartingVpn())
+                if (client_id.ptr().page_number() == entry->StartingVpn())
                     continue;
-                if (mbi.address().page_number() == entry->StartingVpn())
+                if (mbi.ptr().page_number() == entry->StartingVpn())
                     continue;
             }
 
-            GuestVirtualAddress addr;
+            uint64_t addr;
             for (addr = entry->StartingAddress(); addr < entry->EndingAddress();) {
 
                 // TODO: We shouldn't need injection to figure this information out
                 auto result = inject::system_call<nt::NtQueryVirtualMemory>(
-                    process_handle, addr, MemoryBasicInformation, mbi, mbi->buffer_size(), nullptr);
+                    process_handle, guest_ptr<void>(vcpu, addr), MemoryBasicInformation, mbi,
+                    mbi->buffer_size(), nullptr);
 
                 if (!result.NT_SUCCESS()) {
                     std::cerr << "NtQueryVirtualMemory failed for " << addr << ": " << result
@@ -124,17 +126,9 @@ class MemDumpTool final : public EventCallback {
                     continue;
                 }
 
-                if (addr.value() == 0x000000000C2F1000) {
-                    std::cerr << "Yeah I'm here\n";
-                    mbi->write(std::cerr, "");
-                }
-
-                if (unlikely(addr.value() != mbi->BaseAddress())) {
-                    std::cerr << "Base address mismatch!! Ahh!!!\n";
-                }
-
                 // This region is good, add it
-                dump_regions.push_back(std::make_pair(addr, addr + mbi->RegionSize()));
+                guest_ptr<void> gva(event.domain(), addr, process->DirectoryTableBase());
+                dump_regions.push_back(std::make_pair(gva, gva + mbi->RegionSize()));
 
                 // Skip past the region
                 addr += mbi->RegionSize();
@@ -155,7 +149,8 @@ class MemDumpTool final : public EventCallback {
         // Now we will try to read them all
         for (const auto& region : dump_regions) {
             for (auto addr = region.first; addr < region.second;) {
-                const uint32_t copy_size = std::min(region.second - addr, BufferSize);
+                const uint32_t copy_size =
+                    std::min<uint64_t>(region.second.address() - addr.address(), BufferSize);
 
                 uint32_t ResultLength = 0;
                 auto result = inject::system_call<nt::NtReadVirtualMemory>(
@@ -168,14 +163,14 @@ class MemDumpTool final : public EventCallback {
                 }
 
                 // Write it to our file
-                off64_t offset = addr.value();
+                off64_t offset = addr.address();
 
                 // std::cout << "Seeking to " << std::hex << offset << std::endl << std::dec;
                 if (fseeko64(output, offset, SEEK_SET) < 0) {
                     // std::cerr << "Bad fseek: " << strerror(errno) << std::endl;
                 }
 
-                fwrite(buffer, 1, copy_size, output);
+                fwrite(buffer.ptr().get(), 1, copy_size, output);
 
                 count += (copy_size / x86::PageDirectory::PAGE_SIZE);
                 addr += copy_size;

@@ -38,21 +38,21 @@ Json::Value KEY_VALUE_FULL_INFORMATION_IMPL::json() const {
     return result;
 }
 
-KEY_VALUE_FULL_INFORMATION_IMPL::KEY_VALUE_FULL_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+KEY_VALUE_FULL_INFORMATION_IMPL::KEY_VALUE_FULL_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                                  uint32_t buffer_size)
     : KEY_VALUE_FULL_INFORMATION_IMPL_BASE(KEY_VALUE_INFORMATION_CLASS::KeyValueFullInformation,
-                                           gva, buffer_size) {
+                                           ptr, buffer_size) {
 
-    const auto pName = gva_ + offsetof(structs::_KEY_VALUE_FULL_INFORMATION, Name);
-    const uint32_t name_buffer_len = (gva_ + data_->DataOffset) - pName;
-    const uint32_t name_length = std::min(data_->NameLength, name_buffer_len);
-    Name_.emplace(pName, name_length, name_buffer_len);
+    const auto pName = ptr + offsetof(structs::_KEY_VALUE_FULL_INFORMATION, Name);
+    const uint32_t name_buffer_len = (ptr + ptr_->DataOffset) - pName;
+    const uint32_t name_length = std::min(ptr_->NameLength, name_buffer_len);
+    Name_.emplace(pName, name_buffer_len, name_length);
 
-    if (data_->DataOffset && data_->DataLength) {
-        const auto pData = gva_ + data_->DataOffset;
-        const uint32_t data_buffer_len = (gva_ + buffer_size) - pData;
-        if (likely(data_->DataLength >= data_buffer_len)) {
-            Data_ = KEY_VALUE::make_unique(Type(), pData, data_->DataLength);
+    if (ptr_->DataOffset && ptr_->DataLength) {
+        const auto pData = ptr + ptr_->DataOffset;
+        const uint32_t data_buffer_len = (ptr + buffer_size) - pData;
+        if (likely(ptr_->DataLength >= data_buffer_len)) {
+            Data_ = KEY_VALUE::make_unique(Type(), pData, ptr_->DataLength);
         }
     }
 }

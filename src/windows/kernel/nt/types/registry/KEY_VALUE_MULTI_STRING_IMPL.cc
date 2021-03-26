@@ -15,9 +15,8 @@
  */
 #include "KEY_VALUE_MULTI_STRING_IMPL.hh"
 
-#include <introvirt/windows/common/WStr.hh>
-
 #include <boost/io/ios_state.hpp>
+#include <introvirt/windows/common/Utf16String.hh>
 
 #include <memory>
 
@@ -54,23 +53,22 @@ Json::Value KEY_VALUE_MULTI_STRING_IMPL::json() const {
     return result;
 }
 
-KEY_VALUE_MULTI_STRING_IMPL::KEY_VALUE_MULTI_STRING_IMPL(const GuestVirtualAddress& gva,
-                                                         uint32_t size)
-    : KEY_VALUE_IMPL<KEY_VALUE_MULTI_STRING>(REG_TYPE::REG_MULTI_SZ, gva, size) {
+KEY_VALUE_MULTI_STRING_IMPL::KEY_VALUE_MULTI_STRING_IMPL(const guest_ptr<void>& ptr, uint32_t size)
+    : KEY_VALUE_IMPL<KEY_VALUE_MULTI_STRING>(REG_TYPE::REG_MULTI_SZ, ptr, size) {
 
-    const uint32_t DataLength = DataSize();
-    guest_ptr<char[]> data(address(), DataLength);
+    const char* data = reinterpret_cast<const char*>(buf_.get());
 
     // Several null terminated unicode strings
     uint32_t currentStringStart = 0;
-
-    for (uint32_t i = 1; i < DataLength; ++i) {
+    for (uint32_t i = 1; i < size; ++i) {
         if (data[i - 1] == '\0' && data[i] == '\0') {
             // We've reached the end of a string
-            const GuestVirtualAddress startAddress = address() + currentStringStart;
+            const char16_t* startAddress =
+                reinterpret_cast<const char16_t*>(data + currentStringStart);
             uint16_t length = i - currentStringStart;
             if (length != 0) {
-                Values_.emplace_back(WStr(startAddress, length).utf8());
+                std::u16string_view view(startAddress, length);
+                Values_.emplace_back(Utf16String::convert(view));
             }
             currentStringStart = i + 1;
         }

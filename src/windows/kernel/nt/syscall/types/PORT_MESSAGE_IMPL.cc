@@ -82,8 +82,8 @@ uint32_t PORT_MESSAGE_IMPL<PtrType>::CallbackId() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress PORT_MESSAGE_IMPL<PtrType>::address() const {
-    return gva_;
+guest_ptr<void> PORT_MESSAGE_IMPL<PtrType>::ptr() const {
+    return ptr_;
 }
 
 template <typename PtrType>
@@ -120,29 +120,29 @@ Json::Value PORT_MESSAGE_IMPL<PtrType>::json() const {
 
 template <typename PtrType>
 PORT_MESSAGE_IMPL<PtrType>::PORT_MESSAGE_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                              const GuestVirtualAddress& gva)
-    : kernel_(kernel), gva_(gva) {
+                                              const guest_ptr<void>& ptr)
+    : kernel_(kernel), ptr_(ptr) {
 
     // Load our structure offsets
     port_message_ = LoadOffsets<structs::PORT_MESSAGE>(kernel);
 
     // Map in the structure. Doing one mapping is a lot cheaper than mapping every field.
-    buffer.reset(gva_, port_message_->size());
+    buffer.reset(ptr_, port_message_->size());
 
     // Create the CLIENT_ID entry
-    const auto pClientId = gva_ + port_message_->ClientId.offset();
+    const auto pClientId = ptr_ + port_message_->ClientId.offset();
     client_id_.emplace(pClientId);
 }
 
 std::unique_ptr<PORT_MESSAGE> PORT_MESSAGE::make_unique(const NtKernel& kernel,
-                                                        const GuestVirtualAddress& gva) {
+                                                        const guest_ptr<void>& ptr) {
 
     if (kernel.x64()) {
         return std::make_unique<PORT_MESSAGE_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     } else {
         return std::make_unique<PORT_MESSAGE_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
     }
 }
 

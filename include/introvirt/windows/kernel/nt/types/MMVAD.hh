@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/const/MEMORY_ALLOCATION_TYPE.hh>
 #include <introvirt/windows/kernel/nt/const/PAGE_PROTECTION.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
@@ -91,27 +91,27 @@ class MMVAD {
     virtual uint64_t RegionSize() const = 0;
 
     /** @returns The starting address of the region (equivalent to StartingVpn() << 12). */
-    virtual GuestVirtualAddress StartingAddress() const = 0;
+    virtual uint64_t StartingAddress() const = 0;
 
     /** @returns The last address of the region [((EndingVpn() + 1) << 12) - 1]; */
-    virtual GuestVirtualAddress EndingAddress() const = 0;
+    virtual uint64_t EndingAddress() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual bool locked() const = 0;
 
     virtual std::vector<std::shared_ptr<const MMVAD>> VadTreeInOrder() const = 0;
 
-    virtual GuestVirtualAddress FirstPrototypePte() const = 0;
-    virtual GuestVirtualAddress LastContiguousPte() const = 0;
+    virtual uint64_t FirstPrototypePte() const = 0;
+    virtual uint64_t LastContiguousPte() const = 0;
 
     /**
      * @brief Search for the MMVAD entry for the given address in children
      *
-     * @param VirtualAddress The address to search for
+     * @param virtual_address The address to search for
      * @returns The matching MMVAD entry, or nullptr.
      */
-    virtual std::shared_ptr<const MMVAD> search(const GuestVirtualAddress& gva) const = 0;
+    virtual std::shared_ptr<const MMVAD> search(uint64_t virtual_address) const = 0;
 
     virtual ~MMVAD() = default;
 };

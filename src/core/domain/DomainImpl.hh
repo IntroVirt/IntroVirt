@@ -26,7 +26,6 @@
 #include <introvirt/core/domain/Guest.hh>
 #include <introvirt/core/filter/TaskFilter.hh>
 #include <introvirt/core/fwd.hh>
-#include <introvirt/core/memory/GuestAddress.hh>
 #include <introvirt/core/memory/GuestMemoryMapping.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/core/syscall/SystemCallFilter.hh>
@@ -61,10 +60,10 @@ class DomainImpl : public Domain {
     void pause_all_other_vcpus(const Vcpu& vcpu);
     void resume_all_other_vcpus(const Vcpu& vcpu);
 
-    std::shared_ptr<Breakpoint> create_breakpoint(const GuestAddress& address,
+    std::shared_ptr<Breakpoint> create_breakpoint(const guest_ptr<void>& address,
                                                   std::function<void(Event&)> callback) override;
 
-    std::unique_ptr<Watchpoint> create_watchpoint(const GuestAddress& address, uint64_t length,
+    std::unique_ptr<Watchpoint> create_watchpoint(const guest_ptr<void>& address, uint64_t length,
                                                   bool read, bool write, bool execute,
                                                   std::function<void(Event&)> callback) override;
 

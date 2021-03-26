@@ -111,11 +111,11 @@ Json::Value PS_CREATE_INFO_IMPL<PtrType>::json() const {
 /** Only valid for state == PsCreateSuccess || PsCreateFailOnSectionCreate */
 template <typename PtrType>
 uint64_t PS_CREATE_INFO_IMPL<PtrType>::FileHandle() const {
-    switch (data_->State) {
+    switch (ptr_->State) {
     case PS_CREATE_STATE::PsCreateSuccess:
-        return data_->SuccessState.FileHandle;
+        return ptr_->SuccessState.FileHandle;
     case PS_CREATE_STATE::PsCreateFailOnSectionCreate:
-        return data_->FailSection.FileHandle;
+        return ptr_->FailSection.FileHandle;
     default:
         break;
     }
@@ -126,116 +126,116 @@ uint64_t PS_CREATE_INFO_IMPL<PtrType>::FileHandle() const {
 /** Only valid for state == PsCreateSuccess */
 template <typename PtrType>
 uint64_t PS_CREATE_INFO_IMPL<PtrType>::SectionHandle() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateSuccess)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateSuccess)) {
         throw InvalidStructureException("current state does not have a section handle");
     }
 
-    return data_->SuccessState.SectionHandle;
+    return ptr_->SuccessState.SectionHandle;
 }
 template <typename PtrType>
 uint64_t PS_CREATE_INFO_IMPL<PtrType>::UserProcessParametersNative() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateSuccess)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateSuccess)) {
         throw InvalidStructureException("current state does not have user process parameters");
     }
-    return data_->SuccessState.UserProcessParametersNative;
+    return ptr_->SuccessState.UserProcessParametersNative;
 }
 template <typename PtrType>
 uint32_t PS_CREATE_INFO_IMPL<PtrType>::UserProcessParametersWow64() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateSuccess)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateSuccess)) {
         throw InvalidStructureException(
             "current state does not have user process parameters wow64");
     }
-    return data_->SuccessState.UserProcessParametersWow64;
+    return ptr_->SuccessState.UserProcessParametersWow64;
 }
 template <typename PtrType>
 uint32_t PS_CREATE_INFO_IMPL<PtrType>::CurrentParameterFlags() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateSuccess)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateSuccess)) {
         throw InvalidStructureException("current state does not have current parameter flags");
     }
-    return data_->SuccessState.CurrentParameterFlags;
+    return ptr_->SuccessState.CurrentParameterFlags;
 }
 template <typename PtrType>
 uint64_t PS_CREATE_INFO_IMPL<PtrType>::PebAddressNative() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateSuccess)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateSuccess)) {
         throw InvalidStructureException("current state does not have peb address");
     }
-    return data_->SuccessState.PebAddressNative;
+    return ptr_->SuccessState.PebAddressNative;
 }
 template <typename PtrType>
 uint32_t PS_CREATE_INFO_IMPL<PtrType>::PebAddressWow64() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateSuccess)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateSuccess)) {
         throw InvalidStructureException("current state does not have peb address wow64");
     }
-    return data_->SuccessState.PebAddressWow64;
+    return ptr_->SuccessState.PebAddressWow64;
 }
 template <typename PtrType>
 uint64_t PS_CREATE_INFO_IMPL<PtrType>::ManifestAddress() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateSuccess)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateSuccess)) {
         throw InvalidStructureException("current state does not have a manifest address");
     }
-    return data_->SuccessState.ManifestAddress;
+    return ptr_->SuccessState.ManifestAddress;
 }
 template <typename PtrType>
 uint32_t PS_CREATE_INFO_IMPL<PtrType>::ManifestSize() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateSuccess)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateSuccess)) {
         throw InvalidStructureException("current state does not have a manifest size");
     }
-    return data_->SuccessState.ManifestSize;
+    return ptr_->SuccessState.ManifestSize;
 }
 template <typename PtrType>
 uint32_t PS_CREATE_INFO_IMPL<PtrType>::OutputFlags() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateSuccess)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateSuccess)) {
         throw InvalidStructureException("current state does not have output flags");
     }
-    return data_->SuccessState.OutputFlags;
+    return ptr_->SuccessState.OutputFlags;
 }
 
 /** Only valid for state == PsCreateFailExeName */
 template <typename PtrType>
 uint64_t PS_CREATE_INFO_IMPL<PtrType>::IFEOKey() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateFailExeName)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateFailExeName)) {
         throw InvalidStructureException("current state does not have an ifeo key");
     }
-    return data_->ExeName.IFEOKey;
+    return ptr_->ExeName.IFEOKey;
 }
 
 /* Only valid for state == PsCreateInitialState */
 template <typename PtrType>
 uint32_t PS_CREATE_INFO_IMPL<PtrType>::InitFlags() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateInitialState)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateInitialState)) {
         throw InvalidStructureException("current state does not have init flags");
     }
-    return data_->InitState.InitFlags;
+    return ptr_->InitState.InitFlags;
 }
 template <typename PtrType>
 void PS_CREATE_INFO_IMPL<PtrType>::InitFlags(uint32_t InitFlags) {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateInitialState)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateInitialState)) {
         throw InvalidStructureException("current state does not have init flags");
     }
-    data_->InitState.InitFlags = InitFlags;
+    ptr_->InitState.InitFlags = InitFlags;
 }
 
 template <typename PtrType>
 FILE_ACCESS_MASK PS_CREATE_INFO_IMPL<PtrType>::AdditionalFileAccess() const {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateInitialState)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateInitialState)) {
         throw InvalidStructureException("current state does not have addition file access");
     }
-    return FILE_ACCESS_MASK(data_->InitState.AdditionalFileAccess);
+    return FILE_ACCESS_MASK(ptr_->InitState.AdditionalFileAccess);
 }
 template <typename PtrType>
 void PS_CREATE_INFO_IMPL<PtrType>::AdditionalFileAccess(FILE_ACCESS_MASK AdditionalFileAccess) {
-    if (unlikely(data_->State != PS_CREATE_STATE::PsCreateInitialState)) {
+    if (unlikely(ptr_->State != PS_CREATE_STATE::PsCreateInitialState)) {
         throw InvalidStructureException("current state does not have addition file access");
     }
-    data_->InitState.AdditionalFileAccess = AdditionalFileAccess.value();
+    ptr_->InitState.AdditionalFileAccess = AdditionalFileAccess.value();
 }
 
 std::unique_ptr<PS_CREATE_INFO> PS_CREATE_INFO::make_unique(const NtKernel& kernel,
-                                                            const GuestVirtualAddress& gva) {
+                                                            const guest_ptr<void>& ptr) {
     if (kernel.x64())
-        return std::make_unique<PS_CREATE_INFO_IMPL<uint64_t>>(gva);
+        return std::make_unique<PS_CREATE_INFO_IMPL<uint64_t>>(ptr);
     else
-        return std::make_unique<PS_CREATE_INFO_IMPL<uint32_t>>(gva);
+        return std::make_unique<PS_CREATE_INFO_IMPL<uint32_t>>(ptr);
 }
 
 const std::string& to_string(PS_CREATE_STATE state) {

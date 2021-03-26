@@ -36,12 +36,12 @@ template <typename PtrType, typename _BaseClass = OBJECT>
 class OBJECT_IMPL : public _BaseClass {
   public:
     const OBJECT_HEADER& header() const final { return *header_; }
-    GuestVirtualAddress address() const final { return gva_; }
+    guest_ptr<void> ptr() const final { return ptr_; }
 
     OBJECT_IMPL(const NtKernel& kernel,
                 std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header,
                 ObjectType expected = ObjectType::Unknown)
-        : gva_(object_header->Body()), header_(std::move(object_header)) {
+        : ptr_(object_header->Body()), header_(std::move(object_header)) {
 
         if (expected != ObjectType::Unknown) {
             if (unlikely(expected != header().type())) {
@@ -50,11 +50,11 @@ class OBJECT_IMPL : public _BaseClass {
         }
     }
 
-    OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva,
+    OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr,
                 ObjectType expected = ObjectType::Unknown)
-        : gva_(gva), object_header_offsets_(LoadOffsets<structs::OBJECT_HEADER>(kernel)),
+        : ptr_(ptr), object_header_offsets_(LoadOffsets<structs::OBJECT_HEADER>(kernel)),
           header_(std::make_unique<OBJECT_HEADER_IMPL<PtrType>>(
-              kernel, gva_ - object_header_offsets_->Body.offset())) {
+              kernel, ptr_ - object_header_offsets_->Body.offset())) {
 
         if (expected != ObjectType::Unknown) {
             if (unlikely(expected != header().type())) {
@@ -64,7 +64,7 @@ class OBJECT_IMPL : public _BaseClass {
     }
 
   protected:
-    GuestVirtualAddress gva_;
+    guest_ptr<void> ptr_;
 
   private:
     const structs::OBJECT_HEADER* object_header_offsets_;

@@ -252,8 +252,8 @@ std::unique_ptr<HANDLE_TABLE_ENTRY> HANDLE_TABLE_IMPL<PtrType>::Handle(uint64_t 
     if (unlikely(TableLevel > 2))
         throw InvalidStructureException("Invalid Table Code");
 
-    GuestVirtualAddress pTable(gva_.create(TableCode & ~LEVEL_MASK));
-    GuestVirtualAddress pEntry;
+    guest_ptr<void> pTable(buffer_.clone(TableCode & ~LEVEL_MASK));
+    guest_ptr<void> pEntry;
 
     if constexpr (std::is_same_v<PtrType, uint32_t>) {
         // 32-Bit implementation
@@ -268,19 +268,19 @@ std::unique_ptr<HANDLE_TABLE_ENTRY> HANDLE_TABLE_IMPL<PtrType>::Handle(uint64_t 
                     throw InvalidStructureException("Null level-1 handle table");
 
                 pTable += (handle >> L1_SHIFT) * sizeof(PtrType);
-                pTable = pTable.create(*guest_ptr<PtrType>(pTable));
+                pTable = pTable.clone(*guest_ptr<PtrType>(pTable));
             } else {
                 // Level 2
                 if (unlikely(!pTable))
                     throw InvalidStructureException("Null level-2 handle table");
                 pTable += (handle >> L2_SHIFT) * sizeof(PtrType);
-                pTable = pTable.create(*guest_ptr<PtrType>(pTable));
+                pTable = pTable.clone(*guest_ptr<PtrType>(pTable));
 
                 // Level 1
                 if (unlikely(!pTable))
                     throw InvalidStructureException("Null level-1 handle table");
                 pTable += ((handle >> L1_SHIFT) & 0x3ff) * sizeof(PtrType);
-                pTable = pTable.create(*guest_ptr<PtrType>(pTable));
+                pTable = pTable.clone(*guest_ptr<PtrType>(pTable));
             }
             if (unlikely(!pTable))
                 throw InvalidStructureException("Null level-0 handle table");
@@ -305,13 +305,13 @@ std::unique_ptr<HANDLE_TABLE_ENTRY> HANDLE_TABLE_IMPL<PtrType>::Handle(uint64_t 
             if (unlikely(!pTable))
                 throw InvalidStructureException("Null level-2 handle table");
             pTable += (handle >> L2_SHIFT) * sizeof(PtrType);
-            pTable = pTable.create(*guest_ptr<PtrType>(pTable));
+            pTable = pTable.clone(*guest_ptr<PtrType>(pTable));
 
             // Get the value from the L1 table
             if (unlikely(!pTable))
                 throw InvalidStructureException("Null level-1 handle table");
             pTable += ((handle >> L1_SHIFT) & L1_MASK) * sizeof(PtrType);
-            pTable = pTable.create(*guest_ptr<PtrType>(pTable));
+            pTable = pTable.clone(*guest_ptr<PtrType>(pTable));
 
             // Get the address of the L0 entry
             if (unlikely(!pTable))
@@ -324,7 +324,7 @@ std::unique_ptr<HANDLE_TABLE_ENTRY> HANDLE_TABLE_IMPL<PtrType>::Handle(uint64_t 
                 throw InvalidStructureException("Null level-1 handle table");
 
             pTable += (handle >> L1_SHIFT) * sizeof(PtrType);
-            pTable = pTable.create(*guest_ptr<PtrType>(pTable));
+            pTable = pTable.clone(*guest_ptr<PtrType>(pTable));
 
             // Get the address of the L0 entry
             if (unlikely(!pTable))
@@ -352,45 +352,46 @@ HANDLE_TABLE_IMPL<PtrType>::Handle(uint64_t handle) const {
 
 template <typename PtrType>
 void HANDLE_TABLE_IMPL<PtrType>::parse_open_handles_l2(
-    GuestVirtualAddress TableAddress,
+    const guest_ptr<void>& TableAddress,
     std::vector<std::unique_ptr<const HANDLE_TABLE_ENTRY>>& handles) const {
 
     constexpr unsigned int MaxCount = PageDirectory::PAGE_SIZE / sizeof(PtrType);
-    guest_ptr<PtrType[]> entries(TableAddress, MaxCount);
+    guest_ptr<void*[], PtrType> entries(TableAddress, MaxCount);
     for (unsigned int i = 0; i < MaxCount; ++i) {
-        if (entries[i]) {
+        guest_ptr<void> entry = entries[i];
+        if (entry) {
             constexpr unsigned int Shift = (std::is_same_v<uint64_t, PtrType> ? 19 : 21);
-            parse_open_handles_l1(TableAddress.create(entries[i]), handles, i << Shift);
+            parse_open_handles_l1(entry, handles, i << Shift);
         }
     }
 }
 
 template <typename PtrType>
 void HANDLE_TABLE_IMPL<PtrType>::parse_open_handles_l1(
-    GuestVirtualAddress TableAddress,
+    const guest_ptr<void>& TableAddress,
     std::vector<std::unique_ptr<const HANDLE_TABLE_ENTRY>>& handles, PtrType handle_start) const {
     constexpr unsigned int MaxCount = PageDirectory::PAGE_SIZE / sizeof(PtrType);
-    guest_ptr<PtrType[]> entries(TableAddress, MaxCount);
+    guest_ptr<void*[], PtrType> entries(TableAddress, MaxCount);
     for (unsigned int i = 0; i < MaxCount; ++i) {
-        if (entries[i]) {
-            try {
+        try {
+            guest_ptr<void> entry = entries[i];
+            if (entry) {
                 constexpr unsigned int Shift = (std::is_same_v<uint64_t, PtrType> ? 10 : 11);
-                parse_open_handles_l0(TableAddress.create(entries[i]), handles, i << Shift);
-            } catch (VirtualAddressNotPresentException& ex) {
-                /*
-                 * Note: This seems to be legitimate sometimes.
-                 *       WinDbg is also unable to read any handle information for a process.
-                 */
-                LOG4CXX_DEBUG(logger,
-                              "Could not read handle data at " << TableAddress.create(entries[i]));
+                parse_open_handles_l0(entry, handles, i << Shift);
             }
+        } catch (VirtualAddressNotPresentException& ex) {
+            /*
+             * Note: This seems to be legitimate sometimes.
+             *       WinDbg is also unable to read any handle information for a process.
+             */
+            LOG4CXX_DEBUG(logger, "Could not read handle data");
         }
     }
 }
 
 template <typename PtrType>
 void HANDLE_TABLE_IMPL<PtrType>::parse_open_handles_l0(
-    GuestVirtualAddress TableAddress,
+    const guest_ptr<void>& TableAddress,
     std::vector<std::unique_ptr<const HANDLE_TABLE_ENTRY>>& handles, PtrType handle_start) const {
 
     auto handle_table_entry_offsets = LoadOffsets<structs::HANDLE_TABLE_ENTRY>(kernel_);
@@ -417,7 +418,7 @@ HANDLE_TABLE_IMPL<PtrType>::open_handles() const {
     if (unlikely(TableLevel > 2))
         throw InvalidStructureException("Invalid Table Code");
 
-    const GuestVirtualAddress TableAddress(gva_.create(TableCode & ~LEVEL_MASK));
+    const guest_ptr<void> TableAddress(buffer_.clone(TableCode & ~LEVEL_MASK));
 
     if (TableLevel == 2)
         parse_open_handles_l2(TableAddress, result);
@@ -469,13 +470,13 @@ uint32_t HANDLE_TABLE_IMPL<PtrType>::NextHandleNeedingPool() const {
 
 template <typename PtrType>
 HANDLE_TABLE_IMPL<PtrType>::HANDLE_TABLE_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                              const GuestVirtualAddress& gva, bool isPspCidTable)
-    : kernel_(kernel), gva_(gva), offsets_(LoadOffsets<structs::HANDLE_TABLE>(kernel)),
+                                              const guest_ptr<void>& ptr, bool isPspCidTable)
+    : kernel_(kernel), offsets_(LoadOffsets<structs::HANDLE_TABLE>(kernel)),
       handle_table_entry_(LoadOffsets<structs::HANDLE_TABLE_ENTRY>(kernel_)),
       isPspCidTable(isPspCidTable) {
 
     // Map in the structure.
-    buffer_.reset(gva_, offsets_->size());
+    buffer_.reset(ptr, offsets_->size());
 }
 
 template <typename PtrType>

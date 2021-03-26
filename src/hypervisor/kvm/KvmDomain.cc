@@ -99,7 +99,7 @@ bool KvmDomain::intercept_exception(x86::Exception vector) const {
 
 const KvmHypervisor& KvmDomain::hypervisor() const { return hypervisor_; }
 
-GuestMemoryMapping KvmDomain::map_pfns(const uint64_t* pfns, size_t count) const {
+std::shared_ptr<GuestMemoryMapping> KvmDomain::map_pfns(const uint64_t* pfns, size_t count) const {
     const size_t region_size = count * PageDirectory::PAGE_SIZE;
 
     // Reserve address space for the mapping
@@ -126,7 +126,7 @@ GuestMemoryMapping KvmDomain::map_pfns(const uint64_t* pfns, size_t count) const
         }
         mapping += 4096;
     }
-    return GuestMemoryMapping(result, region_size);
+    return std::make_shared<GuestMemoryMapping>(result, region_size);
 }
 
 KvmDomain::KvmDomain(const KvmHypervisor& hypervisor, const std::string& name, uint32_t id, int fd)

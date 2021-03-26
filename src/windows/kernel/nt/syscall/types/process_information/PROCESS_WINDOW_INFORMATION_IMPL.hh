@@ -45,31 +45,30 @@ using PROCESS_WINDOW_INFORMATION_IMPL_BASE =
 
 class PROCESS_WINDOW_INFORMATION_IMPL final : public PROCESS_WINDOW_INFORMATION_IMPL_BASE {
   public:
-    uint32_t WindowFlags() const override { return this->data_->WindowFlags; }
-    void WindowFlags(uint32_t WindowFlags) override { this->data_->WindowFlags = WindowFlags; }
+    uint32_t WindowFlags() const override { return this->ptr_->WindowFlags; }
+    void WindowFlags(uint32_t WindowFlags) override { this->ptr_->WindowFlags = WindowFlags; }
 
     const std::string& WindowTitle() const override { return WindowTitle_->utf8(); }
     void WindowTitle(const std::string& value) override {
         WindowTitle_->set(value);
-        this->data_->WindowTitleLength = WindowTitle_->Length();
+        this->ptr_->WindowTitleLength = WindowTitle_->Length();
     }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    PROCESS_WINDOW_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    PROCESS_WINDOW_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : PROCESS_WINDOW_INFORMATION_IMPL_BASE(PROCESS_INFORMATION_CLASS::ProcessWindowInformation,
-                                               gva, buffer_size) {
+                                               ptr, buffer_size) {
 
         const uint16_t WindowsTitleMaxLength =
             buffer_size_ - offsetof(structs::_PROCESS_WINDOW_INFORMATION, WindowTitle);
 
         const uint16_t WindowTitleLength =
-            std::min(WindowsTitleMaxLength, this->data_->WindowTitleLength);
+            std::min(WindowsTitleMaxLength, this->ptr_->WindowTitleLength);
 
-        WindowTitle_.emplace(this->gva_ +
-                                 offsetof(structs::_PROCESS_WINDOW_INFORMATION, WindowTitle),
-                             WindowTitleLength, WindowsTitleMaxLength);
+        WindowTitle_.emplace(ptr + offsetof(structs::_PROCESS_WINDOW_INFORMATION, WindowTitle),
+                             WindowsTitleMaxLength, WindowTitleLength);
     }
 
   private:

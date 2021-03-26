@@ -42,13 +42,13 @@ class IMAGE_RELOCATION_SECTION_IMPL final : public IMAGE_RELOCATION_SECTION {
   public:
     const std::vector<IMAGE_BASE_RELOCATION>& relocations() const override { return relocations_; }
 
-    IMAGE_RELOCATION_SECTION_IMPL(const GuestVirtualAddress& image_base,
-                                  const GuestVirtualAddress& reloc_data_address,
+    IMAGE_RELOCATION_SECTION_IMPL(const guest_ptr<void>& image_base,
+                                  const guest_ptr<void>& reloc_data_address,
                                   uint32_t reloc_data_size) {
 
-        const GuestVirtualAddress reloc_data_limit = reloc_data_address + reloc_data_size;
+        const guest_ptr<void> reloc_data_limit = reloc_data_address + reloc_data_size;
 
-        GuestVirtualAddress addr = reloc_data_address;
+        guest_ptr<void> addr = reloc_data_address;
         while (addr < reloc_data_limit) {
             guest_ptr<structs::_IMAGE_BASE_RELOCATION> entry(addr);
 
@@ -59,12 +59,12 @@ class IMAGE_RELOCATION_SECTION_IMPL final : public IMAGE_RELOCATION_SECTION {
             const uint32_t num_words =
                 (entry->SizeOfBlock - sizeof(structs::_IMAGE_BASE_RELOCATION)) / sizeof(uint16_t);
 
-            const GuestVirtualAddress pdata = addr + sizeof(structs::_IMAGE_BASE_RELOCATION);
+            const guest_ptr<void> pdata = addr + sizeof(structs::_IMAGE_BASE_RELOCATION);
 
             // Map in all of the data
             guest_ptr<uint16_t[]> data(pdata, num_words);
             for (unsigned int i = 0; i < num_words; ++i) {
-                const GuestVirtualAddress reloc_address =
+                const guest_ptr<void> reloc_address =
                     image_base + entry->VirtualAddress + (data[i] & 0xFFF);
 
                 const uint8_t flags = data[i] >> 12;

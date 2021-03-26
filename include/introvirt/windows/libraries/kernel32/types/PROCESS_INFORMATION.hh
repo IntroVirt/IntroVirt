@@ -16,7 +16,7 @@
 #pragma once
 
 #include <introvirt/core/injection/GuestAllocation.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 #include <memory>
@@ -39,9 +39,9 @@ class PROCESS_INFORMATION {
     virtual uint32_t dwThreadId() const = 0;
     virtual void dwThreadId(uint32_t dwThreadId) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> address() const = 0;
 
-    static std::unique_ptr<PROCESS_INFORMATION> make_unique(const GuestVirtualAddress& gva);
+    static std::shared_ptr<PROCESS_INFORMATION> make_shared(const guest_ptr<void>& ptr, bool x64);
 
     virtual ~PROCESS_INFORMATION() = default;
 };
@@ -52,13 +52,10 @@ class PROCESS_INFORMATION {
 namespace inject {
 
 template <>
-class GuestAllocation<windows::kernel32::PROCESS_INFORMATION>
+class GuestAllocation<windows::kernel32::PROCESS_INFORMATION> final
     : public GuestAllocationComplexBase<windows::kernel32::PROCESS_INFORMATION> {
   public:
     explicit GuestAllocation();
-
-  private:
-    std::optional<GuestAllocation<uint8_t[]>> buffer_;
 };
 
 } // namespace inject

@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/pe/const/RelocationType.hh>
 
 namespace introvirt {
@@ -23,7 +23,7 @@ namespace windows {
 namespace pe {
 
 struct IMAGE_BASE_RELOCATION {
-    GuestVirtualAddress reloc_address;
+    guest_ptr<void> reloc_address;
     RelocationType type;
 };
 

@@ -30,7 +30,7 @@ class PLAINTEXTKEYBLOB final : public BLOB {
   public:
     guest_ptr<const uint8_t[]> KeyData() const;
 
-    PLAINTEXTKEYBLOB(const GuestVirtualAddress& gva, uint32_t length);
+    PLAINTEXTKEYBLOB(const guest_ptr<void>& ptr, uint32_t length);
 
   private:
     guest_ptr<uint8_t[]> key_data_;

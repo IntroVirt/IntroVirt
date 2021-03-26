@@ -33,17 +33,17 @@ struct _FILE_ATTRIBUTE_TAG_INFORMATION {
 
 class FILE_ATTRIBUTE_TAG_INFORMATION_IMPL final : public FILE_ATTRIBUTE_TAG_INFORMATION {
   public:
-    FILE_ATTRIBUTES FileAttributes() const override { return data_->FileAttributes; }
-    void FileAttributes(FILE_ATTRIBUTES attributes) override { data_->FileAttributes = attributes; }
+    FILE_ATTRIBUTES FileAttributes() const override { return ptr_->FileAttributes; }
+    void FileAttributes(FILE_ATTRIBUTES attributes) override { ptr_->FileAttributes = attributes; }
 
-    uint32_t ReparseTag() const override { return data_->ReparseTag; }
-    void ReparseTag(uint32_t value) override { data_->ReparseTag = value; }
+    uint32_t ReparseTag() const override { return ptr_->ReparseTag; }
+    void ReparseTag(uint32_t value) override { ptr_->ReparseTag = value; }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileAttributeTagInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -51,12 +51,11 @@ class FILE_ATTRIBUTE_TAG_INFORMATION_IMPL final : public FILE_ATTRIBUTE_TAG_INFO
 
     Json::Value json() const override;
 
-    FILE_ATTRIBUTE_TAG_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_ATTRIBUTE_TAG_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
+    guest_ptr<structs::_FILE_ATTRIBUTE_TAG_INFORMATION> ptr_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_ATTRIBUTE_TAG_INFORMATION> data_;
 };
 
 } // namespace nt

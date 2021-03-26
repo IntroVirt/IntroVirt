@@ -67,11 +67,10 @@ class FILE_BOTH_DIR_INFORMATION_ENTRY {
     virtual uint32_t EaSize() const = 0;
     virtual void EaSize(uint32_t EaSize) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
     virtual uint32_t buffer_size() const = 0;
 
-    static std::shared_ptr<FILE_BOTH_DIR_INFORMATION_ENTRY>
-    make_shared(const GuestVirtualAddress& gva);
+    static std::shared_ptr<FILE_BOTH_DIR_INFORMATION_ENTRY> make_shared(const guest_ptr<void>& ptr);
 
     virtual ~FILE_BOTH_DIR_INFORMATION_ENTRY() = default;
 };

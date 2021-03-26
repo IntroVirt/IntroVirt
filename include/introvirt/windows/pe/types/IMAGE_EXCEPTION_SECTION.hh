@@ -17,8 +17,6 @@
 
 #include "RUNTIME_FUNCTION.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
-
 #include <cstdint>
 
 namespace introvirt {

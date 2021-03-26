@@ -41,15 +41,15 @@ template <typename PtrType>
 class SECTION_RELOCATION_INFORMATION_IMPL final
     : public SECTION_RELOCATION_INFORMATION_IMPL_BASE<PtrType> {
   public:
-    uint64_t BaseAddress() const override { return this->data_->BaseAddress; }
-    void BaseAddress(uint64_t value) override { this->data_->BaseAddress = value; }
+    uint64_t BaseAddress() const override { return this->ptr_->BaseAddress; }
+    void BaseAddress(uint64_t value) override { this->ptr_->BaseAddress = value; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    SECTION_RELOCATION_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    SECTION_RELOCATION_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : SECTION_RELOCATION_INFORMATION_IMPL_BASE<PtrType>(
-              SECTION_INFORMATION_CLASS::SectionRelocationInformation, gva, buffer_size) {}
+              SECTION_INFORMATION_CLASS::SectionRelocationInformation, ptr, buffer_size) {}
 };
 
 } // namespace nt

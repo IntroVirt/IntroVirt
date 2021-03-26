@@ -190,7 +190,7 @@ class EventImplTpl : public _BaseClass, public EventImpl {
      * @brief Suspend the event until another event comes in for the same thread
      */
     std::unique_ptr<Event> suspend(std::function<WakeAction(Event&)> check_wakeup) override {
-        assert(check_wakeup != nullptr);
+        introvirt_assert(check_wakeup != nullptr, "");
 
         std::unique_lock lock(mtx_);
         hypervisor_event_->domain().suspend_event(*this);
@@ -220,7 +220,7 @@ class EventImplTpl : public _BaseClass, public EventImpl {
      * @brief Wake the event back up
      */
     WakeAction wake(std::unique_ptr<Event>&& event) override {
-        assert(check_wakeup_ != nullptr);
+        introvirt_assert(check_wakeup_ != nullptr, "");
 
         WakeAction result = check_wakeup_(*event);
         if (result == WakeAction::ACCEPT) {

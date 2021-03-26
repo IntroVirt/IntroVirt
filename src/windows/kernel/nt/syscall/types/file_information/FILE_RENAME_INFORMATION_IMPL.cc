@@ -48,21 +48,21 @@ Json::Value FILE_RENAME_INFORMATION_IMPL<PtrType>::json() const {
 }
 
 template <typename PtrType>
-FILE_RENAME_INFORMATION_IMPL<PtrType>::FILE_RENAME_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+FILE_RENAME_INFORMATION_IMPL<PtrType>::FILE_RENAME_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                                     uint32_t buffer_size)
-    : gva_(gva), buffer_size_(buffer_size) {
+    : buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_FILE_RENAME_INFORMATION<PtrType>)))
         throw BufferTooSmallException(sizeof(structs::_FILE_RENAME_INFORMATION<PtrType>),
                                       buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 
-    const auto pFileName = gva_ + offsetof(structs::_FILE_RENAME_INFORMATION<PtrType>, FileName);
+    const auto pFileName = ptr + offsetof(structs::_FILE_RENAME_INFORMATION<PtrType>, FileName);
     buffer_size -= sizeof(structs::_FILE_RENAME_INFORMATION<PtrType>);
 
-    const uint32_t FileNameLength = std::min(data_->FileNameLength, buffer_size);
-    FileName_.emplace(pFileName, FileNameLength, buffer_size);
+    const uint32_t FileNameLength = std::min(ptr_->FileNameLength, buffer_size);
+    FileName_.emplace(pFileName, buffer_size, FileNameLength);
 }
 
 template class FILE_RENAME_INFORMATION_IMPL<uint32_t>;

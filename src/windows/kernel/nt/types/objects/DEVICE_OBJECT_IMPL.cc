@@ -44,19 +44,19 @@ const DRIVER_OBJECT& DEVICE_OBJECT_IMPL<PtrType>::DriverObject() const {
         if (unlikely(pDriverObject == 0))
             throw InvalidStructureException("DEVICE_OBJECT::DriverObject was NULL");
 
-        DriverObject_ = std::make_unique<DRIVER_OBJECT_IMPL<PtrType>>(
-            kernel_, this->address().create(pDriverObject));
+        DriverObject_ =
+            std::make_unique<DRIVER_OBJECT_IMPL<PtrType>>(kernel_, this->ptr_.clone(pDriverObject));
     }
     return *DriverObject_;
 }
 
 template <typename PtrType>
 DEVICE_OBJECT_IMPL<PtrType>::DEVICE_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                                const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, DEVICE_OBJECT>(kernel, gva, ObjectType::Device), kernel_(kernel),
+                                                const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, DEVICE_OBJECT>(kernel, ptr, ObjectType::Device), kernel_(kernel),
       offsets_(LoadOffsets<structs::DEVICE_OBJECT>(kernel)) {
 
-    buffer_.reset(gva, offsets_->size());
+    buffer_.reset(ptr, offsets_->size());
 }
 
 template <typename PtrType>
@@ -66,20 +66,20 @@ DEVICE_OBJECT_IMPL<PtrType>::DEVICE_OBJECT_IMPL(
     : OBJECT_IMPL<PtrType, DEVICE_OBJECT>(kernel, std::move(object_header), ObjectType::Device),
       kernel_(kernel), offsets_(LoadOffsets<structs::DEVICE_OBJECT>(kernel)) {
 
-    buffer_.reset(OBJECT_IMPL<PtrType, DEVICE_OBJECT>::address(), offsets_->size());
+    buffer_.reset(this->ptr_, offsets_->size());
 }
 
 template <typename PtrType>
 DEVICE_OBJECT_IMPL<PtrType>::~DEVICE_OBJECT_IMPL() = default;
 
 std::shared_ptr<DEVICE_OBJECT> DEVICE_OBJECT::make_shared(const NtKernel& kernel,
-                                                          const GuestVirtualAddress& gva) {
+                                                          const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<DEVICE_OBJECT_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<DEVICE_OBJECT_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<DEVICE_OBJECT>

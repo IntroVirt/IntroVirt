@@ -19,12 +19,9 @@ namespace introvirt {
 namespace windows {
 namespace nt {
 
-SECURITY_QUALITY_OF_SERVICE_IMPL::SECURITY_QUALITY_OF_SERVICE_IMPL(const GuestVirtualAddress& gva)
-    : gva_(gva), data_(gva) {}
-
 std::unique_ptr<SECURITY_QUALITY_OF_SERVICE>
-SECURITY_QUALITY_OF_SERVICE::make_unique(const GuestVirtualAddress& gva) {
-    return std::make_unique<SECURITY_QUALITY_OF_SERVICE_IMPL>(gva);
+SECURITY_QUALITY_OF_SERVICE::make_unique(const guest_ptr<void>& ptr) {
+    return std::make_unique<SECURITY_QUALITY_OF_SERVICE_IMPL>(ptr);
 }
 
 } // namespace nt

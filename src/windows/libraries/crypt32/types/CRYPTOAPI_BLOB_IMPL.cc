@@ -22,12 +22,11 @@ namespace introvirt {
 namespace windows {
 namespace crypt32 {
 
-std::unique_ptr<CRYPTOAPI_BLOB> CRYPTOAPI_BLOB::make_unique(const GuestVirtualAddress& gva,
-                                                            bool x64) {
+std::shared_ptr<CRYPTOAPI_BLOB> CRYPTOAPI_BLOB::make_shared(const guest_ptr<void>& ptr, bool x64) {
     if (x64) {
-        return std::make_unique<CRYPTOAPI_BLOB_IMPL<uint64_t>>(gva);
+        return std::make_shared<CRYPTOAPI_BLOB_IMPL<uint64_t>>(ptr);
     }
-    return std::make_unique<CRYPTOAPI_BLOB_IMPL<uint32_t>>(gva);
+    return std::make_shared<CRYPTOAPI_BLOB_IMPL<uint32_t>>(ptr);
 }
 
 size_t CRYPTOAPI_BLOB::size(bool x64) {

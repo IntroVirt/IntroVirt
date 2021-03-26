@@ -64,11 +64,11 @@ static log4cxx::LoggerPtr
     logger(log4cxx::Logger::getLogger("introvirt.windows.kernel.nt.NtKernel"));
 
 template <typename PtrType>
-GuestVirtualAddress NtKernelImpl<PtrType>::symbol(const std::string& name) const {
+guest_ptr<void> NtKernelImpl<PtrType>::symbol(const std::string& name) const {
     const auto* symbol = pe_->pdb().name_to_symbol(name);
     if (!symbol)
         throw SymbolNotFoundException(name);
-    return base_address_ + symbol->image_offset();
+    return ptr_ + symbol->image_offset();
 }
 
 template <typename PtrType>
@@ -80,18 +80,14 @@ std::unique_ptr<HANDLE_TABLE> NtKernelImpl<PtrType>::CidTable() {
 
 template <typename PtrType>
 std::unique_ptr<const HANDLE_TABLE> NtKernelImpl<PtrType>::CidTable() const {
-    auto ppPspCidTable = symbol("PspCidTable");
-    GuestVirtualAddress pPspCidTable = ppPspCidTable.create(*guest_ptr<PtrType>(ppPspCidTable));
-    return std::make_unique<const HANDLE_TABLE_IMPL<PtrType>>(*this, pPspCidTable, true);
+    guest_ptr<PtrType*, PtrType> ppPspCidTable(symbol("PspCidTable"));
+    return std::make_unique<const HANDLE_TABLE_IMPL<PtrType>>(*this, *ppPspCidTable, true);
 }
 
 template <typename PtrType>
 std::shared_ptr<OBJECT_DIRECTORY> NtKernelImpl<PtrType>::RootDirectoryObject() const {
-    auto pObpRootDirectoryObject = symbol("ObpRootDirectoryObject");
-    GuestVirtualAddress ObpRootDirectoryObject =
-        pObpRootDirectoryObject.create(*guest_ptr<PtrType>(pObpRootDirectoryObject));
-
-    return OBJECT_DIRECTORY::make_shared(*this, ObpRootDirectoryObject);
+    guest_ptr<PtrType*, PtrType> ppObpRootDirectoryObject(symbol("ObpRootDirectoryObject"));
+    return OBJECT_DIRECTORY::make_shared(*this, *ppObpRootDirectoryObject);
 }
 
 template <typename PtrType>
@@ -102,9 +98,9 @@ NtKernelImpl<PtrType>::PsLoadedModuleList() const {
 
     auto pPsLoadedModuleList = symbol("PsLoadedModuleList");
 
-    // TODO: Create IMPL class forLDR_DATA_TABLE_ENTRY so we can create it directly
     std::vector<std::shared_ptr<const LDR_DATA_TABLE_ENTRY>> result;
-    std::vector<GuestVirtualAddress> addresses;
+
+    std::vector<guest_ptr<void>> addresses;
 
     // Parse all of the structure addresses
     if constexpr (is64Bit()) {
@@ -114,7 +110,7 @@ NtKernelImpl<PtrType>::PsLoadedModuleList() const {
     }
 
     // Create the entries
-    for (const GuestVirtualAddress& addr : addresses) {
+    for (const guest_ptr<void>& addr : addresses) {
         result.emplace_back(std::make_shared<LDR_DATA_TABLE_ENTRY_IMPL<PtrType>>(addr));
     }
     return result;
@@ -150,7 +146,7 @@ void NtKernelImpl<PtrType>::reparse_drive_letters() {
             const auto* symLink = dynamic_cast<const OBJECT_SYMBOLIC_LINK*>(object.get());
             std::string target = boost::to_lower_copy(symLink->LinkTarget());
             LOG4CXX_DEBUG(logger, "Found drive " << name << " -> " << target)
-            drive_letters_[target] = symLink->address();
+            drive_letters_[target] = symLink->ptr();
         } catch (VirtualAddressNotPresentException& ex) {
             LOG4CXX_DEBUG(logger, ex.what());
         }
@@ -175,7 +171,7 @@ std::string NtKernelImpl<PtrType>::get_device_drive_letter(const nt::DEVICE_OBJE
     auto iter = drive_letters_.find(device_path);
     if (iter != drive_letters_.end()) {
         // Possible match
-        const GuestVirtualAddress& pSymbolicLink = iter->second;
+        const guest_ptr<void>& pSymbolicLink = iter->second;
         try {
             auto symbolicLink = OBJECT_SYMBOLIC_LINK::make_shared(*this, pSymbolicLink);
             return symbolicLink->header().NameInfo().Name();
@@ -192,7 +188,7 @@ std::string NtKernelImpl<PtrType>::get_device_drive_letter(const nt::DEVICE_OBJE
     iter = drive_letters_.find(device_path);
     if (iter != drive_letters_.end()) {
         // Possible match
-        const GuestVirtualAddress& pSymbolicLink = iter->second;
+        const guest_ptr<void>& pSymbolicLink = iter->second;
         try {
             auto symbolicLink = OBJECT_SYMBOLIC_LINK::make_shared(*this, pSymbolicLink);
             return symbolicLink->header().NameInfo().Name();
@@ -284,8 +280,8 @@ const mspdb::PDB& NtKernelImpl<PtrType>::pdb() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress NtKernelImpl<PtrType>::base_address() const {
-    return base_address_;
+const guest_ptr<void>& NtKernelImpl<PtrType>::ptr() const {
+    return ptr_;
 }
 
 template <typename PtrType>
@@ -305,14 +301,13 @@ uint64_t NtKernelImpl<PtrType>::InvalidPteMask() const {
 }
 
 template <typename PtrType>
-std::shared_ptr<nt::THREAD>
-NtKernelImpl<PtrType>::thread(const GuestVirtualAddress& address) const {
+std::shared_ptr<nt::THREAD> NtKernelImpl<PtrType>::thread(const guest_ptr<void>& ptr) const {
     std::lock_guard lock(threads_.mtx_);
 
     // TODO (papes): Need a way of expiring invalid weak pointers
 
     // Check if we already have an entry in the map
-    auto iter = threads_.map_.find(address.value());
+    auto iter = threads_.map_.find(ptr.address());
     if (iter != threads_.map_.end()) {
         // Yep, check if it's valid
         auto [tid, thread] = iter->second;
@@ -321,21 +316,20 @@ NtKernelImpl<PtrType>::thread(const GuestVirtualAddress& address) const {
     }
 
     // Nope, create one
-    auto result = nt::THREAD::make_shared(*this, address);
-    threads_.map_[address.value()] = std::make_pair(result->Cid().UniqueThread(), result);
+    auto result = nt::THREAD::make_shared(*this, ptr);
+    threads_.map_[ptr.address()] = std::make_pair(result->Cid().UniqueThread(), result);
 
     return result;
 }
 
 template <typename PtrType>
-std::shared_ptr<nt::PROCESS>
-NtKernelImpl<PtrType>::process(const GuestVirtualAddress& address) const {
+std::shared_ptr<nt::PROCESS> NtKernelImpl<PtrType>::process(const guest_ptr<void>& ptr) const {
     std::lock_guard<decltype(procs_.mtx_)> lock(procs_.mtx_);
 
     // TODO (papes): Need a way of expiring invalid weak pointers
 
     // Check if we already have an entry in the map
-    auto iter = procs_.map_.find(address.value());
+    auto iter = procs_.map_.find(ptr.address());
     if (iter != procs_.map_.end()) {
         // Yep, check if it's valid
         auto [pid, proc] = iter->second;
@@ -344,15 +338,15 @@ NtKernelImpl<PtrType>::process(const GuestVirtualAddress& address) const {
     }
 
     // Nope, create one
-    auto result = nt::PROCESS::make_shared(*this, address);
-    procs_.map_[address.value()] = std::make_pair(result->UniqueProcessId(), result);
+    auto result = nt::PROCESS::make_shared(*this, ptr);
+    procs_.map_[ptr.address()] = std::make_pair(result->UniqueProcessId(), result);
     return result;
 }
 
 template <typename PtrType>
 std::string NtKernelImpl<PtrType>::profile_path() const {
     const auto* debug_directory = pe_->optional_header().debug_directory();
-    assert(debug_directory->Type() == pe::ImageDebugType::IMAGE_DEBUG_TYPE_CODEVIEW);
+    introvirt_assert(debug_directory->Type() == pe::ImageDebugType::IMAGE_DEBUG_TYPE_CODEVIEW, "");
     const auto* cv_data = debug_directory->codeview_data();
 
     std::string pdb_identifier = boost::to_upper_copy(cv_data->PdbIdentifier());
@@ -382,12 +376,11 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
      * MSR_LSTAR is for 64-bit and MSR_IA32_SYSENTER_EIP is for 32-bit.
      */
     const auto& registers = vcpu->registers();
-    base_address_ =
-        GuestVirtualAddress(*vcpu, std::max(registers.msr(x86::Msr::MSR_LSTAR),
-                                            registers.msr(x86::Msr::MSR_IA32_SYSENTER_EIP)) &
-                                       PageDirectory::PAGE_MASK);
+    guest_ptr<uint16_t> search_ptr(*vcpu, std::max(registers.msr(x86::Msr::MSR_LSTAR),
+                                                   registers.msr(x86::Msr::MSR_IA32_SYSENTER_EIP)) &
+                                              PageDirectory::PAGE_MASK);
 
-    LOG4CXX_DEBUG(logger, "Starting NT kernel search at address " << base_address_);
+    LOG4CXX_DEBUG(logger, "Starting NT kernel search at address " << search_ptr);
 
     /*
      * TODO: Sometimes this fails. I think the processor is in usermode at the time, and
@@ -395,25 +388,25 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
      */
     // Go down one page at a time and look for the MZ header
     static const uint64_t MaxRange = 0x1000000;
-    const GuestVirtualAddress search_bottom = base_address_ - MaxRange;
-    while (base_address_ > search_bottom) {
+    const uint64_t search_bottom = search_ptr.address() - MaxRange;
+    while (search_ptr.address() > search_bottom) {
         try {
-            if (unlikely(*guest_ptr<uint16_t>(base_address_) == 0x5a4D)) { // "MZ"
-                LOG4CXX_DEBUG(logger, "Found MZ at " << base_address_);
+            if (unlikely(*search_ptr == 0x5a4D)) { // "MZ"
+                LOG4CXX_DEBUG(logger, "Found MZ at " << search_ptr);
                 try {
                     /*
                      * Parse the PE of the image and make sure it's one we're expecting
                      */
                     static const std::set<std::string> ValidKernelNames{
                         "ntkrnlmp.pdb", "ntkrnlpa.pdb", "ntoskrnl.pdb", "ntkrpamp.pdb"};
-                    pe_.emplace(base_address_);
+                    pe_.emplace(search_ptr);
 
                     const auto* debug_directory = pe_->optional_header().debug_directory();
 
                     if (!debug_directory ||
                         debug_directory->Type() != pe::ImageDebugType::IMAGE_DEBUG_TYPE_CODEVIEW) {
                         LOG4CXX_DEBUG(logger, "Missing IMAGE_DEBUG_DIRECTORY, continuing scan...");
-                        base_address_ -= PageDirectory::PAGE_SIZE;
+                        search_ptr -= PageDirectory::PAGE_SIZE / sizeof(uint16_t);
                         continue;
                     }
 
@@ -422,25 +415,28 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
                     const std::string pdb_filename = cv_data->PdbFileName();
                     if (ValidKernelNames.count(pdb_filename) == 0) {
                         LOG4CXX_DEBUG(logger, "Incorrect PDB file name: " << pdb_filename);
-                        base_address_ -= PageDirectory::PAGE_SIZE;
+                        search_ptr -= PageDirectory::PAGE_SIZE / sizeof(uint16_t);
                         continue; // Try again
                     }
 
                     LOG4CXX_DEBUG(logger, "Found PDB Filename: " << pdb_filename);
                     break;
                 } catch (pe::PeException& ex) {
-                    LOG4CXX_DEBUG(logger, "Failed to parse PE at " + to_string(base_address_));
+                    LOG4CXX_DEBUG(logger, "Failed to parse PE at " + to_string(search_ptr));
                 } catch (VirtualAddressNotPresentException& ex) {
                     LOG4CXX_DEBUG(logger, ex.what());
                 }
             }
         } catch (VirtualAddressNotPresentException& ex) {
         }
-        base_address_ -= PageDirectory::PAGE_SIZE;
+        search_ptr -= PageDirectory::PAGE_SIZE / sizeof(uint16_t);
     }
 
     if (!pe_)
         throw GuestDetectionException(domain, "Failed to find NT kernel base address");
+
+    // TODO: Why did I have to do this?
+    ptr_.reset(vcpu->domain(), search_ptr.address(), vcpu->registers().cr3());
 
     filesystem::create_directories(profile_path());
 
@@ -495,8 +491,7 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
         // TODO: Move MI_SYSTEM_INFORMATION into it's own class
         const auto* MiState = LoadOffsets<structs::MI_SYSTEM_INFORMATION>(*this);
         if (MiState->InvalidPteMask.exists()) {
-            GuestVirtualAddress pMiState = symbol("MiState");
-            guest_ptr<const char[]> MiStateBuffer(pMiState, MiState->size());
+            guest_ptr<const char[]> MiStateBuffer(symbol("MiState"), MiState->size());
             if (MiState->InvalidPteMask.size() == 8) {
                 InvalidPteMask_ = MiState->InvalidPteMask.template get<uint64_t>(MiStateBuffer);
             } else if (MiState->InvalidPteMask.size() == 4) {
@@ -518,7 +513,7 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
             if (object->header().has_name_info() &&
                 object->header().NameInfo().Name() == "GLOBAL??") {
                 // Found it
-                global_directory_address_ = object->address();
+                global_directory_address_ = object->ptr();
                 LOG4CXX_DEBUG(logger, "Found \\GLOBAL?? : " << global_directory_address_);
                 LOG4CXX_DEBUG(logger, "Parsing drive letters");
                 reparse_drive_letters();
@@ -532,8 +527,7 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
     // Detect the number of CPUs that Windows is using
     // This is because for licensing reasons, Windows will sometimes refuse to use a CPU,
     // leaving its PCR as null.
-    auto pKeNumberProcessors = symbol("KeNumberProcessors");
-    cpu_count_ = *guest_ptr<uint32_t>(pKeNumberProcessors);
+    cpu_count_ = *guest_ptr<uint32_t>(symbol("KeNumberProcessors"));
 
     if (unlikely(cpu_count() > domain.vcpu_count())) {
         throw GuestDetectionException(domain, "Guest reporting too many CPUs");
@@ -578,7 +572,7 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
     LOG4CXX_DEBUG(logger, "Parsed KeServiceDescriptorTable with "
                               << KeServiceDescriptorTable().count() << " entries");
 
-    GuestVirtualAddress pKeServiceDescriptorTableShadow(symbol("KeServiceDescriptorTableShadow"));
+    guest_ptr<void> pKeServiceDescriptorTableShadow(symbol("KeServiceDescriptorTableShadow"));
 
     // The shadow service table isn't present in all processes
     // Try it with a bunch of them
@@ -588,14 +582,15 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
         if (header->type() == ObjectType::Process) {
             try {
                 auto process = PROCESS::make_shared(*this, std::move(header));
-                pKeServiceDescriptorTableShadow.page_directory(process->DirectoryTableBase());
+                pKeServiceDescriptorTableShadow.reset(domain,
+                                                      pKeServiceDescriptorTableShadow.address(),
+                                                      process->DirectoryTableBase());
                 KeServiceDescriptorTableShadow_.emplace(pKeServiceDescriptorTableShadow);
                 break;
             } catch (VirtualAddressNotPresentException& ex) {
             }
         }
     }
-    base_address_.page_directory(vcpu->registers().cr3());
 
     if (KeServiceDescriptorTableShadow_) {
         LOG4CXX_DEBUG(logger, "Parsed KeServiceDescriptorTableShadow with "

@@ -153,13 +153,12 @@ class EventHandler : public EventCallback {
         auto& vcpu = event.vcpu();
         auto& regs = vcpu.registers();
 
-        // RDX holds a pointer to a string that we'll reverse in place
-        // Get a GuestVirtualAddress based on this
-        GuestVirtualAddress pStr(event.vcpu(), regs.rdx());
-
         try {
+            // RDX holds a pointer to a string that we'll reverse in place
+            guest_ptr<void> pStr(event.vcpu(), regs.rdx());
+
             // Try to map in the cstr
-            guest_ptr<char[]> str = map_guest_cstr(pStr);
+            guest_ptr<char[]> str = map_guest_cstring(pStr);
 
             // Reverse it in place
             std::cout << '\t' << "Reversing input string [" << str.get() << "]\n";
@@ -177,21 +176,19 @@ class EventHandler : public EventCallback {
         auto& vcpu = event.vcpu();
         auto& regs = vcpu.registers();
 
-        // RDX holds a pointer to a buffer
-        GuestVirtualAddress pBuffer(event.vcpu(), regs.rdx());
-
-        // R8 holds the length of the buffer
-        const uint64_t length = regs.r8();
-
         try {
+            // RDX holds a pointer to a buffer
+            guest_ptr<void> pBuffer(event.vcpu(), regs.rdx());
+
+            // R8 holds the length of the buffer
+            const uint64_t length = regs.r8();
+
             auto wp = domain->create_watchpoint(
                 pBuffer, length, false, true, false,
                 std::bind(&EventHandler::memory_access_violation, this, std::placeholders::_1));
 
             std::cout << '\t' << "Write protecting buffer [" << pBuffer << " Len: " << length
                       << "]\n";
-            std::cout << '\t' << "Physical Address: 0x" << std::hex << pBuffer.physical_address()
-                      << std::dec << '\n';
 
             std::lock_guard lock(mtx_);
             read_only_protections_[event.task().pid()].push_back(std::move(wp));

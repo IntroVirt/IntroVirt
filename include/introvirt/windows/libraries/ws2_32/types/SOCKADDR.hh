@@ -15,9 +15,8 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
-#include <array>
 #include <cstdint>
 #include <memory>
 
@@ -34,13 +33,13 @@ class SOCKADDR {
     virtual uint16_t sa_family() const = 0;
     virtual void sa_family(uint16_t sa_family) = 0;
 
-    virtual std::array<char, 14> sa_data() const = 0;
-    virtual void sa_data(const std::array<char, 14>& sa_data) = 0;
+    virtual guest_ptr<const char[]> sa_data() const = 0;
+    virtual guest_ptr<char[]> sa_data() = 0;
 
     /**
      * @brief Create a SOCKADDR
      */
-    static std::unique_ptr<SOCKADDR> make_unique(const GuestVirtualAddress& gva, bool x64);
+    static std::shared_ptr<SOCKADDR> make_shared(const guest_ptr<void>& ptr, bool x64);
 
     /**
      * @brief Get the size of the structure

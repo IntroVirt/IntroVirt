@@ -47,33 +47,33 @@ using THREAD_BASIC_INFORMATION_IMPL_BASE =
 template <typename PtrType>
 class THREAD_BASIC_INFORMATION_IMPL final : public THREAD_BASIC_INFORMATION_IMPL_BASE<PtrType> {
   public:
-    NTSTATUS ExitStatus() const override { return NTSTATUS(this->data_->ExitStatus); }
-    void ExitStatus(NTSTATUS ExitStatus) override { this->data_->ExitStatus = ExitStatus.code(); }
+    NTSTATUS ExitStatus() const override { return NTSTATUS(this->ptr_->ExitStatus); }
+    void ExitStatus(NTSTATUS ExitStatus) override { this->ptr_->ExitStatus = ExitStatus.code(); }
 
-    uint64_t TebBaseAddress() const override { return this->data_->TebBaseAddress; }
+    uint64_t TebBaseAddress() const override { return this->ptr_->TebBaseAddress; }
     void TebBaseAddress(uint64_t TebBaseAddress) override {
-        this->data_->TebBaseAddress = TebBaseAddress;
+        this->ptr_->TebBaseAddress = TebBaseAddress;
     }
 
     const CLIENT_ID& ClientId() const override { return ClientId_; }
     CLIENT_ID& ClientId() override { return ClientId_; }
 
-    uint64_t AffinityMask() const override { return this->data_->AffinityMask; }
-    void AffinityMask(uint64_t AffinityMask) override { this->data_->AffinityMask = AffinityMask; }
+    uint64_t AffinityMask() const override { return this->ptr_->AffinityMask; }
+    void AffinityMask(uint64_t AffinityMask) override { this->ptr_->AffinityMask = AffinityMask; }
 
-    int32_t Priority() const override { return this->data_->Priority; }
-    void Priority(int32_t Priority) override { this->data_->Priority = Priority; }
+    int32_t Priority() const override { return this->ptr_->Priority; }
+    void Priority(int32_t Priority) override { this->ptr_->Priority = Priority; }
 
-    int32_t BasePriority() const override { return this->data_->BasePriority; }
-    void BasePriority(int32_t BasePriority) override { this->data_->BasePriority = BasePriority; }
+    int32_t BasePriority() const override { return this->ptr_->BasePriority; }
+    void BasePriority(int32_t BasePriority) override { this->ptr_->BasePriority = BasePriority; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    THREAD_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
+    THREAD_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
         : THREAD_BASIC_INFORMATION_IMPL_BASE<PtrType>(
-              THREAD_INFORMATION_CLASS::ThreadBasicInformation, gva, buffer_size),
-          ClientId_(this->gva_ + offsetof(structs::_THREAD_BASIC_INFORMATION<PtrType>, ClientId)) {}
+              THREAD_INFORMATION_CLASS::ThreadBasicInformation, ptr, buffer_size),
+          ClientId_(ptr + offsetof(structs::_THREAD_BASIC_INFORMATION<PtrType>, ClientId)) {}
 
   private:
     CLIENT_ID_IMPL<PtrType> ClientId_;

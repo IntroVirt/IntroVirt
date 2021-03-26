@@ -55,9 +55,9 @@ Json::Value TOKEN_GROUPS_IMPL<PtrType>::json() const {
 }
 
 template <typename PtrType>
-TOKEN_GROUPS_IMPL<PtrType>::TOKEN_GROUPS_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size)
-    : array_iterable_type(gva, gva + offsetof(structs::_TOKEN_GROUPS<PtrType>, Groups),
-                          TOKEN_INFORMATION_CLASS::TokenGroups, gva,
+TOKEN_GROUPS_IMPL<PtrType>::TOKEN_GROUPS_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size)
+    : array_iterable_type(ptr, ptr + offsetof(structs::_TOKEN_GROUPS<PtrType>, Groups),
+                          TOKEN_INFORMATION_CLASS::TokenGroups, ptr,
                           buffer_size - offsetof(structs::_TOKEN_GROUPS<PtrType>, Groups)) {}
 
 template class TOKEN_GROUPS_IMPL<uint32_t>;

@@ -41,8 +41,7 @@ class FILE_NETWORK_OPEN_INFORMATION : public FILE_INFORMATION {
     virtual void EndOfFile(uint64_t eof) = 0;
     virtual void FileAttributes(FILE_ATTRIBUTES atts) = 0;
 
-    static std::unique_ptr<FILE_NETWORK_OPEN_INFORMATION>
-    make_unique(const GuestVirtualAddress& gva);
+    static std::unique_ptr<FILE_NETWORK_OPEN_INFORMATION> make_unique(const guest_ptr<void>& ptr);
 };
 
 } /* namespace nt */

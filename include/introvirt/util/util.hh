@@ -23,3 +23,5 @@
 #include <introvirt/util/HexDump.hh>
 #include <introvirt/util/ProgressBar.hh>
 #include <introvirt/util/compiler.hh>
+#include <introvirt/util/introvirt_assert.hh>
+#include <introvirt/util/n2hexstr.hh>

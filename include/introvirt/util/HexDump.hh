@@ -15,7 +15,6 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestAddress.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
@@ -51,11 +50,11 @@ class HexDump {
     /**
      * @brief Construct a HexDump object using guest memory at the specified address
      *
-     * @param ga The address to read
+     * @param ptr The address to read
      * @param len The number of bytes to read
      * @param prepend A prefix to add before each line
      */
-    HexDump(const GuestAddress& ga, size_t len, std::string prepend = "");
+    HexDump(const guest_ptr<void>& ptr, size_t len, std::string prepend = "");
 
   private:
     guest_ptr<uint8_t[]> guest_data_;

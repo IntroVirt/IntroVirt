@@ -16,7 +16,6 @@
 #include "CM_KEY_NODE_IMPL.hh"
 #include "windows/kernel/nt/NtKernelImpl.hh"
 
-#include <introvirt/windows/common/WStr.hh>
 #include <introvirt/windows/exception/InvalidStructureException.hh>
 
 #include <log4cxx/logger.h>
@@ -33,14 +32,14 @@ static log4cxx::LoggerPtr
 template <typename PtrType>
 const std::string& CM_KEY_NODE_IMPL<PtrType>::Name() const {
     if (Name_.empty()) {
-        const uint16_t NameLength = cm_key_node->NameLength.get<uint16_t>(cm_key_node_buffer);
-        const auto pName = gva_ + cm_key_node->Name.offset();
-        guest_ptr<uint8_t[]> buf(pName, NameLength);
+        const uint16_t NameLength = cm_key_node_->NameLength.get<uint16_t>(cm_key_node_buffer_);
 
         if (Flags() & CM_KEY_NODE::CompressedName) {
-            Name_ = std::string(reinterpret_cast<const char*>(buf.get()), NameLength);
+            Name_ = guest_ptr<char[]>(ptr_ + cm_key_node_->Name.offset(), NameLength).str();
         } else {
-            Name_ = WStr(std::move(buf), NameLength).utf8();
+            Name_ = guest_ptr<char16_t[]>(ptr_ + cm_key_node_->Name.offset(),
+                                          NameLength / sizeof(char16_t))
+                        .str();
         }
     }
     return Name_;
@@ -48,7 +47,7 @@ const std::string& CM_KEY_NODE_IMPL<PtrType>::Name() const {
 
 template <typename PtrType>
 void CM_KEY_NODE_IMPL<PtrType>::addLfLhList(
-    const GuestVirtualAddress& pList, std::vector<std::unique_ptr<CM_KEY_NODE>>& output) const {
+    const guest_ptr<void>& pList, std::vector<std::unique_ptr<CM_KEY_NODE>>& output) const {
 
     struct _LF_LH_LIST_ENTRY {
         uint32_t CellIndex;
@@ -58,13 +57,13 @@ void CM_KEY_NODE_IMPL<PtrType>::addLfLhList(
         };
     };
 
-    guest_ptr<char[]> cm_key_index_buffer(pList, cm_key_index->size());
-    const uint16_t Count = cm_key_index->Count.get<uint16_t>(cm_key_index_buffer);
+    guest_ptr<char[]> cm_key_index_buffer(pList, cm_key_index_->size());
+    const uint16_t Count = cm_key_index_->Count.get<uint16_t>(cm_key_index_buffer);
 
-    GuestVirtualAddress pListEntry = pList + cm_key_index->List.offset();
+    guest_ptr<void> pListEntry = pList + cm_key_index_->List.offset();
     for (uint16_t i = 0; i < Count; ++i) {
         guest_ptr<_LF_LH_LIST_ENTRY> listEntry(pListEntry);
-        GuestVirtualAddress pChild = hive_.CellAddress(listEntry->CellIndex);
+        guest_ptr<void> pChild = hive_.CellAddress(listEntry->CellIndex);
         if (pChild) {
             try {
                 output.emplace_back(
@@ -79,19 +78,19 @@ void CM_KEY_NODE_IMPL<PtrType>::addLfLhList(
 }
 
 template <typename PtrType>
-void CM_KEY_NODE_IMPL<PtrType>::addLiList(const GuestVirtualAddress& pList,
+void CM_KEY_NODE_IMPL<PtrType>::addLiList(const guest_ptr<void>& pList,
                                           std::vector<std::unique_ptr<CM_KEY_NODE>>& output) const {
     struct _LI_LIST_ENTRY {
         uint32_t CellIndex;
     };
 
-    guest_ptr<char[]> cm_key_index_buffer(pList, cm_key_index->size());
-    const uint16_t Count = cm_key_index->Count.get<uint16_t>(cm_key_index_buffer);
+    guest_ptr<char[]> cm_key_index_buffer(pList, cm_key_index_->size());
+    const uint16_t Count = cm_key_index_->Count.get<uint16_t>(cm_key_index_buffer);
 
-    GuestVirtualAddress pListEntry = pList + cm_key_index->List.offset();
+    guest_ptr<void> pListEntry = pList + cm_key_index_->List.offset();
     for (uint16_t i = 0; i < Count; ++i) {
         guest_ptr<_LI_LIST_ENTRY> listEntry(pListEntry);
-        GuestVirtualAddress pChild = hive_.CellAddress(listEntry->CellIndex);
+        guest_ptr<void> pChild = hive_.CellAddress(listEntry->CellIndex);
         if (pChild) {
             try {
                 output.emplace_back(
@@ -106,24 +105,24 @@ void CM_KEY_NODE_IMPL<PtrType>::addLiList(const GuestVirtualAddress& pList,
 }
 
 template <typename PtrType>
-void CM_KEY_NODE_IMPL<PtrType>::addRiList(const GuestVirtualAddress& pList,
+void CM_KEY_NODE_IMPL<PtrType>::addRiList(const guest_ptr<void>& pList,
                                           std::vector<std::unique_ptr<CM_KEY_NODE>>& output) const {
     struct _RI_LIST_ENTRY {
         uint32_t CellIndex;
     };
 
-    guest_ptr<char[]> cm_key_index_buffer(pList, cm_key_index->size());
-    const uint16_t Count = cm_key_index->Count.get<uint16_t>(cm_key_index_buffer);
+    guest_ptr<char[]> cm_key_index_buffer(pList, cm_key_index_->size());
+    const uint16_t Count = cm_key_index_->Count.get<uint16_t>(cm_key_index_buffer);
 
-    GuestVirtualAddress pListEntry = pList + cm_key_index->List.offset();
+    guest_ptr<void> pListEntry = pList + cm_key_index_->List.offset();
     for (uint16_t i = 0; i < Count; ++i) {
         guest_ptr<_RI_LIST_ENTRY> listEntry(pListEntry);
-        GuestVirtualAddress pChildList = hive_.CellAddress(listEntry->CellIndex);
+        guest_ptr<void> pChildList = hive_.CellAddress(listEntry->CellIndex);
         if (pChildList) {
             try {
-                cm_key_index_buffer.reset(pChildList, cm_key_index->size());
+                cm_key_index_buffer.reset(pChildList, cm_key_index_->size());
                 ;
-                switch (cm_key_index->Signature.get<uint16_t>(cm_key_index_buffer)) {
+                switch (cm_key_index_->Signature.get<uint16_t>(cm_key_index_buffer)) {
                 case 0x666c: { /* "lf" */
                     addLfLhList(pChildList, output);
                     break;
@@ -151,19 +150,19 @@ void CM_KEY_NODE_IMPL<PtrType>::getSubKeys(
     unsigned int listIndex, std::vector<std::unique_ptr<CM_KEY_NODE>>& output) const {
 
     const uint32_t SubKeyListOffset =
-        cm_key_node->SubKeyLists.offset() + (sizeof(uint32_t) * listIndex);
+        cm_key_node_->SubKeyLists.offset() + (sizeof(uint32_t) * listIndex);
     const uint32_t SubKeyList =
-        *reinterpret_cast<const uint32_t*>(cm_key_node_buffer.get() + SubKeyListOffset);
+        *reinterpret_cast<const uint32_t*>(cm_key_node_buffer_.get() + SubKeyListOffset);
 
     const uint32_t SubKeyCountOffset =
-        cm_key_node->SubKeyCounts.offset() + (sizeof(uint32_t) * listIndex);
+        cm_key_node_->SubKeyCounts.offset() + (sizeof(uint32_t) * listIndex);
     const uint32_t SubKeyCount =
-        *reinterpret_cast<const uint32_t*>(cm_key_node_buffer.get() + SubKeyCountOffset);
+        *reinterpret_cast<const uint32_t*>(cm_key_node_buffer_.get() + SubKeyCountOffset);
 
-    const GuestVirtualAddress pList = hive_.CellAddress(SubKeyList);
+    const guest_ptr<void> pList = hive_.CellAddress(SubKeyList);
     if (pList && SubKeyCount) {
-        guest_ptr<char[]> cm_key_index_buffer(pList, cm_key_index->size());
-        const uint64_t Signature = cm_key_index->Signature.get<uint16_t>(cm_key_index_buffer);
+        guest_ptr<char[]> cm_key_index_buffer(pList, cm_key_index_->size());
+        const uint64_t Signature = cm_key_index_->Signature.get<uint16_t>(cm_key_index_buffer);
         switch (Signature) {
         case 0x666c: { /* "lf" */
             addLfLhList(pList, output);
@@ -189,19 +188,20 @@ void CM_KEY_NODE_IMPL<PtrType>::getSubKeys(
 
 template <typename PtrType>
 const std::vector<std::unique_ptr<CM_KEY_VALUE>>& CM_KEY_NODE_IMPL<PtrType>::Values() const {
-    const uint32_t ValueListCount = cm_key_node->ValueList.Count.get<uint32_t>(cm_key_node_buffer);
+    const uint32_t ValueListCount =
+        cm_key_node_->ValueList.Count.get<uint32_t>(cm_key_node_buffer_);
     if (Values_.empty() && ValueListCount > 0) {
         struct _VK_LIST_ENTRY {
             uint32_t CellIndex;
         };
 
-        const GuestVirtualAddress pList =
-            hive_.CellAddress(cm_key_node->ValueList.List.get<uint32_t>(cm_key_node_buffer));
+        const guest_ptr<void> pList =
+            hive_.CellAddress(cm_key_node_->ValueList.List.get<uint32_t>(cm_key_node_buffer_));
         if (pList) {
-            GuestVirtualAddress pListEntry = pList;
+            guest_ptr<void> pListEntry = pList;
             for (uint16_t i = 0; i < ValueListCount; ++i) {
                 guest_ptr<_VK_LIST_ENTRY> listEntry(pListEntry);
-                GuestVirtualAddress pChild = hive_.CellAddress(listEntry->CellIndex);
+                guest_ptr<void> pChild = hive_.CellAddress(listEntry->CellIndex);
                 if (pChild) {
                     try {
                         Values_.emplace_back(
@@ -220,49 +220,45 @@ const std::vector<std::unique_ptr<CM_KEY_VALUE>>& CM_KEY_NODE_IMPL<PtrType>::Val
 
 template <typename PtrType>
 const std::vector<std::unique_ptr<CM_KEY_NODE>>& CM_KEY_NODE_IMPL<PtrType>::StableSubKeys() const {
-    const uint32_t SubKeyCountOffset = cm_key_node->SubKeyCounts.offset() + (sizeof(uint32_t) * 0);
+    const uint32_t SubKeyCountOffset = cm_key_node_->SubKeyCounts.offset() + (sizeof(uint32_t) * 0);
     const uint32_t SubKeyCount =
-        *reinterpret_cast<const uint32_t*>(cm_key_node_buffer.get() + SubKeyCountOffset);
-    if (stableSubKeys.empty() && SubKeyCount > 0) {
-        getSubKeys(0, stableSubKeys);
+        *reinterpret_cast<const uint32_t*>(cm_key_node_buffer_.get() + SubKeyCountOffset);
+    if (stableSubKeys_.empty() && SubKeyCount > 0) {
+        getSubKeys(0, stableSubKeys_);
     }
-    return stableSubKeys;
+    return stableSubKeys_;
 }
 
 template <typename PtrType>
 const std::vector<std::unique_ptr<CM_KEY_NODE>>&
 CM_KEY_NODE_IMPL<PtrType>::VolatileSubKeys() const {
-    const uint32_t SubKeyCountOffset = cm_key_node->SubKeyCounts.offset() + (sizeof(uint32_t) * 1);
+    const uint32_t SubKeyCountOffset = cm_key_node_->SubKeyCounts.offset() + (sizeof(uint32_t) * 1);
     const uint32_t SubKeyCount =
-        *reinterpret_cast<const uint32_t*>(cm_key_node_buffer.get() + SubKeyCountOffset);
-    if (volatileSubKeys.empty() && SubKeyCount > 0) {
-        getSubKeys(1, volatileSubKeys);
+        *reinterpret_cast<const uint32_t*>(cm_key_node_buffer_.get() + SubKeyCountOffset);
+    if (volatileSubKeys_.empty() && SubKeyCount > 0) {
+        getSubKeys(1, volatileSubKeys_);
     }
-    return volatileSubKeys;
+    return volatileSubKeys_;
 }
 
 template <typename PtrType>
 uint16_t CM_KEY_NODE_IMPL<PtrType>::Flags() const {
-    return cm_key_node->Flags.get<uint16_t>(cm_key_node_buffer);
-}
-
-template <typename PtrType>
-GuestVirtualAddress CM_KEY_NODE_IMPL<PtrType>::address() const {
-    return gva_;
+    return cm_key_node_->Flags.get<uint16_t>(cm_key_node_buffer_);
 }
 
 template <typename PtrType>
 CM_KEY_NODE_IMPL<PtrType>::CM_KEY_NODE_IMPL(const NtKernelImpl<PtrType>& kernel,
                                             const HIVE_IMPL<PtrType>& hive,
-                                            const GuestVirtualAddress& gva)
-    : kernel_(kernel), hive_(hive), gva_(gva) {
+                                            const guest_ptr<void>& ptr)
+    : kernel_(kernel), hive_(hive) {
 
-    cm_key_node = LoadOffsets<structs::CM_KEY_NODE>(kernel);
-    cm_key_index = LoadOffsets<structs::CM_KEY_INDEX>(kernel);
+    cm_key_node_ = LoadOffsets<structs::CM_KEY_NODE>(kernel);
+    cm_key_index_ = LoadOffsets<structs::CM_KEY_INDEX>(kernel);
 
-    cm_key_node_buffer.reset(gva_, cm_key_node->size());
+    cm_key_node_buffer_.reset(ptr, cm_key_node_->size());
+    ptr_ = ptr;
 
-    const uint16_t Signature = cm_key_node->Signature.get<uint16_t>(cm_key_node_buffer);
+    const uint16_t Signature = cm_key_node_->Signature.get<uint16_t>(cm_key_node_buffer_);
     if (unlikely(Signature != 0x6b6e)) { // "nk"
         throw InvalidStructureException("Invalid Signature for CM_KEY_NODE");
     }

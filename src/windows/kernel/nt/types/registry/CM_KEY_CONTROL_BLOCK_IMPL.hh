@@ -15,11 +15,14 @@
  */
 #pragma once
 
+#include <introvirt/windows/kernel/nt/types/registry/CM_KEY_CONTROL_BLOCK.hh>
+
+#include "HIVE_IMPL.hh"
+#include "windows/kernel/nt/NtKernelImpl.hh"
 #include "windows/kernel/nt/structs/structs.hh"
 
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/fwd.hh>
-#include <introvirt/windows/kernel/nt/types/registry/CM_KEY_CONTROL_BLOCK.hh>
 
 #include <mutex>
 #include <optional>
@@ -29,45 +32,103 @@ namespace windows {
 namespace nt {
 
 template <typename PtrType>
-class HIVE_IMPL;
-
-template <typename PtrType>
-class NtKernelImpl;
-
-template <typename PtrType>
 class CM_KEY_CONTROL_BLOCK_IMPL final : public CM_KEY_CONTROL_BLOCK {
   public:
-    const CM_KEY_CONTROL_BLOCK* ParentKcb() const override;
+    const CM_KEY_CONTROL_BLOCK* ParentKcb() const override {
+        std::lock_guard lock(mtx_);
+        if (!parentKCB_) {
+            const auto pParentKcb = ptr_.clone(
+                cm_key_control_block_->ParentKcb.get<PtrType>(cm_key_control_block_buffer_));
+            if (pParentKcb) {
+                parentKCB_ =
+                    std::make_unique<CM_KEY_CONTROL_BLOCK_IMPL<PtrType>>(kernel_, pParentKcb);
+            }
+        }
+        return parentKCB_.get();
+    }
 
-    const std::string& Name() const override;
+    const std::string& Name() const override {
+        std::lock_guard lock(mtx_);
+        if (name_.empty()) {
+            // Get the pointer to the name block
+            guest_ptr<void> pNameBlock = ptr_.clone(
+                cm_key_control_block_->NameBlock.get<PtrType>(cm_key_control_block_buffer_));
 
-    const HIVE* KeyHive() const override;
+            // Map in the name buffer
+            guest_ptr<char[]> cm_name_control_block_buffer(pNameBlock,
+                                                           cm_name_control_block_->size());
 
-    const CM_KEY_CONTROL_BLOCK::KeyFlags Flags() const override;
+            const uint16_t NameLength =
+                cm_name_control_block_->NameLength.get<uint16_t>(cm_name_control_block_buffer);
+            if (NameLength > 0) {
+                const bool Compressed =
+                    cm_name_control_block_->Compressed.get<uint8_t>(cm_name_control_block_buffer);
 
-    const CM_KEY_CONTROL_BLOCK::KeyExtFlags ExtFlags() const override;
+                const guest_ptr<void> pNameData =
+                    pNameBlock + cm_name_control_block_->Name.offset();
 
-    GuestVirtualAddress address() const override;
+                if (Compressed) {
+                    // char
+                    name_ = guest_ptr<char[]>(pNameData, NameLength).str();
+                } else {
+                    // utf16
+                    name_ = guest_ptr<char16_t[]>(pNameData, NameLength / sizeof(char16_t)).str();
+                }
+            }
+        }
+        return name_;
+    }
 
-    CM_KEY_CONTROL_BLOCK_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
-    ~CM_KEY_CONTROL_BLOCK_IMPL() override;
+    const HIVE* KeyHive() const override {
+        std::lock_guard lock(mtx_);
+        if (!KeyHive_.get()) {
+            const auto pKeyHive = ptr_.clone(
+                cm_key_control_block_->KeyHive.get<PtrType>(cm_key_control_block_buffer_));
+            if (pKeyHive) {
+                KeyHive_ = std::make_unique<HIVE_IMPL<PtrType>>(kernel_, pKeyHive);
+            }
+        }
+        return KeyHive_.get();
+    }
+
+    const CM_KEY_CONTROL_BLOCK::KeyFlags Flags() const override {
+        return CM_KEY_CONTROL_BLOCK::KeyFlags(
+            cm_key_control_block_->Flags.get<uint16_t>(cm_key_control_block_buffer_));
+    }
+
+    const CM_KEY_CONTROL_BLOCK::KeyExtFlags ExtFlags() const override {
+        return CM_KEY_CONTROL_BLOCK::KeyExtFlags(
+            cm_key_control_block_->ExtFlags.get<uint16_t>(cm_key_control_block_buffer_));
+    }
+
+    const guest_ptr<void>& ptr() const override { return ptr_; }
+
+    CM_KEY_CONTROL_BLOCK_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
+        : kernel_(kernel) {
+
+        cm_key_control_block_ = LoadOffsets<structs::CM_KEY_CONTROL_BLOCK>(kernel);
+        cm_name_control_block_ = LoadOffsets<structs::CM_NAME_CONTROL_BLOCK>(kernel);
+
+        cm_key_control_block_buffer_.reset(ptr, cm_key_control_block_->size());
+        ptr_ = cm_key_control_block_buffer_;
+    }
+
+    ~CM_KEY_CONTROL_BLOCK_IMPL() override = default;
 
   private:
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
+    guest_ptr<void> ptr_;
+    guest_ptr<char[]> cm_key_control_block_buffer_;
 
-    const structs::CM_KEY_CONTROL_BLOCK* cm_key_control_block;
-    const structs::CM_NAME_CONTROL_BLOCK* cm_name_control_block;
-
-    guest_ptr<char[]> cm_key_control_block_buffer;
-    mutable guest_ptr<char[]> cm_name_control_block_buffer;
+    const structs::CM_KEY_CONTROL_BLOCK* cm_key_control_block_;
+    const structs::CM_NAME_CONTROL_BLOCK* cm_name_control_block_;
 
     mutable std::recursive_mutex mtx_;
 
     mutable std::unique_ptr<HIVE_IMPL<PtrType>> KeyHive_;
-    mutable std::unique_ptr<CM_KEY_CONTROL_BLOCK_IMPL<PtrType>> parentKCB;
+    mutable std::unique_ptr<CM_KEY_CONTROL_BLOCK_IMPL<PtrType>> parentKCB_;
 
-    mutable std::string name;
+    mutable std::string name_;
 };
 
 } // namespace nt

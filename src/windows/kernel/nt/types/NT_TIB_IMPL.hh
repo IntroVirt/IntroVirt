@@ -30,15 +30,21 @@ class NtKernelImpl;
 template <typename PtrType>
 class NT_TIB_IMPL final : public NT_TIB {
   public:
-    GuestVirtualAddress StackLimit() const override;
-    GuestVirtualAddress StackBase() const override;
+    guest_ptr<void> StackLimit() const override {
+        return buffer_.clone(nt_tib_->StackLimit.get<PtrType>(buffer_));
+    }
+    guest_ptr<void> StackBase() const override {
+        return buffer_.clone(nt_tib_->StackBase.get<PtrType>(buffer_));
+    }
 
-    NT_TIB_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    NT_TIB_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr) {
+        nt_tib_ = LoadOffsets<structs::NT_TIB>(kernel);
+        buffer_.reset(ptr, nt_tib_->size());
+    }
 
   private:
-    const GuestVirtualAddress gva_;
-    const structs::NT_TIB* nt_tib;
-    guest_ptr<char[]> buffer;
+    const structs::NT_TIB* nt_tib_;
+    guest_ptr<char[]> buffer_;
 };
 
 } // namespace nt

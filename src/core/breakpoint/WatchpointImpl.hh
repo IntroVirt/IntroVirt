@@ -17,7 +17,7 @@
 
 #include <introvirt/core/breakpoint/Watchpoint.hh>
 #include <introvirt/core/event/Event.hh>
-#include <introvirt/core/memory/GuestAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 #include <functional>
@@ -29,7 +29,7 @@ class WatchpointImpl final : public Watchpoint {
   public:
     void callback(std::function<void(Event&)> callback) override;
 
-    const GuestAddress& address() const;
+    const guest_ptr<void>& ptr() const;
     uint64_t length() const;
     bool read() const;
     bool write() const;
@@ -37,12 +37,12 @@ class WatchpointImpl final : public Watchpoint {
 
     void deliver_event(Event& event);
 
-    WatchpointImpl(const GuestAddress& address, uint64_t length, bool read, bool write,
-                   bool execute, std::function<void(Event&)> callback);
+    WatchpointImpl(const guest_ptr<void>& ptr, uint64_t length, bool read, bool write, bool execute,
+                   std::function<void(Event&)> callback);
     ~WatchpointImpl();
 
   private:
-    std::unique_ptr<GuestAddress> address_;
+    const guest_ptr<void> ptr_;
     const uint64_t length_;
     const bool read_;
     const bool write_;

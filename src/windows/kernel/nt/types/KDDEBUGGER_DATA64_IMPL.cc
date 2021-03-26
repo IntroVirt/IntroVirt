@@ -102,70 +102,48 @@ uint64_t KDDEBUGGER_DATA64_IMPL<PtrType>::PspCidTable() const {
 
 template <typename PtrType>
 KDDEBUGGER_DATA64_IMPL<PtrType>::KDDEBUGGER_DATA64_IMPL(const NtKernel& kernel) {
-    guest_ptr<structs::_KDDEBUGGER_DATA64> guestptr;
-    const GuestVirtualAddress kernel_base = kernel.base_address();
-    const Domain& domain = kernel_base.domain();
+    guest_ptr<const structs::_KDDEBUGGER_DATA64> kdDebuggerDataBlock;
+    const guest_ptr<void>& kernel_base_ptr = kernel.ptr();
+    const Domain& domain = kernel_base_ptr.domain();
 
-    GuestVirtualAddress kdDebuggerDataBlock;
     try {
         // Find the address of KdDebuggerDataBlock using the PDB file
         kdDebuggerDataBlock = kernel.symbol("KdDebuggerDataBlock");
         LOG4CXX_DEBUG(logger, "KdDebuggerDataBlock: " << kdDebuggerDataBlock);
-
-        // Try to map in the structure
-        guestptr.reset(kdDebuggerDataBlock);
     } catch (SymbolNotFoundException& ex) {
         throw GuestDetectionException(domain, "Failed to find KdVersionBlock in PDB file");
     }
 
-    bool blockEncoded = true;
-    if (guestptr->Header.OwnerTag == MAGIC_OWNER_TAG) {
+    if (kdDebuggerDataBlock->Header.OwnerTag == MAGIC_OWNER_TAG) {
         // tag is cleartext, block is not encoded
         LOG4CXX_DEBUG(logger, "KdDebuggerDataBlock not encoded");
-        blockEncoded = false;
-        debuggerData_ = *guestptr;
-        kiProcessorBlock_ = kernel_base.create(debuggerData_.KiProcessorBlock);
-    }
-
-    // if block is encoded, try to decode using PDB file for the kernel
-    if (blockEncoded) {
+        debuggerData_ = *kdDebuggerDataBlock;
+    } else {
+        // if block is encoded, try to decode using PDB file for the kernel
         LOG4CXX_DEBUG(logger, "Attempting decode of KdDebuggerDataBlock");
 
-        GuestVirtualAddress kiWaitNever;
-        GuestVirtualAddress kiWaitAlways;
-        GuestVirtualAddress kdpDataBlockEncoded;
+        uint64_t kiWaitNever;
+        uint64_t kiWaitAlways;
+        uint64_t kdpDataBlockEncoded;
         try {
-            // These symbols are all addresses that we have to then use to get the real data
-            kiWaitNever = kernel.symbol("KiWaitNever");
-            kiWaitAlways = kernel.symbol("KiWaitAlways");
-            kdpDataBlockEncoded = kernel.symbol("KdpDataBlockEncoded");
+            kiWaitNever = *guest_ptr<uint64_t>(kernel.symbol("KiWaitNever"));
+            kiWaitAlways = *guest_ptr<uint64_t>(kernel.symbol("kiWaitAlways"));
+            kdpDataBlockEncoded = kernel.symbol("KdpDataBlockEncoded").address();
         } catch (SymbolNotFoundException& ex) {
             throw GuestDetectionException(
                 domain, "Failed to find necessary symbols to decode KdDebuggerDataBlock");
         }
 
         const uint nchunks = sizeof(debuggerData_) / sizeof(uint64_t);
-        guest_ptr<uint64_t[]> encodedChunks(kdDebuggerDataBlock, nchunks);
+        guest_ptr<const uint64_t[]> encodedChunks(
+            reinterpret_ptr_cast<const void>(kdDebuggerDataBlock), nchunks);
 
-        guest_ptr<uint64_t> kiWaitNeverPtr(kiWaitNever);
-        kiWaitNever = kernel_base.create(*kiWaitNeverPtr);
-
-        guest_ptr<uint64_t> kiWaitAlwaysPtr(kiWaitAlways);
-        kiWaitAlways = kernel_base.create(*kiWaitAlwaysPtr);
-
-        guest_ptr<uint32_t> tag(kdDebuggerDataBlock + 0x10);
-        if (*tag == MAGIC_OWNER_TAG) {
-            throw GuestDetectionException(domain, "Failed to decide KdDebuggerDataBlock");
-        }
-
-        for (uint64_t i = 0; i < nchunks; i++) {
+        for (uint64_t i = 0; i < nchunks; ++i) {
             uint64_t decodedChunk = encodedChunks[i];
-            decodedChunk = ROL((decodedChunk ^ kiWaitNever.virtual_address()),
-                               (kiWaitNever.virtual_address() & 0xFF));
-            decodedChunk =
-                decodedChunk ^ (kdpDataBlockEncoded.virtual_address() | 0xFFFF000000000000ULL);
+            decodedChunk = ROL((decodedChunk ^ kiWaitNever), (kiWaitNever & 0xFF));
+            decodedChunk = decodedChunk ^ (kdpDataBlockEncoded | 0xFFFF000000000000ULL);
             decodedChunk = BSWAP_64(decodedChunk);
-            decodedChunk = decodedChunk ^ kiWaitAlways.virtual_address();
+            decodedChunk = decodedChunk ^ kiWaitAlways;
             (reinterpret_cast<uint64_t*>(&debuggerData_))[i] = decodedChunk;
         }
 
@@ -174,26 +152,26 @@ KDDEBUGGER_DATA64_IMPL<PtrType>::KDDEBUGGER_DATA64_IMPL(const NtKernel& kernel) 
         }
 
         LOG4CXX_DEBUG(logger, "KDBG Decoded OK using PDB");
-
-        // if block is encoded, we cannot use KiProcessorBlock within kdbg
-        kiProcessorBlock_ = kernel.symbol("KiProcessorBlock");
     }
 
-    const GuestVirtualAddress ppObpTypeObjectType(
-        kernel_base.create(debuggerData_.ObpTypeObjectType));
-    const GuestVirtualAddress ppObpRootDirectoryObject(
-        kernel_base.create(debuggerData_.ObpRootDirectoryObject));
-    const GuestVirtualAddress ppPspCidTable(kernel_base.create(debuggerData_.PspCidTable));
-    const GuestVirtualAddress pNtBuildLab(kernel_base.create(debuggerData_.NtBuildLab));
+    guest_ptr<PtrType*, PtrType> ppObpTypeObjectType =
+        kernel_base_ptr.clone(debuggerData_.ObpTypeObjectType);
+    pObpTypeObjectType_ = ppObpTypeObjectType.get();
 
-    pObpTypeObjectType_ = guest_ptr<PtrType>(ppObpTypeObjectType);
-    pObpRootDirectoryObject_ = guest_ptr<PtrType>(ppObpRootDirectoryObject);
-    pPspCidTable_ = guest_ptr<PtrType>(ppPspCidTable);
-    CmNtCSDVersion_ = *guest_ptr<uint32_t>(kernel_base.create(debuggerData_.CmNtCSDVersion));
-    NtBuildLab_ = std::string(map_guest_cstr(pNtBuildLab));
+    guest_ptr<PtrType*, PtrType> ppObpRootDirectoryObject =
+        kernel_base_ptr.clone(debuggerData_.ObpRootDirectoryObject);
+    pObpRootDirectoryObject_ = ppObpRootDirectoryObject.get();
+
+    guest_ptr<PtrType*, PtrType> ppPspCidTable = kernel_base_ptr.clone(debuggerData_.PspCidTable);
+    pPspCidTable_ = ppPspCidTable.get();
+
+    CmNtCSDVersion_ = *guest_ptr<uint32_t>(kernel_base_ptr.clone(debuggerData_.CmNtCSDVersion));
+
+    NtBuildLab_ = map_guest_cstring(kernel_base_ptr.clone(debuggerData_.NtBuildLab)).str();
+    // NtBuildLab_ = std::string(NtBuildLabMapping.get(), NtBuildLabMapping.length());
 
     // Sanity check
-    if (KernelBase() != kernel_base.virtual_address()) {
+    if (KernelBase() != kernel_base_ptr.address()) {
         throw GuestDetectionException(domain, "KdVersionBlock kernel base mismatch");
     }
 }

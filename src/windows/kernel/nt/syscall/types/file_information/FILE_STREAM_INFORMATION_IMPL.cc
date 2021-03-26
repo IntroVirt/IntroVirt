@@ -58,30 +58,29 @@ Json::Value FILE_STREAM_INFORMATION_IMPL::json() const {
 FILE_STREAM_INFORMATION_ENTRY_IMPL&
 FILE_STREAM_INFORMATION_ENTRY_IMPL::operator=(const FILE_STREAM_INFORMATION_ENTRY& src) {
     const auto& src_impl = static_cast<const FILE_STREAM_INFORMATION_ENTRY_IMPL&>(src);
-    gva_ = src_impl.gva_;
-    *data_ = *(src_impl.data_);
-    StreamName_ = WStr(gva_ + offsetof(structs::_FILE_STREAM_INFORMATION, StreamName),
-                       src_impl.StreamName_.Length(), src_impl.StreamName_.MaximumLength());
+    *ptr_ = *(src_impl.ptr_);
+    StreamName_ = WStr(base_ + offsetof(structs::_FILE_STREAM_INFORMATION, StreamName),
+                       src_impl.StreamName_.MaximumLength(), src_impl.StreamName_.Length());
 
     StreamName_.set(src_impl.StreamName_.utf16());
     return *this;
 }
 
-FILE_STREAM_INFORMATION_IMPL::FILE_STREAM_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+FILE_STREAM_INFORMATION_IMPL::FILE_STREAM_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                            uint32_t buffer_size)
     : offset_iterable(
-          [](const GuestVirtualAddress& gva, uint32_t buffer_size) {
-              return std::make_shared<FILE_STREAM_INFORMATION_ENTRY_IMPL>(gva);
+          [](const guest_ptr<void>& ptr, uint32_t buffer_size) {
+              return std::make_shared<FILE_STREAM_INFORMATION_ENTRY_IMPL>(ptr);
           },
-          gva, buffer_size) {
+          ptr, buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_FILE_STREAM_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_FILE_STREAM_INFORMATION), buffer_size);
 }
 
 std::shared_ptr<FILE_STREAM_INFORMATION_ENTRY>
-FILE_STREAM_INFORMATION_ENTRY::make_shared(const GuestVirtualAddress& gva) {
-    return std::make_shared<FILE_STREAM_INFORMATION_ENTRY_IMPL>(gva);
+FILE_STREAM_INFORMATION_ENTRY::make_shared(const guest_ptr<void>& ptr) {
+    return std::make_shared<FILE_STREAM_INFORMATION_ENTRY_IMPL>(ptr);
 }
 
 } // namespace nt

@@ -33,13 +33,8 @@ namespace windows {
 namespace nt {
 
 template <typename PtrType>
-GuestVirtualAddress MM_SESSION_SPACE_IMPL<PtrType>::address() const {
-    return gva_;
-}
-
-template <typename PtrType>
 std::vector<std::shared_ptr<const PROCESS>> MM_SESSION_SPACE_IMPL<PtrType>::process_list() const {
-    std::vector<GuestVirtualAddress> addresses;
+    std::vector<guest_ptr<void>> addresses;
 
     addresses =
         parse_list_ptrtype<PtrType>(SessionProcListHeadAddress(), SessionProcessLinksOffset());
@@ -63,14 +58,14 @@ uint16_t MM_SESSION_SPACE_IMPL<PtrType>::SessionProcessLinksOffset() const {
 }
 
 template <typename PtrType>
-GuestVirtualAddress MM_SESSION_SPACE_IMPL<PtrType>::SessionProcListHeadAddress() const {
-    return address() + mm_session_space->ProcessList.offset();
+guest_ptr<void> MM_SESSION_SPACE_IMPL<PtrType>::SessionProcListHeadAddress() const {
+    return this->ptr_ + mm_session_space->ProcessList.offset();
 }
 
 template <typename PtrType>
 MM_SESSION_SPACE_IMPL<PtrType>::MM_SESSION_SPACE_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                                      const GuestVirtualAddress& gva)
-    : kernel_(kernel), gva_(gva) {
+                                                      const guest_ptr<void>& ptr)
+    : kernel_(kernel), ptr_(ptr) {
     // Load our structure offsets
     mm_session_space = LoadOffsets<structs::MM_SESSION_SPACE>(kernel);
     eprocess = LoadOffsets<structs::EPROCESS>(kernel);
@@ -80,7 +75,7 @@ MM_SESSION_SPACE_IMPL<PtrType>::MM_SESSION_SPACE_IMPL(const NtKernelImpl<PtrType
     const uint32_t buffer_size =
         ((mm_session_space->PoolTags.exists()) ? mm_session_space->PoolTags.offset()
                                                : mm_session_space->size());
-    buffer.reset(gva, buffer_size);
+    buffer.reset(ptr, buffer_size);
 }
 
 template class MM_SESSION_SPACE_IMPL<uint32_t>;

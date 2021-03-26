@@ -40,9 +40,9 @@ class DRIVER_OBJECT_IMPL final : public OBJECT_IMPL<PtrType, DRIVER_OBJECT> {
   public:
     const DEVICE_OBJECT* DeviceObject() const override;
     std::string DriverName() const override;
-    GuestVirtualAddress MajorFunction(IRP_MJ irp) const override;
+    guest_ptr<void> MajorFunction(IRP_MJ irp) const override;
 
-    DRIVER_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    DRIVER_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     DRIVER_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel,
                        std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 

@@ -45,7 +45,7 @@ class KEY_NAME_INFORMATION_IMPL final : public KEY_NAME_INFORMATION {
         return KEY_INFORMATION_CLASS::KeyNameInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -53,12 +53,11 @@ class KEY_NAME_INFORMATION_IMPL final : public KEY_NAME_INFORMATION {
 
     Json::Value json() const override;
 
-    KEY_NAME_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    KEY_NAME_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_KEY_NAME_INFORMATION> data_;
+    guest_ptr<structs::_KEY_NAME_INFORMATION> ptr_;
     std::optional<WStr> Name_;
 };
 

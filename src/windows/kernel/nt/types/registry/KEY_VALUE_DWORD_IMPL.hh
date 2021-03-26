@@ -30,7 +30,7 @@ class KEY_VALUE_DWORD_IMPL final : public KEY_VALUE_IMPL<KEY_VALUE_DWORD> {
     void write(std::ostream& os, const std::string& linePrefix = "") const override;
     Json::Value json() const override;
 
-    KEY_VALUE_DWORD_IMPL(const GuestVirtualAddress& gva, uint32_t size);
+    KEY_VALUE_DWORD_IMPL(const guest_ptr<void>& ptr, uint32_t size);
 };
 
 } // namespace nt

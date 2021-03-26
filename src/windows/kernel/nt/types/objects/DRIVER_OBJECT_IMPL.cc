@@ -28,8 +28,8 @@ template <typename PtrType>
 const DEVICE_OBJECT* DRIVER_OBJECT_IMPL<PtrType>::DeviceObject() const {
     std::lock_guard lock(mtx_);
     if (!DeviceObject_) {
-        const GuestVirtualAddress pDeviceObject =
-            this->address().create(offsets_->DeviceObject.get<PtrType>(buffer_));
+        const guest_ptr<void> pDeviceObject =
+            this->ptr_.clone(offsets_->DeviceObject.get<PtrType>(buffer_));
 
         if (pDeviceObject)
             DeviceObject_ = std::make_unique<DEVICE_OBJECT_IMPL<PtrType>>(kernel_, pDeviceObject);
@@ -44,14 +44,13 @@ template <typename PtrType>
 std::string DRIVER_OBJECT_IMPL<PtrType>::DriverName() const {
     std::lock_guard lock(mtx_);
     if (!DriverName_) {
-        const GuestVirtualAddress pDriverName = this->address() + offsets_->DriverName.offset();
-        DriverName_.emplace(pDriverName);
+        DriverName_.emplace(this->ptr_ + offsets_->DriverName.offset());
     }
     return DriverName_->utf8();
 }
 
 template <typename PtrType>
-GuestVirtualAddress DRIVER_OBJECT_IMPL<PtrType>::MajorFunction(IRP_MJ irp) const {
+guest_ptr<void> DRIVER_OBJECT_IMPL<PtrType>::MajorFunction(IRP_MJ irp) const {
     if (unlikely(irp > IRP_MJ::IRP_MJ_MAX))
         throw InvalidIrpException("IRP out of bounds");
 
@@ -59,16 +58,16 @@ GuestVirtualAddress DRIVER_OBJECT_IMPL<PtrType>::MajorFunction(IRP_MJ irp) const
         offsets_->MajorFunction.offset() + (sizeof(PtrType) * static_cast<uint16_t>(irp));
 
     const PtrType pResult = *reinterpret_cast<const PtrType*>(buffer_.get() + offset);
-    return this->address().create(pResult);
+    return this->ptr_.clone(pResult);
 }
 
 template <typename PtrType>
 DRIVER_OBJECT_IMPL<PtrType>::DRIVER_OBJECT_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                                const GuestVirtualAddress& gva)
-    : OBJECT_IMPL<PtrType, DRIVER_OBJECT>(kernel, gva, ObjectType::Driver), kernel_(kernel),
+                                                const guest_ptr<void>& ptr)
+    : OBJECT_IMPL<PtrType, DRIVER_OBJECT>(kernel, ptr, ObjectType::Driver), kernel_(kernel),
       offsets_(LoadOffsets<structs::DRIVER_OBJECT>(kernel)) {
 
-    buffer_.reset(gva, offsets_->size());
+    buffer_.reset(ptr, offsets_->size());
 }
 
 template <typename PtrType>
@@ -78,17 +77,17 @@ DRIVER_OBJECT_IMPL<PtrType>::DRIVER_OBJECT_IMPL(
     : OBJECT_IMPL<PtrType, DRIVER_OBJECT>(kernel, std::move(object_header), ObjectType::Driver),
       kernel_(kernel), offsets_(LoadOffsets<structs::DRIVER_OBJECT>(kernel)) {
 
-    buffer_.reset(OBJECT_IMPL<PtrType, DRIVER_OBJECT>::address(), offsets_->size());
+    buffer_.reset(this->ptr_, offsets_->size());
 }
 
 std::shared_ptr<DRIVER_OBJECT> DRIVER_OBJECT::make_shared(const NtKernel& kernel,
-                                                          const GuestVirtualAddress& gva) {
+                                                          const guest_ptr<void>& ptr) {
     if (kernel.x64())
         return std::make_shared<DRIVER_OBJECT_IMPL<uint64_t>>(
-            static_cast<const NtKernelImpl<uint64_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint64_t>&>(kernel), ptr);
     else
         return std::make_shared<DRIVER_OBJECT_IMPL<uint32_t>>(
-            static_cast<const NtKernelImpl<uint32_t>&>(kernel), gva);
+            static_cast<const NtKernelImpl<uint32_t>&>(kernel), ptr);
 }
 
 std::shared_ptr<DRIVER_OBJECT>

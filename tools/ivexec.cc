@@ -80,7 +80,7 @@ class ExecFileTool final : public EventCallback {
 
         // Allocate STARTUPINFO, which holds the launch settings
         // We mostly leave it zeroed
-        auto startupinfo = inject::allocate<STARTUPINFO>();
+        auto startupinfo = inject::allocate<STARTUPINFOW>();
         if (no_window_) {
             startupinfo->dwFlags(STARTF_USESHOWWINDOW);
             startupinfo->wShowWindow(SW_HIDE);
@@ -96,10 +96,19 @@ class ExecFileTool final : public EventCallback {
         if (!args_.empty())
             cmdline += ' ' + args_;
 
+        auto guest_cmdline = inject::allocate(Utf16String::convert(cmdline));
+        guest_ptr<char16_t[]> pguest_directory;
+
+        std::optional<inject::GuestAllocation<char16_t[]>> guest_directory;
+        if (!directory_.empty()) {
+            guest_directory.emplace(inject::allocate(Utf16String::convert(directory_)));
+            pguest_directory = guest_directory->ptr();
+        }
+
         // Call CreateProcessA in the guest
-        result = inject::function_call<CreateProcessA>(
-            "", cmdline, NullGuestAddress(), NullGuestAddress(), false, dwCreationFlags,
-            NullGuestAddress(), directory_, startupinfo, procinfo);
+        result = inject::function_call<CreateProcessW>(nullptr, guest_cmdline, nullptr, nullptr,
+                                                       false, dwCreationFlags, nullptr,
+                                                       pguest_directory, startupinfo, procinfo);
 
         if (result) {
             std::cerr << "Created process [" << procinfo->dwProcessId() << ':'
@@ -184,7 +193,7 @@ class ExecFileTool final : public EventCallback {
             if (wevent.task().pcr().CurrentThread().Teb() != nullptr) {
                 if (posted_message_.test_and_set() == 0) {
 #if 0 // Still seems unstable, disabling for now
-                                        
+
                     if (!matches_launcher(wevent) && matches_session_id(wevent) &&
                         has_user32(wevent)) {
                         if (!inject::system_call<win32k::NtUserPostMessage>(
@@ -376,7 +385,7 @@ int main(int argc, char** argv) {
       ("syscall,S", "Monitor system calls executed by the new process")
       ("no-flush", "Don't flush the output buffer after each event")
       ("json", "Output JSON format")
-      ("help", "Display program help") 
+      ("help", "Display program help")
       ("unsupported", "Display system calls that we don't have handlers for (for syscalls)");
     // clang-format on
 

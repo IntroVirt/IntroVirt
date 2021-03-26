@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/json/json.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 #include <introvirt/windows/kernel/nt/syscall/types/array_iterator.hh>
@@ -91,9 +91,9 @@ class PS_ATTRIBUTE {
     /**
      * @brief Get the address of this entry
      *
-     * @return GuestVirtualAddress
+     * @return guest_ptr<void>
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     /**
      * @brief Write out a human-readable representation
@@ -182,9 +182,9 @@ class PS_ATTRIBUTE_LIST {
     /**
      * @brief Get the address of the buffer
      *
-     * @return GuestVirtualAddress
+     * @return guest_ptr<void>
      */
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     /**
      * @brief Get the total size of the buffer in bytes
@@ -212,7 +212,7 @@ class PS_ATTRIBUTE_LIST {
     virtual Json::Value json() const = 0;
 
     static std::unique_ptr<PS_ATTRIBUTE_LIST> make_unique(const NtKernel& kernel,
-                                                          const GuestVirtualAddress& gva);
+                                                          const guest_ptr<void>& ptr);
 
     virtual ~PS_ATTRIBUTE_LIST() = default;
 };

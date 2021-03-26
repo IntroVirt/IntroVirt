@@ -37,16 +37,16 @@ Json::Value KEY_VALUE_PARTIAL_INFORMATION_IMPL::json() const {
     return result;
 }
 
-KEY_VALUE_PARTIAL_INFORMATION_IMPL::KEY_VALUE_PARTIAL_INFORMATION_IMPL(
-    const GuestVirtualAddress& gva, uint32_t buffer_size)
+KEY_VALUE_PARTIAL_INFORMATION_IMPL::KEY_VALUE_PARTIAL_INFORMATION_IMPL(const guest_ptr<void>& ptr,
+                                                                       uint32_t buffer_size)
     : KEY_VALUE_PARTIAL_INFORMATION_IMPL_BASE(
-          KEY_VALUE_INFORMATION_CLASS::KeyValuePartialInformation, gva, buffer_size) {
+          KEY_VALUE_INFORMATION_CLASS::KeyValuePartialInformation, ptr, buffer_size) {
 
-    if (data_->DataLength) {
-        const auto pData = gva_ + offsetof(structs::_KEY_VALUE_PARTIAL_INFORMATION, Data);
-        const uint32_t data_buffer_len = (gva_ + buffer_size) - pData;
-        if (likely(data_->DataLength >= data_buffer_len)) {
-            Data_ = KEY_VALUE::make_unique(Type(), pData, data_->DataLength);
+    if (ptr_->DataLength) {
+        const auto pData = ptr + offsetof(structs::_KEY_VALUE_PARTIAL_INFORMATION, Data);
+        const uint32_t data_buffer_len = (ptr + buffer_size) - pData;
+        if (likely(ptr_->DataLength >= data_buffer_len)) {
+            Data_ = KEY_VALUE::make_unique(Type(), pData, ptr_->DataLength);
         }
     }
 }

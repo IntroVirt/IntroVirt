@@ -1,0 +1,11 @@
+{
+    "library_name": "crypt32",
+    "namespaces": [
+        "introvirt",
+        "windows",
+        "crypt32"
+    ],
+    "includes": [
+        "\"const/const.hh\""
+    ]
+}

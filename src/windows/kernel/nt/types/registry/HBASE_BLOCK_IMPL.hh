@@ -38,14 +38,14 @@ class HBASE_BLOCK_IMPL final : public HBASE_BLOCK {
     const std::string& FileName() const override;
     uint32_t RootCell() const override;
     uint32_t Length() const override;
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    HBASE_BLOCK_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    HBASE_BLOCK_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     ~HBASE_BLOCK_IMPL() override;
 
   private:
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
+    const guest_ptr<void> ptr_;
     const structs::HBASE_BLOCK* hbase_block;
     guest_ptr<char[]> hbase_block_buffer_;
     mutable std::optional<WStr> FileName_; // TODO: Use WstrImpl

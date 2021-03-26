@@ -98,14 +98,14 @@ class PROCESS_IMPL final : public DISPATCHER_OBJECT_IMPL<PtrType, PROCESS> {
     uint8_t ProtectionLevel() const override;
     void ProtectionLevel(uint8_t Level) override;
 
-    GuestVirtualAddress Win32Process() const override;
+    guest_ptr<void> Win32Process() const override;
 
-    PROCESS_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    PROCESS_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     PROCESS_IMPL(const NtKernelImpl<PtrType>& kernel,
                  std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
 
   private:
-    void init(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    void init(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
     uint64_t VadRootNodeAddress() const;
 

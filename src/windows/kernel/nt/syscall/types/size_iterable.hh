@@ -41,22 +41,22 @@ class size_iterable : public _BaseClass {
 
     iterator erase(const const_iterator& position) override {
         // Erase the element and return a new iterator to the next one
-        assert(position != end());
+        introvirt_assert(position != end(), "");
 
         const uint32_t entry_size = position->Size();
 
-        const GuestVirtualAddress current_gva = position->address();
-        const GuestVirtualAddress next_gva = current_gva + entry_size;
+        const guest_ptr<void> current_ptr = position->address();
+        const guest_ptr<void> next_ptr = current_ptr + entry_size;
 
         // Make sure we're not already at the end
         bool last_entry = false;
-        const GuestVirtualAddress buf_end = buffer_end();
-        if (next_gva < buf_end) {
-            const size_t map_size = buf_end - current_gva;
-            const size_t copy_size = buf_end - next_gva;
+        const guest_ptr<void> buf_end = buffer_end();
+        if (next_ptr < buf_end) {
+            const size_t map_size = buf_end - current_ptr;
+            const size_t copy_size = buf_end - next_ptr;
 
             // Map in the buffer
-            guest_ptr<char[]> buffer(current_gva, map_size);
+            guest_ptr<char[]> buffer(current_ptr, map_size);
 
             // Shift all of the data towards the start of the buffer
             std::memmove(buffer.get(), buffer.get() + entry_size, copy_size);
@@ -74,7 +74,7 @@ class size_iterable : public _BaseClass {
         }
 
         // Return a new iterator with the entry at the current address
-        return iterator(_T::make_shared(current_gva), buffer_end());
+        return iterator(_T::make_shared(current_ptr), buffer_end());
     }
 
     const_iterator begin() const override {
@@ -98,12 +98,12 @@ class size_iterable : public _BaseClass {
      */
     virtual void data_length(uint64_t value) = 0;
 
-    GuestVirtualAddress buffer_end() const { return first_entry_ + data_length(); }
+    guest_ptr<void> buffer_end() const { return first_entry_ + data_length(); }
 
-    size_iterable(const GuestVirtualAddress& first_entry) : first_entry_(first_entry) {}
+    size_iterable(const guest_ptr<void>& first_entry) : first_entry_(first_entry) {}
 
   protected:
-    const GuestVirtualAddress first_entry_;
+    const guest_ptr<void> first_entry_;
 };
 
 } // namespace nt

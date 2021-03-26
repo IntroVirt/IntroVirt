@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 namespace introvirt {
 namespace windows {
@@ -35,7 +35,7 @@ class ServiceTable {
      * @param index
      * @return The address for the specified entry
      */
-    virtual GuestVirtualAddress entry(unsigned int index) const = 0;
+    virtual guest_ptr<void> entry(unsigned int index) const = 0;
 
     /**
      * @brief Get the number of entries in the table

@@ -41,11 +41,11 @@ struct _IMAGE_DEBUG_DIRECTORY {
 
 class IMAGE_DEBUG_DIRECTORY_IMPL final : public IMAGE_DEBUG_DIRECTORY {
   public:
-    uint32_t Characteristics() const override { return data_->Characteristics; }
-    uint32_t TimeDateStamp() const override { return data_->TimeDateStamp; }
-    uint16_t MajorVersion() const override { return data_->MajorVersion; }
-    uint16_t MinorVersion() const override { return data_->MinorVersion; }
-    ImageDebugType Type() const override { return data_->Type; }
+    uint32_t Characteristics() const override { return ptr_->Characteristics; }
+    uint32_t TimeDateStamp() const override { return ptr_->TimeDateStamp; }
+    uint16_t MajorVersion() const override { return ptr_->MajorVersion; }
+    uint16_t MinorVersion() const override { return ptr_->MinorVersion; }
+    ImageDebugType Type() const override { return ptr_->Type; }
 
     const CV_INFO* codeview_data() const override {
         if (cv_info_)
@@ -53,14 +53,14 @@ class IMAGE_DEBUG_DIRECTORY_IMPL final : public IMAGE_DEBUG_DIRECTORY {
         return nullptr;
     }
 
-    IMAGE_DEBUG_DIRECTORY_IMPL(const GuestVirtualAddress& image_base,
-                               const GuestVirtualAddress& gva, uint32_t size)
-        : data_(gva) {
+    IMAGE_DEBUG_DIRECTORY_IMPL(const guest_ptr<void>& image_base, const guest_ptr<void>& ptr,
+                               uint32_t size)
+        : ptr_(ptr) {
 
         switch (Type()) {
         case ImageDebugType::IMAGE_DEBUG_TYPE_CODEVIEW:
             // This is the only one I've actually seen used so far
-            cv_info_.emplace(image_base + data_->AddressOfRawData, data_->SizeOfData);
+            cv_info_.emplace(image_base + ptr_->AddressOfRawData, ptr_->SizeOfData);
             break;
         default:
             // Unsupported
@@ -69,7 +69,7 @@ class IMAGE_DEBUG_DIRECTORY_IMPL final : public IMAGE_DEBUG_DIRECTORY {
     }
 
   private:
-    guest_ptr<structs::_IMAGE_DEBUG_DIRECTORY> data_;
+    guest_ptr<structs::_IMAGE_DEBUG_DIRECTORY> ptr_;
     std::optional<CV_INFO_IMPL> cv_info_;
 };
 

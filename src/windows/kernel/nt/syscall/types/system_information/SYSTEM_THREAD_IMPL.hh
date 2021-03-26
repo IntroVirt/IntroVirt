@@ -47,49 +47,49 @@ struct _SYSTEM_THREAD {
 template <typename PtrType>
 class SYSTEM_THREAD_IMPL final : public SYSTEM_THREAD {
   public:
-    int64_t KernelTime() const override { return this->data_->KernelTime; }
-    void KernelTime(int64_t KernelTime) override { this->data_->KernelTime = KernelTime; }
+    int64_t KernelTime() const override { return this->ptr_->KernelTime; }
+    void KernelTime(int64_t KernelTime) override { this->ptr_->KernelTime = KernelTime; }
 
-    int64_t UserTime() const override { return this->data_->UserTime; }
-    void UserTime(int64_t UserTime) override { this->data_->UserTime = UserTime; }
+    int64_t UserTime() const override { return this->ptr_->UserTime; }
+    void UserTime(int64_t UserTime) override { this->ptr_->UserTime = UserTime; }
 
-    int64_t CreateTime() const override { return this->data_->CreateTime; }
-    void CreateTime(int64_t CreateTime) override { this->data_->CreateTime = CreateTime; }
+    int64_t CreateTime() const override { return this->ptr_->CreateTime; }
+    void CreateTime(int64_t CreateTime) override { this->ptr_->CreateTime = CreateTime; }
 
-    uint32_t WaitTime() const override { return this->data_->WaitTime; }
-    void WaitTime(uint32_t WaitTime) override { this->data_->WaitTime = WaitTime; }
+    uint32_t WaitTime() const override { return this->ptr_->WaitTime; }
+    void WaitTime(uint32_t WaitTime) override { this->ptr_->WaitTime = WaitTime; }
 
-    uint64_t StartAddress() const override { return this->data_->StartAddress; }
-    void StartAddress(uint64_t StartAddress) override { this->data_->StartAddress = StartAddress; }
+    uint64_t StartAddress() const override { return this->ptr_->StartAddress; }
+    void StartAddress(uint64_t StartAddress) override { this->ptr_->StartAddress = StartAddress; }
 
-    uint64_t UniqueProcessId() const override { return this->data_->UniqueProcessId; }
+    uint64_t UniqueProcessId() const override { return this->ptr_->UniqueProcessId; }
     void UniqueProcessId(uint64_t UniqueProcessId) override {
-        this->data_->UniqueProcessId = UniqueProcessId;
+        this->ptr_->UniqueProcessId = UniqueProcessId;
     }
 
-    uint64_t UniqueThreadId() const override { return this->data_->UniqueThreadId; }
+    uint64_t UniqueThreadId() const override { return this->ptr_->UniqueThreadId; }
     void UniqueThreadId(uint64_t UniqueThreadId) override {
-        this->data_->UniqueThreadId = UniqueThreadId;
+        this->ptr_->UniqueThreadId = UniqueThreadId;
     }
 
-    uint32_t Priority() const override { return this->data_->Priority; }
-    void Priority(uint32_t Priority) override { this->data_->Priority = Priority; }
+    uint32_t Priority() const override { return this->ptr_->Priority; }
+    void Priority(uint32_t Priority) override { this->ptr_->Priority = Priority; }
 
-    int32_t BasePriority() const override { return this->data_->BasePriority; }
-    void BasePriority(int32_t BasePriority) override { this->data_->BasePriority = BasePriority; }
+    int32_t BasePriority() const override { return this->ptr_->BasePriority; }
+    void BasePriority(int32_t BasePriority) override { this->ptr_->BasePriority = BasePriority; }
 
-    uint32_t ContextSwitchCount() const override { return this->data_->ContextSwitchCount; }
+    uint32_t ContextSwitchCount() const override { return this->ptr_->ContextSwitchCount; }
     void ContextSwitchCount(uint32_t ContextSwitchCount) override {
-        this->data_->ContextSwitchCount = ContextSwitchCount;
+        this->ptr_->ContextSwitchCount = ContextSwitchCount;
     }
 
-    KTHREAD_STATE State() const override { return static_cast<KTHREAD_STATE>(this->data_->State); }
-    void State(KTHREAD_STATE State) override { this->data_->State = State; }
+    KTHREAD_STATE State() const override { return static_cast<KTHREAD_STATE>(this->ptr_->State); }
+    void State(KTHREAD_STATE State) override { this->ptr_->State = State; }
 
     KWAIT_REASON WaitReason() const override {
-        return static_cast<KWAIT_REASON>(this->data_->WaitReason);
+        return static_cast<KWAIT_REASON>(this->ptr_->WaitReason);
     }
-    void WaitReason(KWAIT_REASON WaitReason) override { this->data_->WaitReason = WaitReason; }
+    void WaitReason(KWAIT_REASON WaitReason) override { this->ptr_->WaitReason = WaitReason; }
 
     void write(std::ostream& os, const std::string& linePrefix = "") const override {
         boost::io::ios_flags_saver ifs(os);
@@ -125,13 +125,12 @@ class SYSTEM_THREAD_IMPL final : public SYSTEM_THREAD {
         return result;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
-    SYSTEM_THREAD_IMPL(const GuestVirtualAddress& gva) : gva_(gva), data_(gva_) {}
+    SYSTEM_THREAD_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 
   private:
-    const GuestVirtualAddress gva_;
-    guest_ptr<structs::_SYSTEM_THREAD<PtrType>> data_;
+    guest_ptr<structs::_SYSTEM_THREAD<PtrType>> ptr_;
 };
 
 } // namespace nt

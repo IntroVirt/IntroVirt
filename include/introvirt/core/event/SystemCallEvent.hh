@@ -17,8 +17,6 @@
 
 #include <introvirt/core/fwd.hh>
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
-
 #include <cstdint>
 #include <string>
 
@@ -98,7 +96,7 @@ class SystemCallEvent {
     /**
      * @brief Get the address where the system call will return
      *
-     * @return GuestVirtualAddress
+     * @return uint64_t
      */
     virtual uint64_t return_address() const = 0;
 

@@ -60,14 +60,14 @@ Json::Value FILE_MODE_INFORMATION_IMPL::json() const {
     return result;
 }
 
-FILE_MODE_INFORMATION_IMPL::FILE_MODE_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+FILE_MODE_INFORMATION_IMPL::FILE_MODE_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                        uint32_t buffer_size)
-    : gva_(gva), buffer_size_(buffer_size) {
+    : buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_FILE_MODE_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_FILE_MODE_INFORMATION), buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 }
 
 bool FILE_MODE_INFORMATION::WriteThrough() const { return (Mode() & FILE_WRITE_THROUGH) != 0u; }

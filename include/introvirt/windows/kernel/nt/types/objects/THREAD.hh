@@ -17,7 +17,7 @@
 
 #include "DISPATCHER_OBJECT.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/const/KTHREAD_STATE.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 #include <introvirt/windows/util/WindowsTime.hh>
@@ -119,7 +119,7 @@ class THREAD : public DISPATCHER_OBJECT {
     /**
      * @returns The Win32StartAddress member of ETHREAD
      */
-    virtual GuestVirtualAddress Win32StartAddress() const = 0;
+    virtual guest_ptr<void> Win32StartAddress() const = 0;
 
     /*
      * Retrieve the state of the thread
@@ -164,8 +164,7 @@ class THREAD : public DISPATCHER_OBJECT {
     virtual WindowsTime CreateTime() const = 0;
     virtual void CreateTime(const WindowsTime& time) = 0;
 
-    static std::shared_ptr<THREAD> make_shared(const NtKernel& kernel,
-                                               const GuestVirtualAddress& gva);
+    static std::shared_ptr<THREAD> make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr);
     static std::shared_ptr<THREAD> make_shared(const NtKernel& kernel,
                                                std::unique_ptr<OBJECT_HEADER>&& header);
 };

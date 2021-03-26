@@ -42,14 +42,14 @@ struct _CV_INFO_PDB70 {
 
 class CV_INFO_IMPL final : public CV_INFO {
   public:
-    uint32_t CvSignature() const override { return data_->CvSignature; }
+    uint32_t CvSignature() const override { return ptr_->CvSignature; }
     const std::string& PdbGUID() const override { return PdbGUID_; }
     const std::string& PdbIdentifier() const override { return PdbIdentifier_; }
-    const uint32_t Age() const override { return data_->Age; }
+    const uint32_t Age() const override { return ptr_->Age; }
     const std::string& PdbFileName() const override { return PdbFileName_; }
 
-    CV_INFO_IMPL(const GuestVirtualAddress& gva, uint32_t SizeOfData) : data_(gva) {
-        if (unlikely(data_->CvSignature != 0x53445352)) /* "RSDS" */
+    CV_INFO_IMPL(const guest_ptr<void>& ptr, uint32_t SizeOfData) : ptr_(ptr) {
+        if (unlikely(ptr_->CvSignature != 0x53445352)) /* "RSDS" */
             throw PeException("Invalid CvSignature");
 
         // Find the PDB identifier
@@ -57,21 +57,21 @@ class CV_INFO_IMPL final : public CV_INFO {
             char pdbid[128];
 
             snprintf(pdbid, sizeof(pdbid), "%08x%04x%04x%02x%02x%02x%02x%02x%02x%02x%02x%01x",
-                     data_->GUID.Data1, data_->GUID.Data2, data_->GUID.Data3, data_->GUID.Data4[0],
-                     data_->GUID.Data4[1], data_->GUID.Data4[2], data_->GUID.Data4[3],
-                     data_->GUID.Data4[4], data_->GUID.Data4[5], data_->GUID.Data4[6],
-                     data_->GUID.Data4[7], data_->Age & 0xf);
+                     ptr_->GUID.Data1, ptr_->GUID.Data2, ptr_->GUID.Data3, ptr_->GUID.Data4[0],
+                     ptr_->GUID.Data4[1], ptr_->GUID.Data4[2], ptr_->GUID.Data4[3],
+                     ptr_->GUID.Data4[4], ptr_->GUID.Data4[5], ptr_->GUID.Data4[6],
+                     ptr_->GUID.Data4[7], ptr_->Age & 0xf);
 
             PdbIdentifier_ = std::string(pdbid);
         }
 
         // Get the PDB file name
         {
-            const GuestVirtualAddress pPdbFileName =
-                gva + offsetof(structs::_CV_INFO_PDB70, PdbFileName);
+            const guest_ptr<void> pPdbFileName =
+                ptr + offsetof(structs::_CV_INFO_PDB70, PdbFileName);
 
             const uint32_t max_len = SizeOfData - sizeof(structs::_CV_INFO_PDB70);
-            auto mapping = map_guest_cstr(pPdbFileName, max_len);
+            auto mapping = map_guest_cstring(pPdbFileName, max_len);
             PdbFileName_ = std::string(mapping.get(), mapping.length());
         }
 
@@ -80,17 +80,17 @@ class CV_INFO_IMPL final : public CV_INFO {
             char guid[128];
 
             snprintf(guid, sizeof(guid), "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-                     data_->GUID.Data1, data_->GUID.Data2, data_->GUID.Data3, data_->GUID.Data4[0],
-                     data_->GUID.Data4[1], data_->GUID.Data4[2], data_->GUID.Data4[3],
-                     data_->GUID.Data4[4], data_->GUID.Data4[5], data_->GUID.Data4[6],
-                     data_->GUID.Data4[7]);
+                     ptr_->GUID.Data1, ptr_->GUID.Data2, ptr_->GUID.Data3, ptr_->GUID.Data4[0],
+                     ptr_->GUID.Data4[1], ptr_->GUID.Data4[2], ptr_->GUID.Data4[3],
+                     ptr_->GUID.Data4[4], ptr_->GUID.Data4[5], ptr_->GUID.Data4[6],
+                     ptr_->GUID.Data4[7]);
 
             PdbGUID_ = std::string(guid);
         }
     }
 
   private:
-    guest_ptr<structs::_CV_INFO_PDB70> data_;
+    guest_ptr<structs::_CV_INFO_PDB70> ptr_;
     std::string PdbIdentifier_;
     std::string PdbFileName_;
     std::string PdbGUID_;

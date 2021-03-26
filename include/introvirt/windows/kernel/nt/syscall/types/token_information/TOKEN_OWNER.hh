@@ -25,8 +25,8 @@ namespace nt {
 
 class TOKEN_OWNER : public TOKEN_INFORMATION {
   public:
-    virtual GuestVirtualAddress OwnerPtr() const = 0;
-    virtual void OwnerPtr(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<void> OwnerPtr() const = 0;
+    virtual void OwnerPtr(const guest_ptr<void>& ptr) = 0;
 
     virtual SID* Owner() = 0;
     virtual const SID* Owner() const = 0;

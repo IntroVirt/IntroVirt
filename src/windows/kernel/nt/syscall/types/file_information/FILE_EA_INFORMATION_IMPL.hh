@@ -32,14 +32,14 @@ struct _FILE_EA_INFORMATION {
 
 class FILE_EA_INFORMATION_IMPL final : public FILE_EA_INFORMATION {
   public:
-    uint32_t EaSize() const override { return data_->EaSize; }
-    void EaSize(uint32_t value) override { data_->EaSize = value; }
+    uint32_t EaSize() const override { return ptr_->EaSize; }
+    void EaSize(uint32_t value) override { ptr_->EaSize = value; }
 
     FILE_INFORMATION_CLASS FileInformationClass() const override {
         return FILE_INFORMATION_CLASS::FileEaInformation;
     }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    guest_ptr<void> ptr() const override { return ptr_; }
 
     uint32_t buffer_size() const override { return buffer_size_; }
 
@@ -47,12 +47,11 @@ class FILE_EA_INFORMATION_IMPL final : public FILE_EA_INFORMATION {
 
     Json::Value json() const override;
 
-    FILE_EA_INFORMATION_IMPL(const GuestVirtualAddress& gva, uint32_t buffer_size);
+    FILE_EA_INFORMATION_IMPL(const guest_ptr<void>& ptr, uint32_t buffer_size);
 
   private:
-    const GuestVirtualAddress gva_;
+    guest_ptr<structs::_FILE_EA_INFORMATION> ptr_;
     const uint32_t buffer_size_;
-    guest_ptr<structs::_FILE_EA_INFORMATION> data_;
 };
 
 } // namespace nt

@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
 #include <cstdint>
@@ -33,16 +33,14 @@ class SECURITY_DESCRIPTOR {
     virtual SECURITY_DESCRIPTOR_CONTROL Control() const = 0;
 
     virtual SID* Owner() = 0;
-    virtual const SID* Owner() const = 0;
     virtual SID* Group() = 0;
-    virtual const SID* Group() const = 0;
     // TODO(pape): Getters for ACLs
 
     virtual void Revision(uint8_t Revision) = 0;
     virtual void Sbz1(uint8_t Sbz1) = 0;
     virtual void Control(SECURITY_DESCRIPTOR_CONTROL Control) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual ~SECURITY_DESCRIPTOR() = default;
 };

@@ -38,12 +38,11 @@ class SEGMENT_IMPL final : public SEGMENT {
     uint64_t FirstMappedVa() const override;
     uint64_t SizeOfSegment() const override;
 
-    SEGMENT_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva,
+    SEGMENT_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr,
                  const CONTROL_AREA_IMPL<PtrType>* control_area = nullptr);
 
   private:
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
 
     const structs::SEGMENT* segment_;
     guest_ptr<char[]> buffer_;

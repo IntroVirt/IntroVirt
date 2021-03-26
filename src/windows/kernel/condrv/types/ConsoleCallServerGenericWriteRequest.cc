@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <introvirt/windows/kernel/condrv/types/ConsoleCallServerGenericWriteRequest.hh>
+
 #include <introvirt/core/exception/BufferTooSmallException.hh>
 #include <introvirt/core/exception/InvalidMethodException.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/compiler.hh>
 #include <introvirt/windows/WindowsGuest.hh>
 #include <introvirt/windows/common/WStr.hh>
 #include <introvirt/windows/kernel/condrv/const/ConsoleCallServerGenericRequestCode.hh>
 #include <introvirt/windows/kernel/condrv/types/ConsoleCallServerGenericRequest.hh>
-#include <introvirt/windows/kernel/condrv/types/ConsoleCallServerGenericWriteRequest.hh>
 
 #include "windows/kernel/condrv/structs/structs.hh"
 
@@ -31,7 +33,7 @@ namespace condrv {
 class ConsoleCallServerGenericWriteRequest::IMPL {
   public:
     virtual uint32_t getDataSize() const = 0;
-    virtual GuestVirtualAddress getDataPtr() const = 0;
+    virtual guest_ptr<void> getDataPtr() const = 0;
     virtual bool isUnicode() const = 0;
     virtual const std::string& getData() const = 0;
 
@@ -61,22 +63,20 @@ class ConsoleCallServerGenericWriteRequest::IMPL_SPEC final
             request.RequestData().get());
 
         // Get the string data
-        guest_ptr<uint8_t[]> buffer(getDataPtr(), getDataSize());
-
         if (isUnicode()) {
-            // Parse it with WSTR
-            data = WStr(std::move(buffer)).utf8();
+            guest_ptr<const char16_t[]> buffer(getDataPtr(), getDataSize() / sizeof(char16_t));
+            data = buffer.str();
         } else {
             // Just copy it directly
-            data = std::string(reinterpret_cast<const char*>(buffer.get()), buffer.length());
+            data = guest_ptr<const char[]>(getDataPtr(), getDataSize()).str();
         }
     }
 
   public:
     uint32_t getDataSize() const override { return header->dataSize; }
 
-    GuestVirtualAddress getDataPtr() const override {
-        return request.header_address().create(header->dataPtr);
+    guest_ptr<void> getDataPtr() const override {
+        return request.header_address().clone(header->dataPtr);
     }
 
     bool isUnicode() const override {

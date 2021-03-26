@@ -20,7 +20,6 @@
 #include <introvirt/core/arch/x86/PageDirectory.hh>
 #include <introvirt/core/arch/x86/Registers.hh>
 #include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
 
 #include <log4cxx/logger.h>
@@ -129,7 +128,7 @@ class PageTableEntry {
     /**
      * @brief Get the physical address
      *
-     * @return GuestPhysicalAddress
+     * @return uint64_t
      */
     uint64_t physical_address() const { return value_ & 0xFFFFFFFFF000; }
 
@@ -163,11 +162,11 @@ class PageTableEntry {
     uint64_t value_;
 };
 
-GuestPhysicalAddress PageDirectory::translate(const GuestVirtualAddress& gva) const {
+uint64_t PageDirectory::translate(uint64_t virtual_address, uint64_t page_directory) const {
 
 retry:
-    uint64_t virt = gva.virtual_address() & va_mask_;
-    uint64_t paddr = gva.page_directory() & ((pt_levels_ == 3) ? 0xFFFFFFE0 : 0x7FFFFFFFFFFFF000LL);
+    uint64_t virt = virtual_address & va_mask_;
+    uint64_t paddr = page_directory & ((pt_levels_ == 3) ? 0xFFFFFFE0 : 0x7FFFFFFFFFFFF000LL);
     uint64_t mask = mask_;
 
     PageTableEntry pte(0);
@@ -175,34 +174,30 @@ retry:
     /*
      *  Walk the page tables
      */
+    guest_phys_ptr<guest_size_t> pte_mapping;
     for (int level = pt_levels_; level > 0; level--) {
         // Offset to the correct PTE
         paddr += ((virt & mask) >> (__builtin_ffsll(mask) - 1)) * pte_size_;
 
         // Read in the PTE
-        uint64_t pte_val = 0;
-        GuestPhysicalAddress pte_addr(domain_, paddr);
-        if (pte_size_ == 8) {
-            pte_val = *guest_ptr<uint64_t>(pte_addr);
-        } else {
-            pte_val = *guest_ptr<uint32_t>(pte_addr);
-        }
-
+        pte_mapping.reset(pte_size_ == 8, domain_, paddr);
+        uint64_t pte_val = *pte_mapping;
         pte = PageTableEntry(pte_val);
         if (unlikely(pte.present() == false)) {
             if (likely(domain_.guest() != nullptr)) {
                 // Let the guest handler give it a try
-                switch (domain_.guest()->impl().handle_page_fault(gva, pte_val)) {
+                switch (domain_.guest()->impl().handle_page_fault(virtual_address, page_directory,
+                                                                  pte_val)) {
                 case GuestPageFaultResult::PTE_FIXED:
                     pte = PageTableEntry(pte_val);
                     break;
                 case GuestPageFaultResult::RETRY:
                     goto retry;
                 case GuestPageFaultResult::FAILURE:
-                    throw VirtualAddressNotPresentException(gva);
+                    throw VirtualAddressNotPresentException(virtual_address, page_directory);
                 }
             } else {
-                throw VirtualAddressNotPresentException(gva);
+                throw VirtualAddressNotPresentException(virtual_address, page_directory);
             }
         }
 
@@ -212,9 +207,7 @@ retry:
         if (pte.huge()) {
             if ((level == 2 || (level == 3 && pt_levels_ == 4))) {
                 mask = ((mask ^ ~-mask) >> 1); /* All bits below first set bit */
-
-                GuestPhysicalAddress result(domain_, ((paddr & ~mask) | (virt & mask)));
-                return result;
+                return ((paddr & ~mask) | (virt & mask));
             }
         }
 
@@ -222,8 +215,7 @@ retry:
     }
 
     // Done
-    GuestPhysicalAddress result(domain_, (paddr & PAGE_MASK) | (virt & ~PAGE_MASK));
-    return result;
+    return (paddr & PAGE_MASK) | (virt & ~PAGE_MASK);
 }
 
 void PageDirectory::reconfigure(const Vcpu& vcpu) {
@@ -255,7 +247,7 @@ void PageDirectory::reconfigure(const Vcpu& vcpu) {
     }
 }
 
-PageDirectory::PageDirectory(const Domain& domain) : domain_(domain) {}
+PageDirectory::PageDirectory(Domain& domain) : domain_(domain) {}
 
 PageDirectory::~PageDirectory() = default;
 

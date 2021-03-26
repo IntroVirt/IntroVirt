@@ -119,7 +119,7 @@ class PageTableEntry {
     /**
      * @brief Get the physical address
      *
-     * @return GuestPhysicalAddress
+     * @return The physical address in the guest
      */
     uint64_t physical_address() const { return value_ & 0xFFFFFFFFF000; }
 

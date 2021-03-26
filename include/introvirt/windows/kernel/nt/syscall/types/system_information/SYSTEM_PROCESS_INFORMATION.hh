@@ -72,7 +72,7 @@ class SYSTEM_THREAD {
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
     virtual Json::Value json() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual ~SYSTEM_THREAD() = default;
 };
@@ -118,7 +118,7 @@ class VM_COUNTERS {
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
     virtual Json::Value json() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual ~VM_COUNTERS() = default;
 };
@@ -146,7 +146,7 @@ class IO_COUNTERS {
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
     virtual Json::Value json() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual ~IO_COUNTERS() = default;
 };
@@ -304,7 +304,7 @@ class SYSTEM_PROCESS_INFORMATION_ENTRY {
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
     virtual Json::Value json() const = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
     virtual uint32_t buffer_size() const = 0;
 
     virtual ~SYSTEM_PROCESS_INFORMATION_ENTRY() = default;

@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/const/REG_TYPE.hh>
 #include <introvirt/windows/kernel/nt/fwd.hh>
 
@@ -35,7 +35,7 @@ class CM_KEY_VALUE {
     virtual const std::string& Name() const = 0;
     virtual const KEY_VALUE* Data() const = 0;
     virtual REG_TYPE Type() const = 0;
-    virtual GuestVirtualAddress address() const = 0;
+    virtual const guest_ptr<void>& ptr() const = 0;
 
     virtual ~CM_KEY_VALUE() = default;
 };

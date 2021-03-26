@@ -16,6 +16,7 @@
 #pragma once
 
 #include <introvirt/core/event/Event.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <memory>
 #include <ostream>
@@ -53,17 +54,17 @@ class Guest {
      *
      * @param region_size The requested size of the region in bytes. May be rounded up.
      * @param executable Allow the region of memory to be executable
-     * @return GuestVirtualAddress A pointer to the newly allocated region
+     * @return guest_ptr<void> A pointer to the newly allocated region
      */
-    virtual GuestVirtualAddress allocate(size_t& region_size, bool executable = false) = 0;
+    virtual guest_ptr<void> allocate(size_t& region_size, bool executable = false) = 0;
 
     /**
      * @brief Free a region of memory in the guest
      *
-     * @param gva The base address to free
+     * @param ptr The base address to free
      * @param region_size The number of bytes to free
      */
-    virtual void guest_free(GuestVirtualAddress& gva, size_t region_size) = 0;
+    virtual void guest_free(const guest_ptr<void>& ptr, size_t region_size) = 0;
 
     /**
      * @brief Used internally

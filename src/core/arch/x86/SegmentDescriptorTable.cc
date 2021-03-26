@@ -42,10 +42,10 @@ Segment SegmentDescriptorTable::index(uint16_t idx) const {
 Segment SegmentDescriptorTable::selector(SegmentSelector sel) const {
     const int offset = sel.index() * sizeof(struct descriptor);
 
-    assert(offset + sizeof(struct descriptor) <= limit_);
+    introvirt_assert(offset + sizeof(struct descriptor) <= limit_, "");
 
     // Get the descriptor from the table
-    const auto* const dsc = reinterpret_cast<const struct descriptor*>(mapping_.get() + offset);
+    const auto* const dsc = reinterpret_cast<const struct descriptor*>(ptr_.get() + offset);
 
     // Figure out base/limit
     const uint64_t base = (static_cast<uint64_t>(dsc->base_top) << 24ull) |
@@ -85,8 +85,8 @@ Segment SegmentDescriptorTable::selector(SegmentSelector sel) const {
 
 size_t SegmentDescriptorTable::count() const { return limit_ / sizeof(struct descriptor); }
 
-SegmentDescriptorTable::SegmentDescriptorTable(const GuestVirtualAddress& base, uint32_t limit)
-    : base_(base), limit_(limit), mapping_(base_, limit_) {}
+SegmentDescriptorTable::SegmentDescriptorTable(const guest_ptr<void>& ptr, uint32_t limit)
+    : ptr_(ptr, limit), limit_(limit) {}
 
 } // namespace x86
 } // namespace introvirt

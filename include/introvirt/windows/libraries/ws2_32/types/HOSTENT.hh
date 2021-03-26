@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
 #include <memory>
@@ -31,11 +31,11 @@ namespace ws2_32 {
 class HOSTENT {
   public:
     // Direct structure members
-    virtual GuestVirtualAddress ph_name() const = 0;
-    virtual void ph_name(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<char[]> ph_name() const = 0;
+    virtual void ph_name(const guest_ptr<char[]>& ptr) = 0;
 
-    virtual GuestVirtualAddress ph_aliases() const = 0;
-    virtual void ph_aliases(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<char*, guest_ptr_t> ph_aliases() const = 0;
+    virtual void ph_aliases(const guest_ptr<char*, guest_ptr_t>& ptr) = 0;
 
     virtual uint16_t h_addrtype() const = 0;
     virtual void h_addrtype(uint16_t h_addrtype) = 0;
@@ -43,17 +43,16 @@ class HOSTENT {
     virtual uint16_t h_length() const = 0;
     virtual void h_length(uint16_t h_length) = 0;
 
-    virtual GuestVirtualAddress ph_addr_list() const = 0;
-    virtual void ph_addr_list(const GuestVirtualAddress& gva) = 0;
+    virtual guest_ptr<uint8_t*, guest_ptr_t> ph_addr_list() const = 0;
+    virtual void ph_addr_list(const guest_ptr<uint8_t*, guest_ptr_t>& ptr) = 0;
 
     // Helpers
-    virtual std::string h_name() const = 0;
-    virtual std::vector<std::string> h_aliases() const = 0;
+    virtual std::vector<guest_ptr<char[]>> h_aliases() const = 0;
 
     /**
-     * @brief Create a WSADATA
+     * @brief Create a HOSTENT
      */
-    static std::unique_ptr<HOSTENT> make_unique(const GuestVirtualAddress& gva, bool x64);
+    static std::shared_ptr<HOSTENT> make_shared(const guest_ptr<void>& ptr, bool x64);
 
     /**
      * @brief Get the size of the structure

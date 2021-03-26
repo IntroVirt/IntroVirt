@@ -15,7 +15,6 @@
  */
 #pragma once
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/fwd.hh>
 #include <introvirt/windows/pe/const/MachineType.hh>
 #include <introvirt/windows/pe/types/IMAGE_SECTION_HEADER.hh>

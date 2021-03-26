@@ -34,22 +34,45 @@ class NtKernelImpl;
 template <typename PtrType>
 class TEB_IMPL final : public TEB {
   public:
-    const NT_TIB& NtTib() const override;
-    const CLIENT_ID& ClientId() const override;
+    const NT_TIB& NtTib() const override {
+        if (!NtTib_) {
+            NtTib_.emplace(kernel_, ptr_ + teb_->NtTib.offset());
+        }
+        return *NtTib_;
+    }
+    const CLIENT_ID& ClientId() const override {
+        if (!ClientId_) {
+            ClientId_.emplace(ptr_ + teb_->ClientId.offset());
+        }
+        return *ClientId_;
+    }
 
-    WinError LastErrorValue() const override;
-    void LastErrorValue(WinError LastErrorValue) override;
+    WinError LastErrorValue() const override {
+        return static_cast<WinError>(teb_->LastErrorValue.get<uint32_t>(buffer_));
+    }
+    void LastErrorValue(WinError LastErrorValue) override {
+        teb_->LastErrorValue.set<uint32_t>(buffer_, static_cast<uint32_t>(LastErrorValue));
+    }
 
-    NTSTATUS LastStatusValue() const override;
-    void LastStatusValue(NTSTATUS value) override;
+    NTSTATUS LastStatusValue() const override {
+        return NTSTATUS(teb_->LastStatusValue.get<uint32_t>(buffer_));
+    }
+    void LastStatusValue(NTSTATUS status) override {
+        teb_->LastStatusValue.set<uint32_t>(buffer_, status.value());
+    }
 
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> ptr() const override { return buffer_; }
 
-    TEB_IMPL(const NtKernelImpl<PtrType>& kernel, const GuestVirtualAddress& gva);
+    TEB_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr)
+        : kernel_(kernel), ptr_(ptr) {
+
+        teb_ = LoadOffsets<structs::TEB>(kernel_);
+        buffer_.reset(ptr, teb_->size());
+    }
 
   private:
     const NtKernelImpl<PtrType>& kernel_;
-    const GuestVirtualAddress gva_;
+    const guest_ptr<void> ptr_;
 
     const structs::TEB* teb_;
     guest_ptr<char[]> buffer_;

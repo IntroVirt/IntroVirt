@@ -17,7 +17,6 @@
 
 #include "KEY_INFORMATION.hh"
 
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
 #include <introvirt/windows/util/WindowsTime.hh>
 
 #include <cstdint>

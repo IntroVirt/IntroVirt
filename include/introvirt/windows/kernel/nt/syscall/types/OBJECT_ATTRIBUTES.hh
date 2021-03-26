@@ -96,22 +96,22 @@ class OBJECT_ATTRIBUTES {
      *
      * @param pUnicodeString The address to
      */
-    virtual void ObjectNamePtr(const GuestVirtualAddress& pUnicodeString) = 0;
+    virtual void ObjectNamePtr(const guest_ptr<void>& pUnicodeString) = 0;
 
     virtual void Attributes(HANDLE_ATTRIBUTES Attributes) = 0;
 
     virtual void Inheritable(bool Inheritable) = 0;
 
-    virtual void SecurityQualityOfServicePtr(uint64_t pSecurityQualityOfService) = 0;
+    virtual void SecurityQualityOfServicePtr(const guest_ptr<void>& pSecurityQualityOfService) = 0;
 
-    virtual GuestVirtualAddress address() const = 0;
+    virtual guest_ptr<void> ptr() const = 0;
 
     virtual void write(std::ostream& os, const std::string& linePrefix = "") const = 0;
 
     virtual Json::Value json() const = 0;
 
     static std::unique_ptr<OBJECT_ATTRIBUTES> make_unique(const NtKernel& kernel,
-                                                          const GuestVirtualAddress& gva);
+                                                          const guest_ptr<void>& ptr);
 
     virtual ~OBJECT_ATTRIBUTES() = default;
 };
@@ -122,13 +122,10 @@ class OBJECT_ATTRIBUTES {
 namespace inject {
 
 template <>
-class GuestAllocation<windows::nt::OBJECT_ATTRIBUTES>
+class GuestAllocation<windows::nt::OBJECT_ATTRIBUTES> final
     : public GuestAllocationComplexBase<windows::nt::OBJECT_ATTRIBUTES> {
   public:
-    explicit GuestAllocation();
-
-  private:
-    std::optional<GuestAllocation<uint8_t[]>> buffer_;
+    GuestAllocation();
 };
 
 } // namespace inject

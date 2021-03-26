@@ -42,19 +42,19 @@ Json::Value KEY_BASIC_INFORMATION_IMPL::json() const {
     return result;
 }
 
-KEY_BASIC_INFORMATION_IMPL::KEY_BASIC_INFORMATION_IMPL(const GuestVirtualAddress& gva,
+KEY_BASIC_INFORMATION_IMPL::KEY_BASIC_INFORMATION_IMPL(const guest_ptr<void>& ptr,
                                                        uint32_t buffer_size)
-    : gva_(gva), buffer_size_(buffer_size) {
+    : buffer_size_(buffer_size) {
 
     if (unlikely(buffer_size < sizeof(structs::_KEY_BASIC_INFORMATION)))
         throw BufferTooSmallException(sizeof(structs::_KEY_BASIC_INFORMATION), buffer_size);
 
-    data_.reset(gva_);
+    ptr_.reset(ptr);
 
-    const auto pName = gva_ + offsetof(structs::_KEY_BASIC_INFORMATION, Name);
-    const uint32_t name_buffer_len = (gva_ + buffer_size) - pName;
-    const uint32_t name_length = std::min(data_->NameLength, name_buffer_len);
-    Name_.emplace(pName, name_length, name_buffer_len);
+    const auto pName = ptr + offsetof(structs::_KEY_BASIC_INFORMATION, Name);
+    const uint32_t name_buffer_len = (ptr + buffer_size) - pName;
+    const uint32_t name_length = std::min(ptr_->NameLength, name_buffer_len);
+    Name_.emplace(pName, name_buffer_len, name_length);
 }
 
 } // namespace nt

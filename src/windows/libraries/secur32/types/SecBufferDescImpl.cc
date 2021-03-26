@@ -22,12 +22,11 @@ namespace introvirt {
 namespace windows {
 namespace secur32 {
 
-std::unique_ptr<SecBufferDesc> SecBufferDesc::make_unique(const GuestVirtualAddress& gva,
-                                                          bool x64) {
+std::shared_ptr<SecBufferDesc> SecBufferDesc::make_shared(const guest_ptr<void>& ptr, bool x64) {
     if (x64) {
-        return std::make_unique<SecBufferDescImpl<uint64_t>>(gva);
+        return std::make_shared<SecBufferDescImpl<uint64_t>>(ptr);
     }
-    return std::make_unique<SecBufferDescImpl<uint32_t>>(gva);
+    return std::make_shared<SecBufferDescImpl<uint32_t>>(ptr);
 }
 
 size_t SecBufferDesc::size(bool x64) {

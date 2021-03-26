@@ -49,14 +49,13 @@ class PROCESS_INFORMATION_IMPL final : public PROCESS_INFORMATION {
     uint32_t dwThreadId() const override;
     void dwThreadId(uint32_t dwThreadId) override;
 
-    GuestVirtualAddress address() const override;
+    guest_ptr<void> address() const override;
 
-    PROCESS_INFORMATION_IMPL(const GuestVirtualAddress& gva);
+    PROCESS_INFORMATION_IMPL(const guest_ptr<void>& ptr);
     ~PROCESS_INFORMATION_IMPL() override = default;
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_PROCESS_INFORMATION<PtrType>> buffer_;
+    guest_ptr<structs::_PROCESS_INFORMATION<PtrType>> ptr_;
 };
 
 } // namespace kernel32

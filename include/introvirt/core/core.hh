@@ -66,11 +66,7 @@
 #include <introvirt/core/injection/function_call.hh>
 #include <introvirt/core/injection/system_call.hh>
 
-#include <introvirt/core/memory/GuestAddress.hh>
 #include <introvirt/core/memory/GuestMemoryMapping.hh>
-#include <introvirt/core/memory/GuestPhysicalAddress.hh>
-#include <introvirt/core/memory/GuestVirtualAddress.hh>
-#include <introvirt/core/memory/guest_ptr.hh>
 
 #include <introvirt/core/syscall/SystemCall.hh>
 #include <introvirt/core/syscall/SystemCallFilter.hh>

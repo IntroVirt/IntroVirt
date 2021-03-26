@@ -25,11 +25,11 @@ namespace introvirt {
 namespace windows {
 namespace pe {
 
-inline static GuestVirtualAddress dword_align(const GuestVirtualAddress& ptr) {
-    if ((ptr.virtual_address() & 0x3) != 0u) {
-        return ptr.create((ptr.virtual_address() + 4) & 0xFFFFFFFFFFFFFFFCLL);
+inline static guest_ptr<void> dword_align(const guest_ptr<void>& ptr) {
+    if ((ptr.address() & 0x3) != 0u) {
+        return ptr.clone((ptr.address() + 4) & 0xFFFFFFFFFFFFFFFCLL);
     }
-    return GuestVirtualAddress(ptr);
+    return ptr;
 }
 
 namespace structs {
@@ -52,24 +52,24 @@ struct _FILE_INFO {
 template <typename _BaseClass = FILE_INFO>
 class FILE_INFO_IMPL : public _BaseClass {
   public:
-    inline uint16_t wLength() const override { return data_->wLength; }
-    inline uint16_t wValueLength() const override { return data_->wValueLength; }
-    inline uint16_t wType() const override { return data_->wType; }
+    inline uint16_t wLength() const override { return ptr_->wLength; }
+    inline uint16_t wValueLength() const override { return ptr_->wValueLength; }
+    inline uint16_t wType() const override { return ptr_->wType; }
     inline const std::string& szKey() const override { return szKey_; }
-    inline GuestVirtualAddress pChildren() const override { return pChildren_; }
+    inline guest_ptr<void> pChildren() const override { return pChildren_; }
 
-    FILE_INFO_IMPL(const GuestVirtualAddress& gva) : data_(gva) {
-        const GuestVirtualAddress pszKey(gva + offsetof(structs::_FILE_INFO, szKey));
-        szKey_ = Utf16String::convert(map_guest_wstr(pszKey));
+    FILE_INFO_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {
+        const guest_ptr<void> pszKey(ptr + offsetof(structs::_FILE_INFO, szKey));
+        szKey_ = map_guest_wstring(pszKey).str();
 
         // Make sure to include the null terminator as part of the offset
         pChildren_ = dword_align(pszKey + sizeof(uint16_t) + (szKey_.length() * sizeof(char16_t)));
     }
 
   private:
-    guest_ptr<structs::_FILE_INFO> data_;
+    guest_ptr<structs::_FILE_INFO> ptr_;
     std::string szKey_;
-    GuestVirtualAddress pChildren_;
+    guest_ptr<void> pChildren_;
 };
 
 } // namespace pe

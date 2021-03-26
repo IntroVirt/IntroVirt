@@ -42,39 +42,40 @@ Json::Value MEMORY_SECTION_NAME_IMPL<PtrType>::json() const {
 }
 
 template <typename PtrType>
-MEMORY_SECTION_NAME_IMPL<PtrType>::MEMORY_SECTION_NAME_IMPL(const GuestVirtualAddress& gva,
+MEMORY_SECTION_NAME_IMPL<PtrType>::MEMORY_SECTION_NAME_IMPL(const guest_ptr<void>& ptr,
                                                             uint32_t buffer_size)
-    : MEMORY_SECTION_NAME_IMPL_BASE<PtrType>(MEMORY_INFORMATION_CLASS::MemorySectionName, gva,
+    : MEMORY_SECTION_NAME_IMPL_BASE<PtrType>(MEMORY_INFORMATION_CLASS::MemorySectionName, ptr,
                                              buffer_size) {
 
     /*
      * I chose to use WStr intead of a UNICODE_STRING here so that I'd have more control over the
      * maximum length, for the setter implementation.
      */
-    const GuestVirtualAddress pNameBuffer = this->gva_.create(this->data_->SectionFileName.Buffer);
+    const guest_ptr<void> pNameBuffer =
+        ptr.clone(this->ptr_->SectionFileName.Buffer & 0xFFFFFFFFFFFFFFFELL);
 
-    const GuestVirtualAddress pBufferEnd = this->gva_ + this->buffer_size_;
+    const guest_ptr<void> pBufferEnd = ptr + this->buffer_size_;
 
-    if (unlikely(pNameBuffer < this->gva_ || pNameBuffer >= pBufferEnd)) {
+    if (unlikely(pNameBuffer < this->ptr_ || pNameBuffer >= pBufferEnd)) {
         throw InvalidStructureException("Name data is not part of buffer");
     }
 
     const uint16_t NameBufferMaxLength = pBufferEnd - pNameBuffer;
     const uint16_t NameBufferLength =
-        std::min(NameBufferMaxLength, this->data_->SectionFileName.Length);
+        std::min(NameBufferMaxLength, this->ptr_->SectionFileName.Length);
 
     // Decode the UNICODE_STRING data
-    SectionFileName_.emplace(pNameBuffer, NameBufferLength, NameBufferMaxLength);
+    SectionFileName_.emplace(pNameBuffer, NameBufferMaxLength, NameBufferLength);
 }
 
-std::unique_ptr<MEMORY_SECTION_NAME>
-MEMORY_SECTION_NAME::make_unique(const NtKernel& kernel, const GuestVirtualAddress& gva,
-                                 uint32_t buffer_size) {
+std::unique_ptr<MEMORY_SECTION_NAME> MEMORY_SECTION_NAME::make_unique(const NtKernel& kernel,
+                                                                      const guest_ptr<void>& ptr,
+                                                                      uint32_t buffer_size) {
 
     if (kernel.x64())
-        return std::make_unique<MEMORY_SECTION_NAME_IMPL<uint64_t>>(gva, buffer_size);
+        return std::make_unique<MEMORY_SECTION_NAME_IMPL<uint64_t>>(ptr, buffer_size);
     else
-        return std::make_unique<MEMORY_SECTION_NAME_IMPL<uint32_t>>(gva, buffer_size);
+        return std::make_unique<MEMORY_SECTION_NAME_IMPL<uint32_t>>(ptr, buffer_size);
 }
 
 template class MEMORY_SECTION_NAME_IMPL<uint32_t>;
@@ -91,16 +92,18 @@ GuestAllocation<windows::nt::MEMORY_SECTION_NAME>::GuestAllocation() {
 
     auto& domain = Domain::thread_local_domain();
     auto* guest = static_cast<WindowsGuest*>(domain.guest());
-    assert(guest != nullptr);
+    introvirt_assert(guest != nullptr, "");
 
     if (guest->x64()) {
-        constexpr uint32_t buffer_size = sizeof(structs::_MEMORY_SECTION_NAME<uint64_t>);
-        buffer_.emplace(buffer_size);
-        value_ = std::make_unique<MEMORY_SECTION_NAME_IMPL<uint64_t>>(*buffer_, buffer_size);
+        constexpr uint32_t buffer_size = sizeof(nt::structs::_MEMORY_SECTION_NAME<uint64_t>);
+        allocation_.emplace(buffer_size);
+        value_ =
+            std::make_unique<MEMORY_SECTION_NAME_IMPL<uint64_t>>(allocation_->ptr(), buffer_size);
     } else {
-        constexpr uint32_t buffer_size = sizeof(structs::_MEMORY_SECTION_NAME<uint32_t>);
-        buffer_.emplace(buffer_size);
-        value_ = std::make_unique<MEMORY_SECTION_NAME_IMPL<uint32_t>>(*buffer_, buffer_size);
+        constexpr uint32_t buffer_size = sizeof(nt::structs::_MEMORY_SECTION_NAME<uint32_t>);
+        allocation_.emplace(buffer_size);
+        value_ =
+            std::make_unique<MEMORY_SECTION_NAME_IMPL<uint32_t>>(allocation_->ptr(), buffer_size);
     }
 }
 

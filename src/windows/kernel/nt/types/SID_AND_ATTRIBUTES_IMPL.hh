@@ -31,7 +31,7 @@ namespace structs {
 
 template <typename PtrType>
 struct _SID_AND_ATTRIBUTES {
-    PtrType Sid;
+    guest_member_ptr<_SID, PtrType> Sid;
     uint32_t Attributes;
 };
 
@@ -43,23 +43,39 @@ static_assert(sizeof(_SID_AND_ATTRIBUTES<uint64_t>) == 0x10);
 template <typename PtrType>
 class SID_AND_ATTRIBUTES_IMPL final : public SID_AND_ATTRIBUTES {
   public:
-    GuestVirtualAddress SidPtr() const override;
-    void SidPtr(const GuestVirtualAddress& gva) override;
+    guest_ptr<void> SidPtr() const override { return ptr_->Sid.get(ptr_); }
+    void SidPtr(const guest_ptr<void>& ptr) override {
+        ptr_->Sid.set(ptr);
+        if (ptr)
+            sid.emplace(ptr);
+    }
 
-    SidAttributeFlags Attributes() const override;
-    void Attributes(SidAttributeFlags Attributes) override;
+    SidAttributeFlags Attributes() const override { return SidAttributeFlags(ptr_->Attributes); }
+    void Attributes(SidAttributeFlags Attributes) override { ptr_->Attributes = Attributes; }
 
-    const SID* Sid() const override;
-    Json::Value json() const override;
+    const SID* Sid() const override {
+        if (sid)
+            return &(*sid);
+        return nullptr; // TODO: Can this actually happen?
+    }
 
-    GuestVirtualAddress address() const override { return gva_; }
+    Json::Value json() const override {
+        Json::Value result;
+        result["SID"] = Sid()->json();
+        result["Attributes"] = Attributes().value();
+        return result;
+    }
 
-    SID_AND_ATTRIBUTES_IMPL(const GuestVirtualAddress& gva);
+    guest_ptr<void> ptr() const override { return ptr_; }
+
+    SID_AND_ATTRIBUTES_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {
+        const auto pSid = SidPtr();
+        if (pSid)
+            sid.emplace(pSid);
+    }
 
   private:
-    GuestVirtualAddress gva_;
-    guest_ptr<structs::_SID_AND_ATTRIBUTES<PtrType>> data_;
-
+    guest_ptr<structs::_SID_AND_ATTRIBUTES<PtrType>> ptr_;
     mutable std::optional<SID_IMPL> sid;
 };
 

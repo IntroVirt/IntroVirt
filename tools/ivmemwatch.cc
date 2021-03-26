@@ -81,10 +81,9 @@ int main(int argc, char** argv) {
     // clang-format off
     desc.add_options()
       ("domain,D", po::value<std::string>(&domain_name)->required(), "The domain name or ID attach to")
-      ("physical,P", "Use a physical address instead of a virtual address")
       ("procname", po::value<std::string>(&process_name), "A process name to watch")
       ("pid", po::value<uint64_t>(&pid), "A process identifier to watch")
-      ("address,a", po::value<std::string>(&address_str)->required(), "An address of a buffer to watch. Requires procname or pid if not physical.")
+      ("address,a", po::value<std::string>(&address_str)->required(), "An address of a buffer to watch. Requires procname or pid.")
       ("length,l", po::value<uint32_t>(&length)->default_value(1), "The length of the buffer to watch")
       ("read,r",  "Watch read accesses")
       ("write,w",  "Watch writes accesses")
@@ -101,7 +100,6 @@ int main(int argc, char** argv) {
     const bool read = vm.count("read");
     const bool write = vm.count("write");
     const bool exec = vm.count("execute");
-    const bool physical = vm.count("physical");
 
     //
     // Argument Validation
@@ -113,12 +111,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (!physical) {
-        // Make sure a process name or PID was provided
-        if (process_name.empty() && vm.count("pid") == 0) {
-            std::cerr << "Virtual addresses require a process name or PID\n";
-            return 1;
-        }
+    // Make sure a process name or PID was provided
+    if (process_name.empty() && vm.count("pid") == 0) {
+        std::cerr << "Virtual addresses require a process name or PID\n";
+        return 1;
     }
 
     if (!length) {
@@ -156,64 +152,57 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (!physical) {
-        domain->pause();
+    domain->pause();
 
-        switch (domain->guest()->os()) {
-        case OS::Windows: {
-            // Find a matching process
-            const auto* guest = static_cast<const WindowsGuest*>(domain->guest());
-            const auto& kernel = guest->kernel();
-            auto cidtable = kernel.CidTable();
-            std::shared_ptr<nt::PROCESS> process;
+    switch (domain->guest()->os()) {
+    case OS::Windows: {
+        // Find a matching process
+        const auto* guest = static_cast<const WindowsGuest*>(domain->guest());
+        const auto& kernel = guest->kernel();
+        auto cidtable = kernel.CidTable();
+        std::shared_ptr<nt::PROCESS> process;
 
-            for (const auto& entry : cidtable->open_handles()) {
-                auto object_header = entry->ObjectHeader();
-                if (object_header->type() == nt::ObjectType::Process) {
-                    auto test_process = kernel.process(object_header->Body());
-                    if (vm.count("pid") == 0) {
-                        // String match
-                        auto name = boost::to_lower_copy(test_process->ImageFileName());
-                        if (boost::starts_with(name, process_name)) {
-                            process = std::move(test_process);
-                            break;
-                        }
-                    } else {
-                        // Pid match
-                        if (pid == test_process->UniqueProcessId()) {
-                            process = std::move(test_process);
-                            break;
-                        }
+        for (const auto& entry : cidtable->open_handles()) {
+            auto object_header = entry->ObjectHeader();
+            if (object_header->type() == nt::ObjectType::Process) {
+                auto test_process = kernel.process(object_header->Body());
+                if (vm.count("pid") == 0) {
+                    // String match
+                    auto name = boost::to_lower_copy(test_process->ImageFileName());
+                    if (boost::starts_with(name, process_name)) {
+                        process = std::move(test_process);
+                        break;
+                    }
+                } else {
+                    // Pid match
+                    if (pid == test_process->UniqueProcessId()) {
+                        process = std::move(test_process);
+                        break;
                     }
                 }
             }
-
-            if (!process) {
-                std::cerr << "Failed to find a matching process\n";
-                return 1;
-            }
-
-            // Make the GuestVirtualAddress in the right address space
-            GuestVirtualAddress gva(*domain, address, process->DirectoryTableBase());
-
-            // Create the watchpoint
-            watchpoint = domain->create_watchpoint(gva, length, read, write, exec,
-                                                   std::bind(&mem_callback, _1));
-
-            break;
         }
-        default:
-            std::cerr << "Unsupported OS\n";
+
+        if (!process) {
+            std::cerr << "Failed to find a matching process\n";
             return 1;
         }
 
-        domain->resume();
-    } else {
-        // Just get the physical address
-        GuestPhysicalAddress physical_address(*domain, address);
-        watchpoint = domain->create_watchpoint(physical_address, length, read, write, exec,
-                                               std::bind(&mem_callback, _1));
+        // Make the pointer in the right address space
+        guest_ptr<void> ptr(*domain, address, process->DirectoryTableBase());
+
+        // Create the watchpoint
+        watchpoint =
+            domain->create_watchpoint(ptr, length, read, write, exec, std::bind(&mem_callback, _1));
+
+        break;
     }
+    default:
+        std::cerr << "Unsupported OS\n";
+        return 1;
+    }
+
+    domain->resume();
 
     std::cout << "Running!" << std::endl;
 

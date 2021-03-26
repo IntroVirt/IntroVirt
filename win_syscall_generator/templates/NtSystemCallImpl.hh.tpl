@@ -32,6 +32,7 @@
 #include "windows/injection/syscall.hh"
 #include "core/injection/RegisterGuard.hh"
 #include <introvirt/core/exception/SystemCallInjectionException.hh>
+#include <introvirt/core/exception/NullAddressException.hh>
 #include <introvirt/windows/event/WindowsEvent.hh>
 #include <introvirt/windows/exception/InvalidSystemCallConfiguration.hh>
 
@@ -52,7 +53,7 @@ class {{ className }}Impl {{ 'final ' if not has_children }}: public {{ parent_n
     /* Direct parameter getters */
 
 {%- for arg in arguments %}
-    {{ arg['type'] if not arg.get('pointer') else 'GuestVirtualAddress' }} {{arg['functionName']}}() const override {{ 'final ' if has_children }} {
+    {{ arg['type'] if not arg.get('pointer') else 'guest_ptr<void>' }} {{arg['functionName']}}() const override {{ 'final ' if has_children }} {
         {%- if not arg.get('pointer') and arg['rawType'] != arg['type'] %}
         return static_cast<{{ arg['type'] }}>({{ arg['variableName'] }}_);
         {%- else %}
@@ -70,14 +71,14 @@ class {{ className }}Impl {{ 'final ' if not has_children }}: public {{ parent_n
     /* Direct parameter setters */
     
 {%- for arg in arguments %}
-    void {{arg['functionName']}}({{ arg['type'] if not arg.get('pointer') else 'const GuestVirtualAddress&' }} {{arg['variableName']}}) override {{ 'final ' if has_children }} {
+    void {{arg['functionName']}}({{ arg['type'] if not arg.get('pointer') else 'const guest_ptr<void>&' }} {{arg['variableName']}}) override {{ 'final ' if has_children }} {
    {%- if 'conditional_indexes' in arg %}
             {%- set indexVar = '' + arg['indexVar'] %}
         {%- else %}
             {%- set indexVar = arg['index'] %}
         {%- endif %}
         {%- if arg.get('pointer') %}
-    this->set_argument({{indexVar}}, {{arg['variableName']}}.virtual_address());
+    this->set_argument({{indexVar}}, {{arg['variableName']}}.address());
         {%- elif not arg.get('pointer') and arg['rawType'] != arg['type'] %}
     this->set_argument({{indexVar}}, static_cast<{{arg['rawType']}}>({{arg['variableName']}}));
         {%- else %}
@@ -197,7 +198,7 @@ Json::Value json() const override {
     {% include 'includes/json_helper_' + arg['writeMethod'] + '.tpl' %}
 {%- endif %}
 {%- if arg.get('pointer') %}
-    {{arg['name']}}Json["address"] = {{arg['functionName']}}();
+    {{arg['name']}}Json["address"] = {{ arg['variableName'] }}_.address();
 {%- endif %}
     args["{{arg['name']}}"] = std::move({{arg['name']}}Json);
 {%- endif %}
@@ -213,13 +214,13 @@ Json::Value json() const override {
     static {{ return_type }} inject({% for arg in signature %}
         {%- if arg.get('pointer') -%}
             {%- if arg.get('use_address_for_injection') -%}
-            const GuestVirtualAddress& {{ arg['variableName'] -}}
+            const guest_ptr<void>& {{ arg['variableName'] -}}
             {%- elif 'helper' in arg -%}
             {{ 'const ' if not arg.get('out') }}{{ arg['helper']['type'] }}{{'*' if arg.get('optional') else '&'}}
             {{- ' ' -}}
             {{ arg['name'] -}}
             {%- else -%}
-            const GuestVirtualAddress& {{ arg['variableName'] -}}
+            const guest_ptr<void>& {{ arg['variableName'] -}}
             {%- endif -%}
         {%- else -%}
             {%- if arg['type'] == 'VOID' %}
@@ -253,7 +254,8 @@ Json::Value json() const override {
 
         // Create a system call stack frame
     {%- if count[0] > 0 %}
-    const uint64_t rsp = injector.stack_pointer();
+    auto& vcpu = event.vcpu();
+    guest_ptr<void> rsp(vcpu, injector.stack_pointer());
     {% endif %}
 
         // Declare pointers to "complex" object types
@@ -262,7 +264,7 @@ Json::Value json() const override {
             {%- if 'helper' in arg %}
                 {%- if arg['helper']['mode'] == 'complex' %}
                     {%- if not arg.get('use_address_for_injection') %}
-    GuestVirtualAddress {{ arg['variableName'] }};
+    guest_ptr<void> {{ arg['variableName'] }};
                     {%- endif %}
                 {%- endif %}
             {%- endif %}
@@ -276,9 +278,9 @@ Json::Value json() const override {
             {%- if 'helper' in arg and arg['helper']['mode'] != 'complex'  %}
             {%- if count.append(count.pop() + 1) %}{% endif %}
             {%- if arg.get('optional') %}
-    const GuestVirtualAddress {{ arg['variableName'] }}(({{arg['name']}}) ? (rsp - ({{ count[0] }} * sizeof(PtrType))) : 0);
+    const guest_ptr<void> {{ arg['variableName'] }}(({{arg['name']}}) ? (rsp - ({{ count[0] }} * sizeof(PtrType))) : nullptr);
             {%- else %}
-    const GuestVirtualAddress {{ arg['variableName'] }}(rsp - ({{ count[0] }} * sizeof(PtrType)));
+    const guest_ptr<void> {{ arg['variableName'] }}(rsp - ({{ count[0] }} * sizeof(PtrType)));
             {%- endif %}
             {%- endif %}
         {%- endif %}
@@ -359,13 +361,13 @@ Json::Value json() const override {
 {%- for arg in arguments %}
     {%- if 'conditional_indexes' in arg %}
     {%- if arg.get('pointer') %}
-    {{arg['variableName']}}_ = GuestVirtualAddress(this->get_argument({{arg['indexVar']}}));
+    {{arg['variableName']}}_ = this->get_address_argument({{arg['indexVar']}});
     {%- else %}
     {{arg['variableName']}}_ = this->get_argument({{arg['indexVar']}});
     {%- endif %}
     {%- else %}
     {%- if arg.get('pointer') %}
-    {{arg['variableName']}}_ = GuestVirtualAddress(this->get_argument({{arg['index']}}));
+    {{arg['variableName']}}_ = this->get_address_argument({{arg['index']}});
     {%- else %}
     {{arg['variableName']}}_ = this->get_argument({{arg['index']}});
     {%- endif %}
@@ -392,7 +394,7 @@ Json::Value json() const override {
   private:
 {%- if not helper_base %}
     /* Injection constructor */
-    {{ className }}Impl(WindowsEvent& event, {% for arg in signature %}{{ arg['type'] if not arg.get('pointer') else 'const GuestVirtualAddress&' }} {{arg['variableName']}}{% if not loop.last %}, {% endif %}{%- endfor %}) :
+    {{ className }}Impl(WindowsEvent& event, {% for arg in signature %}{{ arg['type'] if not arg.get('pointer') else 'const guest_ptr<void>&' }} {{arg['variableName']}}{% if not loop.last %}, {% endif %}{%- endfor %}) :
         {{ parent_name }}Impl<PtrType, _BaseClass>(event) {
 
     // Set all of the arguments
@@ -403,7 +405,7 @@ Json::Value json() const override {
 {%- endif %}
     /* Direct parameters */
     {%- for arg in arguments %}
-    {{ arg['rawType'] if not arg.get('pointer') else 'GuestVirtualAddress' }} {{arg['variableName']}}_;
+    {{ arg['rawType'] if not arg.get('pointer') else 'guest_ptr<void>' }} {{arg['variableName']}}_;
     {%- endfor %}
 
     {%- block helper_variables %}
@@ -432,13 +434,13 @@ Json::Value json() const override {
 {{ return_type }} {{ className }}::inject({% for arg in signature %}
         {%- if arg.get('pointer') -%}
             {%- if arg.get('use_address_for_injection') -%}
-            const GuestVirtualAddress& {{ arg['variableName'] -}}
+            const guest_ptr<void>& {{ arg['variableName'] -}}
             {%- elif 'helper' in arg -%}
             {{ 'const ' if not arg.get('out') }}{{ arg['helper']['type'] }}{{'*' if arg.get('optional') else '&'}}
             {{- ' ' -}}
             {{ arg['name'] -}}
             {%- else -%}
-            const GuestVirtualAddress& {{ arg['variableName'] -}}
+            const guest_ptr<void>& {{ arg['variableName'] -}}
             {%- endif -%}
         {%- else -%}
             {%- if arg['type'] == 'VOID' %}

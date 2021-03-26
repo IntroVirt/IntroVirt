@@ -32,8 +32,7 @@ class NtKernelImpl;
 template <typename PtrType>
 class OBJECT_HEADER_HANDLE_INFO_IMPL final : public OBJECT_HEADER_HANDLE_INFO {
   public:
-    OBJECT_HEADER_HANDLE_INFO_IMPL(const NtKernelImpl<PtrType>& kernel,
-                                   const GuestVirtualAddress& gva);
+    OBJECT_HEADER_HANDLE_INFO_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
   private:
     const structs::OBJECT_HEADER_HANDLE_INFO* offsets_;
