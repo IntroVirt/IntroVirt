@@ -15,6 +15,8 @@
  */
 #include "KEY_VALUE_FULL_INFORMATION_IMPL.hh"
 
+#include <introvirt/util/HexDump.hh>
+
 namespace introvirt {
 namespace windows {
 namespace nt {
@@ -44,17 +46,20 @@ KEY_VALUE_FULL_INFORMATION_IMPL::KEY_VALUE_FULL_INFORMATION_IMPL(const guest_ptr
                                            ptr, buffer_size) {
 
     const auto pName = ptr + offsetof(structs::_KEY_VALUE_FULL_INFORMATION, Name);
-    const uint32_t name_buffer_len = (ptr + ptr_->DataOffset) - pName;
-    const uint32_t name_length = std::min(ptr_->NameLength, name_buffer_len);
-    Name_.emplace(pName, name_buffer_len, name_length);
+    uint32_t name_buffer_len;
 
-    if (ptr_->DataOffset && ptr_->DataLength) {
-        const auto pData = ptr + ptr_->DataOffset;
+    if (ptr_->DataLength) {
+        guest_ptr<void> pData = ptr + ptr_->DataOffset;
         const uint32_t data_buffer_len = (ptr + buffer_size) - pData;
         if (likely(ptr_->DataLength >= data_buffer_len)) {
             Data_ = KEY_VALUE::make_unique(Type(), pData, ptr_->DataLength);
         }
+        name_buffer_len = pData - pName;
+    } else {
+        name_buffer_len = buffer_size - offsetof(structs::_KEY_VALUE_FULL_INFORMATION, Name);
     }
+
+    Name_.emplace(pName, name_buffer_len, std::min(ptr_->NameLength, name_buffer_len));
 }
 
 } // namespace nt

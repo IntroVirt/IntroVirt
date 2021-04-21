@@ -53,18 +53,20 @@ KEY_NODE_INFORMATION_IMPL::KEY_NODE_INFORMATION_IMPL(const guest_ptr<void>& ptr,
     ptr_.reset(ptr);
 
     const auto pName = ptr + offsetof(structs::_KEY_NODE_INFORMATION, Name);
-    const uint32_t name_buffer_len = (ptr + ptr_->ClassOffset) - pName;
-    const uint32_t name_length = std::min(ptr_->NameLength, name_buffer_len);
-    Name_.emplace(pName, name_buffer_len, name_length);
+    uint32_t name_buffer_len;
 
-    if (ptr_->ClassOffset && ptr_->ClassLength) {
+    if (ptr_->ClassLength) {
         const auto pClass = ptr + ptr_->ClassOffset;
         const uint32_t class_buffer_len = (ptr + buffer_size) - pClass;
         const uint32_t class_length = std::min(ptr_->ClassLength, class_buffer_len);
         ClassName_.emplace(pClass, class_buffer_len, class_length);
+        name_buffer_len = (ptr + ptr_->ClassOffset) - pName;
     } else {
         ClassName_.emplace(nullptr, 0, 0);
+        name_buffer_len = buffer_size - offsetof(structs::_KEY_NODE_INFORMATION, Name);
     }
+
+    Name_.emplace(pName, name_buffer_len, std::min(ptr_->NameLength, name_buffer_len));
 }
 
 } // namespace nt
