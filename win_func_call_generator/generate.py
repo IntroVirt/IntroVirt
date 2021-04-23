@@ -79,7 +79,7 @@ def update_file(path, data):
 def resolve_typemap_entry(typemap: dict, type_name: str) -> (dict, str):
     """ Recursively resolve a typemap entry """
     if type_name not in typemap:
-        return None
+        print(f"Failed to find {type_name} in typemap")
 
     remaining = 10
     while True:
@@ -98,15 +98,9 @@ def resolve_typemap_entry(typemap: dict, type_name: str) -> (dict, str):
             typemap, entry["extends"])
         base_entry = base_entry.copy()
 
-        # TODO: We shouldn't have to list every single parameter here
+        # TODO: We shouldn't have to list every single parameter here to override
         if "size_t" in entry:
             base_entry["size_t"] = entry["size_t"]
-
-        if "direct_config" in base_entry and "direct_config" in entry:
-            base_entry["direct_config"].update(entry["direct_config"])
-
-        if "pointer_config" in base_entry and "pointer_config" in entry:
-            base_entry["pointer_config"].update(entry["pointer_config"])
 
         if "includes" in base_entry and "includes" in entry:
             base_entry["includes"] = list(set().union(
@@ -134,19 +128,12 @@ def generate_arg_helper_info(arg, typemap):
     if (DEBUG):
         print(f"Processing argument {arg['name']} of type {arg['type']}")
 
-    if arg.get("ppointer"):
-        arg_config = typemap_entry["ppointer_config"]
-    elif arg.get("pointer"):
-        arg_config = typemap_entry["pointer_config"]
-    else:
-        arg_config = typemap_entry["direct_config"]
-
-    arg_config_json = json.dumps(arg_config)
+    typemap_entry_json = json.dumps(typemap_entry, indent=4)
 
     # Run template on the helper json
-    rtemplate = ENV.from_string(arg_config_json)
+    rtemplate = ENV.from_string(typemap_entry_json)
     arg_config_json = rtemplate.render(typemap_entry)
-    arg_config = arg["config"] = json.loads(arg_config_json)
+    arg.update(json.loads(arg_config_json))
 
 
 def generate_includes(data):
@@ -179,10 +166,16 @@ def generate_library(library_dir: os.DirEntry, global_typemap: dict, include_dir
     typemap = global_typemap.copy()
 
     with open(os.path.join(library_dir, "settings.json")) as file:
+        if DEBUG:
+            print(f"Loading {os.path.join(library_dir, 'settings.json')}")
         settings = json.load(file)
     with open(os.path.join(library_dir, "typemap.json")) as file:
+        if DEBUG:
+            print(f"Loading {os.path.join(library_dir, 'typemap.json')}")        
         typemap.update(json.load(file))
     with open(os.path.join(library_dir, "functions.json")) as file:
+        if DEBUG:
+            print(f"Loading {os.path.join(library_dir, 'functions.json')}")        
         functions = json.load(file)
 
     for function in functions:
@@ -241,6 +234,8 @@ def generate_filelist(library_dir, include_dir, src_dir, headers: bool, sources:
         print(os.path.abspath(include_dir / "fwd.hh"), end=';')
 
     with open(os.path.join(library_dir, "functions.json")) as file:
+        if DEBUG:
+            print(f"Loading {os.path.join(library_dir, 'functions.json')}")
         functions = json.load(file)
 
     for function in functions:
@@ -271,6 +266,8 @@ def main():
     DEBUG = args.debug
 
     with open(os.path.join(BASE_PATH, "typemap.json")) as file:
+        if DEBUG:
+            print(f"Loading {os.path.join(BASE_PATH, 'typemap.json')}")
         global_typemap = json.load(file)
 
     for library_dir in os.scandir(os.path.join(BASE_PATH, "libraries")):

@@ -37,7 +37,7 @@ class {{ function_name }} final : public WindowsFunctionCall {
   public:
     {% for arg in arguments -%}
 
-    {% for method in arg.get("config", {}).get("methods", []) -%}
+    {% for method in arg.get("methods", []) -%}
     {{ method.get("result_type", "void") }} {{ method.get("name", "!!MISSING NAME!!") }}(
       {%- for method_arg in method.get("arguments", []) %}
       {{ method_arg["type"]}} {{ method_arg["name"]}}
@@ -53,8 +53,8 @@ class {{ function_name }} final : public WindowsFunctionCall {
     void write(std::ostream& os = std::cout) const override;
     Json::Value json() const override;
 
-    {% if result["type"] != "void" or result.get("pointer") %}
-    {% for method in result.get("config", {}).get("methods", []) -%}
+    {% if result["type"] != "void" %}
+    {% for method in result.get("methods", []) -%}
     {{ method.get("result_type", "void") }} {{ method.get("name", "!!MISSING NAME!!") }}(
       {%- for method_arg in method.get("arguments", []) %}
       {{ method_arg["type"]}} {{ method_arg["name"]}}
@@ -69,14 +69,14 @@ class {{ function_name }} final : public WindowsFunctionCall {
 
    /* Injection helper */
     static 
-    {% if result["type"] != "void" or result.get("pointer") -%}
-    {{ result["config"]["injection"]["result_type"] }}
+    {% if result["type"] != "void" -%}
+    {{ result["injection"]["result_type"] }}
     {%- else -%}
     void
     {%- endif %}
     inject(
     {%- for arg in arguments -%}
-    {{ arg.get("config", {}).get("injection", {}).get("type") }} {{ arg.get("config", {}).get("injection", {}).get("name") }}
+    {{ arg.get("injection", {}).get("type") }} {{ arg.get("injection", {}).get("name") }}
     {{ "," if not loop.last }}
     {%- endfor -%}
     );
@@ -88,19 +88,19 @@ class {{ function_name }} final : public WindowsFunctionCall {
    /* Injection constructor */
     {{ function_name }}(Event& event,
     {%- for arg in arguments -%}
-    {{ arg.get("config", {}).get("injection", {}).get("type") }} {{ arg.get("config", {}).get("injection", {}).get("name") }}
+    {{ arg.get("injection", {}).get("type") }} {{ arg.get("injection", {}).get("name") }}
     {{ "," if not loop.last }}
     {%- endfor -%}
     );
 
   private:
     {%- for arg in arguments %}
-    {%- for variable in arg.get("config", {}).get("variables", []) %}
+    {%- for variable in arg.get("variables", []) %}
     {{ "mutable" if variable.get("mutable") }} {{ variable.get("type", "MISSING TYPE") }} {{ variable.get("name", "MISSING NAME") }};
     {%- endfor %}
     {%- endfor %}
     {% if result["type"] != "void" or result.get("pointer") -%}
-    {%- for variable in result.get("config", {}).get("variables", []) %}
+    {%- for variable in result.get("variables", []) %}
     {%- if not variable.get("skip_if_result") %}
     {{ "mutable" if variable.get("mutable") }} {{ variable.get("type", "MISSING TYPE") }} {{ variable.get("name", "MISSING NAME") }};
     {%- endif -%}

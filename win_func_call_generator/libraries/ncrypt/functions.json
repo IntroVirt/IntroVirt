@@ -6,14 +6,12 @@
         },
         "arguments": [
             {
-                "type": "uint32_t",
-                "name": "unknown1",
-                "pointer": true
+                "type": "uint32_t*",
+                "name": "unknown1"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bSecret",
-                "pointer": true,
                 "length": "dwSecretLength()"
             },
             {
@@ -21,9 +19,8 @@
                 "name": "dwSecretLength"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bSeed",
-                "pointer": true,
                 "length": "dwSeedLength()"
             },
             {
@@ -31,14 +28,12 @@
                 "name": "dwSeedLength"
             },
             {
-                "type": "void",
-                "name": "unknown2",
-                "pointer": true
+                "type": "void*",
+                "name": "unknown2"
             },
             {
-                "type": "uint32_t",
-                "name": "unknown3",
-                "pointer": true
+                "type": "uint32_t*",
+                "name": "unknown3"
             }
         ]
     }

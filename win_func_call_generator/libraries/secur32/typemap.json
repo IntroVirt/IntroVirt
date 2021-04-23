@@ -5,10 +5,10 @@
         ],
         "extends": "builtin_type"
     },
-    "SecBufferDesc": {
+    "SecBufferDesc*": {
         "includes": [
             "<introvirt/windows/libraries/secur32/types/SecBufferDesc.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     }
 }

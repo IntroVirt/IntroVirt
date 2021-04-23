@@ -10,23 +10,20 @@
                 "name": "dwMsgTypeFlags"
             },
             {
-                "type": "CRYPT_DECRYPT_MESSAGE_PARA",
-                "name": "DecryptPara",
-                "pointer": true
+                "type": "CRYPT_DECRYPT_MESSAGE_PARA*",
+                "name": "DecryptPara"
             },
             {
-                "type": "CRYPT_VERIFY_MESSAGE_PARA",
-                "name": "VerifyPara",
-                "pointer": true
+                "type": "CRYPT_VERIFY_MESSAGE_PARA*",
+                "name": "VerifyPara"
             },
             {
                 "type": "uint32_t",
                 "name": "dwSignerIndex"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bEncodedBlob",
-                "pointer": true,
                 "length": "cbEncodedBlob()"
             },
             {
@@ -38,44 +35,38 @@
                 "name": "dwPrevInnerContentType"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "dwMsgType",
-                "pointer": true,
                 "in": false,
                 "out": true
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "dwInnerContentType",
-                "pointer": true,
                 "in": false,
                 "out": true
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bDecoded",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "optional": true,
                 "length": "*pcbDecoded()"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "cbDecoded",
-                "pointer": true,
                 "in": false,
                 "out": true
             },
             {
-                "type": "CERT_CONTEXT",
-                "name": "XchgCert",
-                "ppointer": true
+                "type": "CERT_CONTEXT**",
+                "name": "XchgCert"
             },
             {
-                "type": "CERT_CONTEXT",
-                "name": "SignerCert",
-                "ppointer": true
+                "type": "CERT_CONTEXT**",
+                "name": "SignerCert"
             }
         ]
     },
@@ -90,14 +81,12 @@
                 "name": "dwCertEncodingType"
             },
             {
-                "type": "cstring",
-                "name": "szStructType",
-                "pointer": true
+                "type": "cstring_or_cryptstructtype",
+                "name": "StructType"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bEncoded",
-                "pointer": true,
                 "length": "cbEncoded()"
             },
             {
@@ -109,21 +98,20 @@
                 "name": "dwFlags"
             },
             {
-                "type": "CRYPT_DECODE_PARA",
+                "type": "CRYPT_DECODE_PARA*",
                 "name": "DecodePara",
-                "pointer": true
+                "optional": true
             },
             {
-                "type": "uint32_t",
+                "type": "void*",
                 "name": "vStructInfo",
-                "pointer": true,
+                "optional": true,
                 "in": false,
                 "out": true
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "cbStructInfo",
-                "pointer": true,
                 "in": false,
                 "out": true
             }
@@ -136,14 +124,12 @@
         },
         "arguments": [
             {
-                "type": "CRYPT_DECRYPT_MESSAGE_PARA",
-                "name": "DecryptPara",
-                "pointer": true
+                "type": "CRYPT_DECRYPT_MESSAGE_PARA*",
+                "name": "DecryptPara"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bEncryptedBlob",
-                "pointer": true,
                 "length": "cbEncryptedBlob()"
             },
             {
@@ -151,25 +137,22 @@
                 "name": "cbEncryptedBlob"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bDecrypted",
-                "pointer": true,
                 "length": "*pcbDecrypted()",
                 "in": false,
                 "out": true,
                 "optional": true
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "cbDecrypted",
-                "pointer": true,
                 "in": true,
                 "out": true
             },
             {
-                "type": "CERT_CONTEXT",
+                "type": "CERT_CONTEXT**",
                 "name": "XchgCert",
-                "ppointer": true,
                 "optional": true
             }
         ]
@@ -181,9 +164,8 @@
         },
         "arguments": [
             {
-                "type": "CRYPT_ENCRYPT_MESSAGE_PARA",
-                "name": "EncryptPara",
-                "pointer": true
+                "type": "CRYPT_ENCRYPT_MESSAGE_PARA*",
+                "name": "EncryptPara"
             },
             {
                 "type": "uint32_t",
@@ -192,13 +174,11 @@
             {
                 "type": "CryptEncryptMessageCerts",
                 "name": "RecipientCert",
-                "pointer": true,
                 "array": true
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bToBeEncrypted",
-                "pointer": true,
                 "length": "cbToBeEncrypted()"
             },
             {
@@ -206,16 +186,14 @@
                 "name": "cbToBeEncrypted"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bEncryptedBlob",
-                "pointer": true,
                 "optional": true,
                 "length": "*pcbEncryptedBlob()"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "cbEncryptedBlob",
-                "pointer": true,
                 "in": true,
                 "out": true
             }
@@ -228,9 +206,8 @@
         },
         "arguments": [
             {
-                "type": "CRYPT_HASH_MESSAGE_PARA",
-                "name": "HashPara",
-                "pointer": true
+                "type": "CRYPT_HASH_MESSAGE_PARA*",
+                "name": "HashPara"
             },
             {
                 "type": "bool",
@@ -241,46 +218,40 @@
                 "name": "cToBeHashed"
             },
             {
-                "type": "guest_ptr<guest_ptr_t[]>",
-                "name": "pbToBeHashed",
-                "pointer": true,
+                "type": "uint8_t*[]",
+                "name": "bToBeHashed",
                 "array": true,
                 "length": "cToBeHashed()"
             },
             {
-                "type": "guest_ptr<uint32_t[]>",
+                "type": "uint32_t[]",
                 "name": "cbToBeHashed",
-                "pointer": true,
                 "array": true,
                 "length": "cToBeHashed()"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bHashedBlob",
                 "length": "*pcbHashedBlob()",
-                "pointer": true,
                 "optional": true,
                 "in": false,
                 "out": true
             },
             {
-                "type": "uint32_t",
-                "name": "cbHashedBlob",
-                "pointer": true
+                "type": "uint32_t*",
+                "name": "cbHashedBlob"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bComputedHash",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "optional": true,
                 "length": "*pcbComputedHash()"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "cbComputedHash",
-                "pointer": true,
                 "in": false,
                 "out": true
             }
@@ -293,31 +264,26 @@
         },
         "arguments": [
             {
-                "type": "CRYPTOAPI_BLOB",
-                "name": "DataIn",
-                "pointer": true
+                "type": "CRYPTOAPI_BLOB*",
+                "name": "DataIn"
             },
             {
-                "type": "cstring",
+                "type": "cstring*",
                 "name": "szDataDescr",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "CRYPTOAPI_BLOB",
+                "type": "CRYPTOAPI_BLOB*",
                 "name": "OptionalEntropy",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "void",
-                "name": "vReserved",
-                "pointer": true
+                "type": "void*",
+                "name": "vReserved"
             },
             {
-                "type": "CRYPTPROTECT_PROMPTSTRUCT",
+                "type": "CRYPTPROTECT_PROMPTSTRUCT*",
                 "name": "PromptStruct",
-                "pointer": true,
                 "optional": true
             },
             {
@@ -325,9 +291,8 @@
                 "name": "dwFlags"
             },
             {
-                "type": "CRYPTOAPI_BLOB",
+                "type": "CRYPTOAPI_BLOB*",
                 "name": "DataOut",
-                "pointer": true,
                 "in": false,
                 "out": true
             }
@@ -340,9 +305,8 @@
         },
         "arguments": [
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "DataIn",
-                "pointer": true,
                 "length": "cbDataIn()"
             },
             {
@@ -362,33 +326,28 @@
         },
         "arguments": [
             {
-                "type": "CRYPTOAPI_BLOB",
-                "name": "DataIn",
-                "pointer": true
+                "type": "CRYPTOAPI_BLOB*",
+                "name": "DataIn"
             },
             {
-                "type": "cstring",
+                "type": "cstring**",
                 "name": "szDataDescr",
-                "ppointer": true,
                 "in": false,
                 "out": true,
                 "optional": true
             },
             {
-                "type": "CRYPTOAPI_BLOB",
+                "type": "CRYPTOAPI_BLOB*",
                 "name": "OptionalEntropy",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "void",
-                "name": "vReserved",
-                "pointer": true
+                "type": "void*",
+                "name": "vReserved"
             },
             {
-                "type": "CRYPTPROTECT_PROMPTSTRUCT",
+                "type": "CRYPTPROTECT_PROMPTSTRUCT*",
                 "name": "PromptStruct",
-                "pointer": true,
                 "optional": true
             },
             {
@@ -396,9 +355,8 @@
                 "name": "dwFlags"
             },
             {
-                "type": "CRYPTOAPI_BLOB",
+                "type": "CRYPTOAPI_BLOB*",
                 "name": "DataOut",
-                "pointer": true,
                 "in": false,
                 "out": true
             }
@@ -411,9 +369,8 @@
         },
         "arguments": [
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "DataIn",
-                "pointer": true,
                 "length": "cbDataIn()"
             },
             {

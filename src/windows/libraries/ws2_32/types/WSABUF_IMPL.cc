@@ -28,6 +28,14 @@ std::shared_ptr<WSABUF> WSABUF::make_shared(const guest_ptr<void>& ptr, bool x64
     }
 }
 
+size_t WSABUF::size(bool x64) {
+    if (x64) {
+        return sizeof(structs::_WSABUF<uint64_t>);
+    } else {
+        return sizeof(structs::_WSABUF<uint32_t>);
+    }
+}
+
 } // namespace ws2_32
 } // namespace windows
 } // namespace introvirt

@@ -1125,23 +1125,23 @@ class basic_guest_ptr : public basic_guest_ptr_members<
         }
     }
     inline auto& _mapping() {
-        if constexpr (std::is_pointer_v<_Tp> && is_guest_size_v<_PtrType>) {
+        if constexpr (_is_pointer_v && _is_guest_ptr_t_v) {
             return this->ptr_._mapping();
-        } else if constexpr (!std::is_pointer_v<_Tp> || !is_guest_size_v<_PtrType>) {
+        } else if constexpr (!_is_pointer_v || !_is_guest_ptr_t_v) {
             return this->mapping_;
         }
     }
     inline void _mapping(const std::shared_ptr<GuestMemoryMapping>& in) {
-        if constexpr (std::is_pointer_v<_Tp> && is_guest_size_v<_PtrType>) {
+        if constexpr (_is_pointer_v && _is_guest_ptr_t_v) {
             this->ptr_._mapping(in);
-        } else if constexpr (!std::is_pointer_v<_Tp> || !is_guest_size_v<_PtrType>) {
+        } else if constexpr (!_is_pointer_v || !_is_guest_ptr_t_v) {
             this->mapping_ = in;
         }
     }
     inline void _mapping(std::shared_ptr<GuestMemoryMapping>&& in) {
-        if constexpr (std::is_pointer_v<_Tp> && is_guest_size_v<_PtrType>) {
+        if constexpr (_is_pointer_v && _is_guest_ptr_t_v) {
             this->ptr_._mapping(std::move(in));
-        } else if constexpr (!std::is_pointer_v<_Tp> || !is_guest_size_v<_PtrType>) {
+        } else if constexpr (!_is_pointer_v || !_is_guest_ptr_t_v) {
             this->mapping_ = std::move(in);
         }
     }
@@ -1317,7 +1317,16 @@ template <typename _CharType, typename _OutPtrType = void, typename _Tp, typenam
 inline auto _map_guest_str(const basic_guest_ptr<_Tp, _PtrType, _Physical>& ptr,
                            size_t max_length = 0xFFFF) {
 
+    using result_type =
+        std::conditional_t<std::is_const_v<_Tp>, std::add_const_t<_CharType>, _CharType>;
+    basic_guest_ptr<result_type, _OutPtrType, _Physical> result;
+
     constexpr std::size_t char_size = sizeof(std::remove_all_extents_t<_CharType>);
+
+    if (!ptr) {
+        return result;
+    }
+
     std::size_t bytes_available = PageDirectory::PAGE_SIZE - ptr.page_offset();
     std::size_t chars_available = bytes_available / char_size;
 
@@ -1333,10 +1342,6 @@ inline auto _map_guest_str(const basic_guest_ptr<_Tp, _PtrType, _Physical>& ptr,
     // Scan for a null pointer
     size_t offset = 0;
 
-    using result_type =
-        std::conditional_t<std::is_const_v<_Tp>, std::add_const_t<_CharType>, _CharType>;
-
-    basic_guest_ptr<result_type, _OutPtrType, _Physical> result;
     if constexpr (std::is_void_v<_Tp>) {
         result.reset(ptr, chars_available);
     } else if constexpr (!std::is_void_v<_Tp>) {

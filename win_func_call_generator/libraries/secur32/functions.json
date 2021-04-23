@@ -6,14 +6,12 @@
         },
         "arguments": [
             {
-                "type": "void",
-                "name": "hContext",
-                "pointer": true
+                "type": "void*",
+                "name": "hContext"
             },
             {
-                "type": "SecBufferDesc",
+                "type": "SecBufferDesc*",
                 "name": "Message",
-                "pointer": true,
                 "in": true,
                 "out": true
             },
@@ -22,9 +20,8 @@
                 "name": "MessageSeqNo"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "fQOP",
-                "pointer": true,
                 "in": false,
                 "out": true
             }
@@ -37,18 +34,16 @@
         },
         "arguments": [
             {
-                "type": "void",
-                "name": "hContext",
-                "pointer": true
+                "type": "void*",
+                "name": "hContext"
             },
             {
                 "type": "uint32_t",
                 "name": "fQOP"
             },
             {
-                "type": "SecBufferDesc",
+                "type": "SecBufferDesc*",
                 "name": "Message",
-                "pointer": true,
                 "in": true,
                 "out": true
             },

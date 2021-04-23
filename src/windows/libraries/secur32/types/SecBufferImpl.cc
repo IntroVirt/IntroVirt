@@ -13,17 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
-#include <cstdint>
+#include "SecBufferImpl.hh"
+
+#include <introvirt/core/domain/Vcpu.hh>
 
 namespace introvirt {
 namespace windows {
 namespace secur32 {
 
-class SecBuffer;
-class SecBufferDesc;
-enum SECURITY_STATUS : uint32_t;
+std::shared_ptr<SecBuffer> SecBuffer::make_shared(const guest_ptr<void>& ptr, bool x64) {
+    if (x64) {
+        return std::make_shared<SecBufferImpl<uint64_t>>(ptr);
+    }
+    return std::make_shared<SecBufferImpl<uint32_t>>(ptr);
+}
+
+size_t SecBuffer::size(bool x64) {
+    if (x64) {
+        return sizeof(structs::_SecBuffer<uint64_t>);
+    }
+    return sizeof(structs::_SecBuffer<uint32_t>);
+}
+
+size_t SecBuffer::size(const Vcpu& vcpu) {
+    return SecBuffer::size(vcpu.long_mode() && !vcpu.long_compatibility_mode());
+}
 
 } // namespace secur32
 } // namespace windows

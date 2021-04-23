@@ -60,6 +60,11 @@ class WSABUF {
      * @return std::shared_ptr<WSABUF>
      */
     static std::shared_ptr<WSABUF> make_shared(const guest_ptr<void>& ptr, bool x64);
+
+    /**
+     * @brief Get the size of the structure
+     */
+    static size_t size(bool x64);
 };
 
 } // namespace ws2_32

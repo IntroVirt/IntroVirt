@@ -1,31 +1,31 @@
 {
-    "CONDITIONPROC": {
+    "CONDITIONPROC*": {
         "note": "Function Pointer",
-        "redirect": "void"
+        "redirect": "void*"
     },
-    "FD_SET": {
+    "FD_SET*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/FD_SET.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "HOSTENT": {
+    "HOSTENT*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/HOSTENT.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "OVERLAPPED": {
+    "OVERLAPPED*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/OVERLAPPED.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "QOS": {
+    "QOS*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/QOS.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
     "SOCKET": {
         "includes": [
@@ -34,52 +34,120 @@
         "size_t": true,
         "extends": "builtin_type"
     },
-    "SOCKADDR": {
+    "SOCKET*": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/SOCKET.hh>"
+        ],
+        "size_t": true,
+        "extends": "builtin_type*"
+    },
+    "SOCKADDR*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/SOCKADDR.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "TIMEVAL": {
+    "TIMEVAL*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/TIMEVAL.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "TRANSMIT_FILE_BUFFERS": {
+    "TRANSMIT_FILE_BUFFERS*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/TRANSMIT_FILE_BUFFERS.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "WSABUF": {
+    "WSABUF*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/WSABUF.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "WSADATA": {
+    "WSABUF[]": {
+        "includes": [
+            "<introvirt/windows/libraries/ws2_32/types/WSABUF.hh>",
+            "<memory>"
+        ],
+        "variables": [
+            {
+                "type": "guest_ptr<void>",
+                "name": "p{{ arg['name'] }}_"
+            }
+        ],
+        "injection": {
+            "type": "const guest_ptr<void>&",
+            "name": "p{{arg['name'] }}",
+            "inject_code": [
+                "this->p{{ arg['name'] }}(p{{arg['name'] }});"
+            ]
+        },
+        "initializer": [
+            "p{{ arg['name'] }}_ = get_address_argument({{index}});"
+        ],
+        "methods": [
+            {
+                "name": "p{{ arg['name'] }}",
+                "result_type": "guest_ptr<void>",
+                "code": [
+                    "return p{{ arg['name'] }}_;"
+                ],
+                "const": true
+            },
+            {
+                "name": "p{{ arg['name'] }}",
+                "result_type": "void",
+                "arguments": [
+                    {
+                        "type": "const guest_ptr<void>&",
+                        "name": "p{{ arg['name'] }}"
+                    }
+                ],
+                "code": [
+                    "set_address_argument({{ index }}, p{{ arg['name'] }});",
+                    "p{{ arg['name'] }}_ = p{{ arg['name'] }};"
+                ]
+            },
+            {
+                "name": "{{ arg['name'] }}",
+                "result_type": "std::vector<std::shared_ptr<WSABUF>>",
+                "code": [
+                    "std::vector<std::shared_ptr<WSABUF>> result;",
+                    "if (p{{ arg['name'] }}_) {",
+                    "  guest_ptr<void> ptr = p{{ arg['name'] }}_;",
+                    "  for (uint32_t i = 0; i < dwBufferCount(); ++i) {",
+                    "      result.emplace_back(WSABUF::make_shared(ptr, x64()));",
+                    "      ptr += WSABUF::size(x64());",
+                    "  }",
+                    "}",
+                    "return result;"
+                ]
+            }
+        ]
+    },
+    "WSADATA*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/WSADATA.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "WSAOVERLAPPED": {
+    "WSAOVERLAPPED*": {
         "includes": [
             "<introvirt/windows/libraries/ws2_32/types/WSAOVERLAPPED.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "WSAOVERLAPPED_COMPLETION_ROUTINE": {
+    "WSAOVERLAPPED_COMPLETION_ROUTINE*": {
         "note": "Function Pointer",
-        "redirect": "void"
+        "redirect": "void*"
     },
-    "WSAPROTOCOL_INFOA": {
+    "WSAPROTOCOL_INFOA*": {
         "TODO": "Implement this",
-        "redirect": "void"
+        "redirect": "void*"
     },
-    "WSAPROTOCOL_INFOW": {
+    "WSAPROTOCOL_INFOW*": {
         "TODO": "Implement this",
-        "redirect": "void"
+        "redirect": "void*"
     }
 }

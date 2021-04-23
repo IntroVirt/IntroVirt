@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include "SecBufferImpl.hh"
+
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/libraries/secur32/types/SecBufferDesc.hh>
 
@@ -30,13 +32,16 @@ template <typename PtrType>
 struct _SecBufferDesc {
     uint32_t ulVersion;
     uint32_t cBuffers;
-    guest_member_ptr<void, PtrType> pBuffers;
+    guest_member_ptr<_SecBuffer<PtrType>, PtrType> pBuffers;
 };
 
 } // namespace structs
 
 template <typename PtrType>
 class SecBufferDescImpl final : public SecBufferDesc {
+    using _SecBuffer = structs::_SecBuffer<PtrType>;
+    using _SecBufferDesc = structs::_SecBufferDesc<PtrType>;
+
   public:
     uint32_t ulVersion() const override { return ptr_->ulVersion; }
     void ulVersion(uint32_t ulVersion) override { ptr_->ulVersion = ulVersion; }
@@ -46,6 +51,23 @@ class SecBufferDescImpl final : public SecBufferDesc {
 
     guest_ptr<void> pBuffers() const override { return ptr_->pBuffers.get(ptr_); }
     void pBuffers(const guest_ptr<void>& ptr) override { ptr_->pBuffers.set(ptr); }
+
+    std::vector<std::shared_ptr<SecBuffer>> Buffers() const {
+        std::vector<std::shared_ptr<SecBuffer>> result;
+
+        // Map in the array of buffers
+        guest_ptr<_SecBuffer> pBuffers(this->pBuffers());
+        if (pBuffers) {
+            for (uint32_t i = 0; i < cBuffers(); ++i) {
+                // Create it
+                result.emplace_back(std::make_shared<SecBufferImpl<PtrType>>(pBuffers));
+                // Move to the next entry
+                ++pBuffers;
+            }
+        }
+
+        return result;
+    }
 
     SecBufferDescImpl(const guest_ptr<void>& ptr) : ptr_(ptr) {}
 

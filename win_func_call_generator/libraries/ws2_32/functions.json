@@ -10,14 +10,12 @@
                 "name": "s"
             },
             {
-                "type": "SOCKADDR",
-                "name": "addr",
-                "pointer": true
+                "type": "SOCKADDR*",
+                "name": "addr"
             },
             {
-                "type": "int32_t",
+                "type": "int32_t*",
                 "name": "addrlen",
-                "pointer": true,
                 "optional": true
             }
         ]
@@ -33,9 +31,8 @@
                 "name": "s"
             },
             {
-                "type": "SOCKADDR",
-                "name": "name",
-                "pointer": true
+                "type": "SOCKADDR*",
+                "name": "addr"
             },
             {
                 "type": "int32_t",
@@ -66,9 +63,8 @@
                 "name": "s"
             },
             {
-                "type": "SOCKADDR",
-                "name": "name",
-                "pointer": true
+                "type": "SOCKADDR*",
+                "name": "name"
             },
             {
                 "type": "int32_t",
@@ -87,18 +83,16 @@
                 "name": "s"
             },
             {
-                "type": "SOCKADDR",
-                "name": "name",
-                "pointer": true
+                "type": "SOCKADDR*",
+                "name": "name"
             },
             {
                 "type": "int32_t",
                 "name": "namelen"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "SendBuffer",
-                "pointer": true,
                 "optional": true,
                 "length": "dwSendDataLength()"
             },
@@ -107,32 +101,28 @@
                 "name": "dwSendDataLength"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "dwBytesSent",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "optional": true
             },
             {
-                "type": "OVERLAPPED",
-                "name": "Overlapped",
-                "pointer": true
+                "type": "OVERLAPPED*",
+                "name": "Overlapped"
             }
         ]
     },
     "gethostbyname": {
         "doc_url": "https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-gethostbyname",
         "result": {
-            "type": "HOSTENT",
-            "pointer": true,
+            "type": "HOSTENT*",
             "optional": true
         },
         "arguments": [
             {
-                "type": "cstring",
-                "name": "name",
-                "pointer": true
+                "type": "cstring*",
+                "name": "name"
             }
         ]
     },
@@ -147,14 +137,12 @@
                 "name": "s"
             },
             {
-                "type": "SOCKADDR",
-                "name": "name",
-                "pointer": true
+                "type": "SOCKADDR*",
+                "name": "name"
             },
             {
-                "type": "int32_t",
-                "name": "namelen",
-                "pointer": true
+                "type": "int32_t*",
+                "name": "namelen"
             }
         ]
     },
@@ -173,9 +161,8 @@
                 "name": "cmd"
             },
             {
-                "type": "uint32_t",
-                "name": "arg",
-                "pointer": true
+                "type": "uint32_t*",
+                "name": "arg"
             }
         ]
     },
@@ -206,9 +193,8 @@
                 "name": "s"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "buf",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "TODO_length": "(returned() ? result() : len())",
@@ -235,9 +221,8 @@
                 "name": "s"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "buf",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "TODO_length": "(returned() ? result() : len())",
@@ -252,16 +237,14 @@
                 "name": "flags"
             },
             {
-                "type": "SOCKADDR",
+                "type": "SOCKADDR*",
                 "name": "from",
-                "pointer": true,
                 "in": false,
                 "out": true
             },
             {
-                "type": "int32_t",
+                "type": "int32_t*",
                 "name": "fromlen",
-                "pointer": true,
                 "optional": true
             }
         ]
@@ -277,24 +260,20 @@
                 "name": "nfds"
             },
             {
-                "type": "FD_SET",
-                "name": "readfds",
-                "pointer": true
+                "type": "FD_SET*",
+                "name": "readfds"
             },
             {
-                "type": "FD_SET",
-                "name": "writefds",
-                "pointer": true
+                "type": "FD_SET*",
+                "name": "writefds"
             },
             {
-                "type": "FD_SET",
-                "name": "exceptfds",
-                "pointer": true
+                "type": "FD_SET*",
+                "name": "exceptfds"
             },
             {
-                "type": "TIMEVAL",
-                "name": "timeout",
-                "pointer": true
+                "type": "TIMEVAL*",
+                "name": "timeout"
             }
         ]
     },
@@ -309,10 +288,9 @@
                 "name": "s"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "buf",
-                "pointer": true,
-                "length": "len()"
+                "length": "(returned() ? result() : len())"
             },
             {
                 "type": "int32_t",
@@ -335,10 +313,9 @@
                 "name": "s"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "buf",
-                "pointer": true,
-                "length": "len()"
+                "length": "(returned() ? result() : len())"
             },
             {
                 "type": "int32_t",
@@ -349,9 +326,8 @@
                 "name": "flags"
             },
             {
-                "type": "SOCKADDR",
-                "name": "to",
-                "pointer": true
+                "type": "SOCKADDR*",
+                "name": "to"
             },
             {
                 "type": "int32_t",
@@ -378,9 +354,8 @@
                 "name": "optname"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "optval",
-                "pointer": true,
                 "length": "optlen()"
             },
             {
@@ -448,15 +423,13 @@
                 "name": "nNumberOfBytesPerSend"
             },
             {
-                "type": "OVERLAPPED",
+                "type": "OVERLAPPED*",
                 "name": "Overlapped",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "TRANSMIT_FILE_BUFFERS",
+                "type": "TRANSMIT_FILE_BUFFERS*",
                 "name": "TransmitBuffers",
-                "pointer": true,
                 "optional": true
             },
             {
@@ -476,26 +449,22 @@
                 "name": "s"
             },
             {
-                "type": "SOCKADDR",
-                "name": "addr",
-                "pointer": true
+                "type": "SOCKADDR*",
+                "name": "addr"
             },
             {
-                "type": "int32_t",
+                "type": "int32_t*",
                 "name": "addrlen",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "CONDITIONPROC",
+                "type": "CONDITIONPROC*",
                 "name": "fnCondition",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "dwCallbackData",
-                "pointer": true,
                 "optional": true
             }
         ]
@@ -511,36 +480,31 @@
                 "name": "s"
             },
             {
-                "type": "SOCKADDR",
-                "name": "name",
-                "pointer": true
+                "type": "SOCKADDR*",
+                "name": "name"
             },
             {
                 "type": "int32_t",
                 "name": "namelen"
             },
             {
-                "type": "WSABUF",
+                "type": "WSABUF*",
                 "name": "CallerData",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "WSABUF",
+                "type": "WSABUF*",
                 "name": "CalleeData",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "QOS",
+                "type": "QOS*",
                 "name": "SQOS",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "QOS",
+                "type": "QOS*",
                 "name": "GQOS",
-                "pointer": true,
                 "optional": true
             }
         ]
@@ -556,39 +520,34 @@
                 "name": "s"
             },
             {
-                "type": "WSABUF",
-                "name": "Buffers",
-                "pointer": true
+                "type": "WSABUF[]",
+                "name": "Buffers"
             },
             {
                 "type": "uint32_t",
                 "name": "dwBufferCount"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "NumberOfBytesRecvd",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "optional": true
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "Flags",
-                "pointer": true,
                 "in": true,
                 "out": true
             },
             {
-                "type": "WSAOVERLAPPED",
+                "type": "WSAOVERLAPPED*",
                 "name": "Overlapped",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE",
+                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE*",
                 "name": "CompletionRoutine",
-                "pointer": true,
                 "optional": true
             }
         ]
@@ -604,55 +563,48 @@
                 "name": "s"
             },
             {
-                "type": "WSABUF",
-                "name": "Buffers",
-                "pointer": true
+                "type": "WSABUF[]",
+                "name": "Buffers"
             },
             {
                 "type": "uint32_t",
                 "name": "dwBufferCount"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "NumberOfBytesRecvd",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "optional": true
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "Flags",
-                "pointer": true,
                 "in": true,
                 "out": true
             },
             {
-                "type": "SOCKADDR",
+                "type": "SOCKADDR*",
                 "name": "From",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "optional": true
             },
             {
-                "type": "int32_t",
+                "type": "int32_t*",
                 "name": "Fromlen",
-                "pointer": true,
                 "in": true,
                 "out": true,
                 "optional": true
             },
             {
-                "type": "WSAOVERLAPPED",
+                "type": "WSAOVERLAPPED*",
                 "name": "Overlapped",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE",
+                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE*",
                 "name": "CompletionRoutine",
-                "pointer": true,
                 "optional": true
             }
         ]
@@ -668,39 +620,34 @@
                 "name": "s"
             },
             {
-                "type": "WSABUF",
-                "name": "Buffers",
-                "pointer": true
+                "type": "WSABUF[]",
+                "name": "Buffers"
             },
             {
                 "type": "uint32_t",
                 "name": "dwBufferCount"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "NumberOfBytesSent",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "optional": true
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "Flags",
-                "pointer": true,
                 "in": true,
                 "out": true
             },
             {
-                "type": "WSAOVERLAPPED",
+                "type": "WSAOVERLAPPED*",
                 "name": "Overlapped",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE",
+                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE*",
                 "name": "CompletionRoutine",
-                "pointer": true,
                 "optional": true
             }
         ]
@@ -716,33 +663,29 @@
                 "name": "s"
             },
             {
-                "type": "WSABUF",
-                "name": "Buffers",
-                "pointer": true
+                "type": "WSABUF[]",
+                "name": "Buffers"
             },
             {
                 "type": "uint32_t",
                 "name": "dwBufferCount"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "NumberOfBytesSent",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "optional": true
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "Flags",
-                "pointer": true,
                 "in": true,
                 "out": true
             },
             {
-                "type": "SOCKADDR",
+                "type": "SOCKADDR*",
                 "name": "To",
-                "pointer": true,
                 "optional": true
             },
             {
@@ -750,15 +693,13 @@
                 "name": "iToLen"
             },
             {
-                "type": "WSAOVERLAPPED",
+                "type": "WSAOVERLAPPED*",
                 "name": "Overlapped",
-                "pointer": true,
                 "optional": true
             },
             {
-                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE",
+                "type": "WSAOVERLAPPED_COMPLETION_ROUTINE*",
                 "name": "CompletionRoutine",
-                "pointer": true,
                 "optional": true
             }
         ]
@@ -782,9 +723,8 @@
                 "name": "protocol"
             },
             {
-                "type": "WSAPROTOCOL_INFOA",
-                "name": "ProtocolInfo",
-                "pointer": true
+                "type": "WSAPROTOCOL_INFOA*",
+                "name": "ProtocolInfo"
             },
             {
                 "type": "uint32_t",
@@ -815,9 +755,8 @@
                 "name": "protocol"
             },
             {
-                "type": "WSAPROTOCOL_INFOW",
-                "name": "ProtocolInfo",
-                "pointer": true
+                "type": "WSAPROTOCOL_INFOW*",
+                "name": "ProtocolInfo"
             },
             {
                 "type": "uint32_t",
@@ -840,9 +779,8 @@
                 "name": "wVersionRequested"
             },
             {
-                "type": "WSADATA",
-                "name": "WSAData",
-                "pointer": true
+                "type": "WSADATA*",
+                "name": "WSAData"
             }
         ]
     }

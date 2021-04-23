@@ -15,12 +15,10 @@
  */
 #pragma once
 
-#include "SecBuffer.hh"
-
 #include <introvirt/core/memory/guest_ptr.hh>
 
 #include <cstdint>
-#include <vector>
+#include <memory>
 
 namespace introvirt {
 namespace windows {
@@ -29,25 +27,20 @@ namespace secur32 {
 /**
  * @brief
  *
- * @see https://docs.microsoft.com/en-us/windows/win32/api/sspi/ns-sspi-secbufferdesc
+ * @see https://docs.microsoft.com/en-us/windows/win32/api/sspi/ns-sspi-secbuffer
  */
-class SecBufferDesc {
+class SecBuffer {
   public:
-    virtual uint32_t ulVersion() const = 0;
-    virtual void ulVersion(uint32_t ulVersion) = 0;
+    virtual uint32_t cbBuffer() const = 0;
+    virtual void cbBuffer(uint32_t value) = 0;
 
-    virtual uint32_t cBuffers() const = 0;
-    virtual void cBuffers(uint32_t cBuffers) = 0;
+    virtual uint32_t BufferType() const = 0;
+    virtual void BufferType(uint32_t value) = 0;
 
-    virtual guest_ptr<void> pBuffers() const = 0;
-    virtual void pBuffers(const guest_ptr<void>& ptr) = 0;
+    virtual guest_ptr<uint8_t[]> pvBuffer() const = 0;
+    virtual void pvBuffer(const guest_ptr<uint8_t[]>& ptr) = 0;
 
-    virtual std::vector<std::shared_ptr<SecBuffer>> Buffers() const = 0;
-
-    /**
-     * @brief Create a SecBufferDesc
-     */
-    static std::shared_ptr<SecBufferDesc> make_shared(const guest_ptr<void>& ptr, bool x64);
+    static std::shared_ptr<SecBuffer> make_shared(const guest_ptr<void>& ptr, bool x64);
 
     /**
      * @brief Get the size of the structure
@@ -63,8 +56,6 @@ class SecBufferDesc {
      * to determine if the structure would be 32-bit or 64-bit.
      */
     static size_t size(const Vcpu& vcpu);
-
-    virtual ~SecBufferDesc() = default;
 };
 
 } // namespace secur32

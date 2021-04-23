@@ -232,6 +232,7 @@ bool operator!=(const SecureAllocator<T>&, const SecureAllocator<U>&) {
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 // If non-zero, the library uses exceptions to report bad input instead of C
@@ -348,6 +349,7 @@ template <typename T>
 using Allocator = typename std::conditional<JSONCPP_USING_SECURE_MEMORY, SecureAllocator<T>,
                                             std::allocator<T>>::type;
 using String = std::basic_string<char, std::char_traits<char>, Allocator<char>>;
+using StringView = std::basic_string_view<char>;
 using IStringStream =
     std::basic_istringstream<String::value_type, String::traits_type, String::allocator_type>;
 using OStringStream =
@@ -837,6 +839,7 @@ class JSON_API Value {
      */
     Value(const StaticString& value);
     Value(const String& value);
+    Value(StringView value);
     Value(bool value);
     Value(const Value& other);
     Value(Value&& other);

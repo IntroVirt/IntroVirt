@@ -12,6 +12,13 @@
         "extends": "builtin_type",
         "size_t": true
     },
+    "HCRYPTPROV*": {
+        "includes": [
+            "<introvirt/windows/libraries/advapi32/types/fwd.hh>"
+        ],
+        "extends": "builtin_type*",
+        "size_t": true
+    },
     "HCRYPTKEY": {
         "includes": [
             "<introvirt/windows/libraries/advapi32/types/fwd.hh>"
@@ -19,11 +26,25 @@
         "extends": "builtin_type",
         "size_t": true
     },
+    "HCRYPTKEY*": {
+        "includes": [
+            "<introvirt/windows/libraries/advapi32/types/fwd.hh>"
+        ],
+        "extends": "builtin_type*",
+        "size_t": true
+    },
     "HCRYPTHASH": {
         "includes": [
             "<introvirt/windows/libraries/advapi32/types/fwd.hh>"
         ],
         "extends": "builtin_type",
+        "size_t": true
+    },
+    "HCRYPTHASH*": {
+        "includes": [
+            "<introvirt/windows/libraries/advapi32/types/fwd.hh>"
+        ],
+        "extends": "builtin_type*",
         "size_t": true
     },
     "KP_VALUE": {

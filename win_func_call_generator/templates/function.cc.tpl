@@ -27,7 +27,7 @@ namespace {{ namespace }} {
 
 {% for arg in arguments -%}
 
-{% for method in arg.get("config", {}).get("methods", []) -%}
+{% for method in arg.get("methods", []) -%}
 {{ method.get("result_type", "void") }} {{ function_name }}::{{ method.get("name", "!!MISSING NAME!!") }}(
     {%- for method_arg in method.get("arguments", []) -%}
     {{ method_arg["type"]}} {{ method_arg["name"]}}
@@ -42,8 +42,8 @@ namespace {{ namespace }} {
 
 {% endfor -%}
 
-{% if result["type"] != "void" or result.get("pointer") %}
-{% for method in result.get("config", {}).get("methods", []) -%}
+{% if result["type"] != "void" %}
+{% for method in result.get("methods", []) -%}
 {{ method.get("result_type", "void") }} {{ function_name }}::{{ method.get("name", "!!MISSING NAME!!") }}(
     {%- for method_arg in method.get("arguments", []) -%}
     {{ method_arg["type"]}} {{ method_arg["name"]}}
@@ -71,14 +71,14 @@ Json::Value {{ function_name }}::json() const {
     Json::Value args;
 
     {%- for arg in arguments -%}
-    {%- for line in arg["config"].get("to_json", []) -%}
+    {%- for line in arg.get("to_json", []) -%}
     {{ line }}
     {%- endfor %}
     {%- endfor %}
 
-    {% if result["type"] != "void" or result["config"].get("pointer") -%}
+    {% if result["type"] != "void" -%}
     if (returned()) {
-        {%- for line in result["config"].get("to_json", []) -%}
+        {%- for line in result.get("to_json", []) -%}
         {{ line }}
         {% endfor %}
     }
@@ -90,7 +90,7 @@ Json::Value {{ function_name }}::json() const {
 
 {{ function_name }}::{{ function_name }}(Event& event) : WindowsFunctionCall(event, ArgumentCount) {
     {% for arg in arguments -%}
-    {%- for line in arg.get("config",{}).get("initializer", []) -%}
+    {%- for line in arg.get("initializer", []) -%}
     {{ line }}
     {%- endfor %}
     {% endfor %}
@@ -99,29 +99,25 @@ Json::Value {{ function_name }}::json() const {
 /* Injection constructor */
 {{ function_name }}::{{ function_name }}(Event& event,
 {%- for arg in arguments -%}
-{{ arg.get("config", {}).get("injection", {}).get("type") }} {{ arg.get("config", {}).get("injection", {}).get("name") }}
+{{ arg.get("injection", {}).get("type") }} {{ arg.get("injection", {}).get("name") }}
 {{ "," if not loop.last }}
 {%- endfor -%}
 ) : WindowsFunctionCall(event, ArgumentCount) {
     {%- for arg in arguments -%}
-    {%- if arg.get("pointer") or arg.get("ppointer") -%}
-    set_address_argument({{arg["index"]}}, {{ arg.get("config", {}).get("injection", {}).get("name") }});
-    {%- else -%}
-    set_argument({{arg["index"]}}, {{ arg.get("config", {}).get("injection", {}).get("name") }});
-    {%- endif %}
+    {% for line in arg["injection"]["inject_code"] %}{{ line }}{% endfor %}
     {% endfor %}
 }
 
 {{ function_name }}::~{{ function_name }}() = default;
 
 {% if result["type"] != "void" or result.get("pointer") -%}
-{{ result["config"]["injection"]["result_type"] }}
+{{ result["injection"]["result_type"] }}
 {%- else -%}
 void
 {%- endif %}
 {{ function_name }}::inject(
 {%- for arg in arguments -%}
-{{ arg.get("config", {}).get("injection", {}).get("type") }} {{ arg.get("config", {}).get("injection", {}).get("name") }}
+{{ arg.get("injection", {}).get("type") }} {{ arg.get("injection", {}).get("name") }}
 {{ "," if not loop.last }}
 {%- endfor -%}
 ) {
@@ -129,13 +125,13 @@ void
         introvirt::windows::inject::FunctionInjector<{{ function_name }}> injector(event);
         {{ function_name }} handler(event,
         {%- for arg in arguments -%}
-        {{ arg.get("config", {}).get("injection", {}).get("name") }}
+        {{ arg.get("injection", {}).get("name") }}
         {{ "," if not loop.last }}
         {%- endfor -%}
         );
         injector.call(handler);
         {%- if result["type"] != "void" or result.get("pointer") -%}
-        {%- for line in result["config"]["injection"]["result_code"] -%}
+        {%- for line in result["injection"]["result_code"] -%}
         {{ line }}
         {%- endfor %}
         {%- endif %}

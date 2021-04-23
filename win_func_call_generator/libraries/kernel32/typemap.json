@@ -1,24 +1,24 @@
 {
-    "PROCESS_INFORMATION": {
+    "PROCESS_INFORMATION*": {
         "includes": [
             "<introvirt/windows/libraries/kernel32/types/PROCESS_INFORMATION.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "SECURITY_ATTRIBUTES": {
+    "SECURITY_ATTRIBUTES*": {
         "TODO": "Implement this",
-        "redirect": "void"
+        "redirect": "void*"
     },
-    "STARTUPINFOA": {
+    "STARTUPINFOA*": {
         "includes": [
             "<introvirt/windows/libraries/kernel32/types/STARTUPINFOA.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     },
-    "STARTUPINFOW": {
+    "STARTUPINFOW*": {
         "includes": [
             "<introvirt/windows/libraries/kernel32/types/STARTUPINFOW.hh>"
         ],
-        "extends": "class_method_make_shared_64check"
+        "extends": "class_method_make_shared_64check*"
     }
 }

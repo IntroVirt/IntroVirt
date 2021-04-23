@@ -6,21 +6,18 @@
         },
         "arguments": [
             {
-                "type": "HCRYPTPROV",
+                "type": "HCRYPTPROV*",
                 "name": "hProv",
-                "pointer": true,
                 "in": false,
                 "out": true
             },
             {
-                "type": "cstring",
-                "name": "szContainer",
-                "pointer": true
+                "type": "cstring*",
+                "name": "szContainer"
             },
             {
-                "type": "cstring",
-                "name": "szProvider",
-                "pointer": true
+                "type": "cstring*",
+                "name": "szProvider"
             },
             {
                 "type": "uint32_t",
@@ -39,21 +36,18 @@
         },
         "arguments": [
             {
-                "type": "HCRYPTPROV",
+                "type": "HCRYPTPROV*",
                 "name": "hProv",
-                "pointer": true,
                 "in": false,
                 "out": true
             },
             {
-                "type": "wstring",
-                "name": "szContainer",
-                "pointer": true
+                "type": "wstring*",
+                "name": "szContainer"
             },
             {
-                "type": "wstring",
-                "name": "szProvider",
-                "pointer": true
+                "type": "wstring*",
+                "name": "szProvider"
             },
             {
                 "type": "uint32_t",
@@ -88,9 +82,8 @@
                 "name": "dwFlags"
             },
             {
-                "type": "HCRYPTHASH",
+                "type": "HCRYPTHASH*",
                 "name": "hHash",
-                "pointer": true,
                 "in": false,
                 "out": true
             }
@@ -119,17 +112,15 @@
                 "name": "dwFlags"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bData",
-                "pointer": true,
                 "in": true,
                 "out": true,
                 "length": "*pdwDataLen()"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "dwDataLen",
-                "pointer": true,
                 "in": true,
                 "out": true
             }
@@ -158,15 +149,15 @@
                 "name": "dwFlags"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bData",
-                "pointer": true,
                 "in": true,
                 "out": true,
+                "optional": true,
                 "length": "dwBufLen()"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "dwDataLen",
                 "in": true,
                 "out": true
@@ -200,15 +191,15 @@
                 "name": "dwFlags"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bData",
-                "pointer": true,
                 "in": false,
                 "out": true,
-                "length": "dwDataLen()"
+                "optional": true,
+                "length": "*pdwDataLen()"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "dwDataLen",
                 "in": true,
                 "out": true
@@ -234,9 +225,8 @@
                 "name": "dwFlags"
             },
             {
-                "type": "HCRYPTKEY",
+                "type": "HCRYPTKEY*",
                 "name": "hKey",
-                "pointer": true,
                 "in": false,
                 "out": true
             }
@@ -257,9 +247,8 @@
                 "name": "dwLen"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bBuffer",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "length": "dwLen()"
@@ -281,18 +270,16 @@
                 "name": "dwParam"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bData",
-                "pointer": true,
                 "in": false,
                 "out": true,
                 "optional": true,
                 "length": "*pdwDataLen()"
             },
             {
-                "type": "uint32_t",
+                "type": "uint32_t*",
                 "name": "dwDataLen",
-                "pointer": true,
                 "in": false,
                 "out": true
             },
@@ -313,9 +300,8 @@
                 "name": "hHash"
             },
             {
-                "type": "guest_ptr<uint8_t[]>",
+                "type": "uint8_t[]",
                 "name": "bData",
-                "pointer": true,
                 "length": "dwDataLen()"
             },
             {
@@ -343,9 +329,8 @@
                 "name": "dwParam"
             },
             {
-                "type": "void",
-                "name": "bData",
-                "pointer": true
+                "type": "uint8_t*",
+                "name": "bData"
             },
             {
                 "type": "uint32_t",
