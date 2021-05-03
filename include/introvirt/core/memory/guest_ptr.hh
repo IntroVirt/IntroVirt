@@ -521,7 +521,7 @@ class basic_guest_ptr : public basic_guest_ptr_members<
     }
     template <typename Tp, typename PtrType>
     basic_guest_ptr<_Tp, _PtrType, _Physical, _Enabled>&
-    operator=(const basic_guest_ptr<Tp, PtrType, _Physical>& in) noexcept {
+    operator=(const basic_guest_ptr<Tp, PtrType, _Physical>& in) {
         this->_copy(in);
         return *this;
     }
@@ -549,7 +549,7 @@ class basic_guest_ptr : public basic_guest_ptr_members<
     }
     template <typename Tp, typename PtrType>
     basic_guest_ptr<_Tp, _PtrType, _Physical, _Enabled>&
-    operator=(basic_guest_ptr<Tp, PtrType, _Physical>&& in) noexcept {
+    operator=(basic_guest_ptr<Tp, PtrType, _Physical>&& in) {
         this->_move(std::move(in));
         return *this;
     }
