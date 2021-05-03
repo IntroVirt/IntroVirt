@@ -105,7 +105,8 @@ class FunctionInjector final {
             return WakeAction::DROP;
         });
 
-        introvirt_assert(event_.vcpu().id() == new_event->vcpu().id(), "");
+        introvirt_assert(event_.vcpu().id() == new_event->vcpu().id(),
+                         "VCPU changed during function injection");
 
         // Update the injection lasterror/laststatus values
         LastErrorValueInject.emplace(teb->LastErrorValue());

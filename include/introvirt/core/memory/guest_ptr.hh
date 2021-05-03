@@ -362,7 +362,7 @@ class basic_guest_ptr : public basic_guest_ptr_members<
     template <bool Physical = _Physical, typename InPtrType,
               typename std::enable_if_t<Physical>* dummy = nullptr>
     basic_guest_ptr(const basic_guest_ptr<_Tp, InPtrType, false>& in) {
-        static_assert(_is_void_v || sizeof(_Tp) == 1,
+        static_assert(!_is_array_v && (_is_void_v || sizeof(_Tp) == 1),
                       "Only void or 1-byte conversions from virtual to physical are supported");
 
         this->_copy(in);
@@ -936,6 +936,9 @@ class basic_guest_ptr : public basic_guest_ptr_members<
                 // Convert the address to physical
                 this->address_ =
                     this->domain_->page_directory().translate(in.address(), in.page_directory());
+                // Don't do the below stuff, we don't need a remap when converting virtual to
+                // physical because we limit it to one byte types
+                return;
             } else {
                 // We have to set this so _reset() can figure out if it should reuse the same buffer
                 this->address_ = in.address();
