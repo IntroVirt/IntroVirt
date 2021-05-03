@@ -51,6 +51,10 @@ void crash_handler(int signum) {
     // This should be safe
     boost::stacktrace::safe_dump_to("./introvirt-crash.dmp");
 
+    // Not as safe
+    std::cerr << "Program crashed with " << strsignal(signum) << '\n';
+    std::cerr << boost::stacktrace::stacktrace() << '\n';
+
     // This is less safe, but we're crashing anyway
     log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("introvirt.crash"));
     LOG4CXX_FATAL(logger, "Program crashed with " << strsignal(signum));
