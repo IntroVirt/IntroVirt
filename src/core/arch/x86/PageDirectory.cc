@@ -171,6 +171,8 @@ retry:
 
     PageTableEntry pte(0);
 
+    bool update_pte = true;
+
     /*
      *  Walk the page tables
      */
@@ -190,6 +192,7 @@ retry:
                                                                   pte_val)) {
                 case GuestPageFaultResult::PTE_FIXED:
                     pte = PageTableEntry(pte_val);
+                    update_pte = false;
                     break;
                 case GuestPageFaultResult::RETRY:
                     goto retry;
@@ -201,16 +204,19 @@ retry:
             }
         }
 
+        if (update_pte)
+            pte_mapping.set(pte_mapping.get() | (1 << 5));
+
         // Read the address provided in the PTE
         paddr = pte.physical_address();
 
         if (pte.huge()) {
             if ((level == 2 || (level == 3 && pt_levels_ == 4))) {
                 mask = ((mask ^ ~-mask) >> 1); /* All bits below first set bit */
+
                 return ((paddr & ~mask) | (virt & mask));
             }
         }
-
         mask >>= (pt_levels_ == 2 ? 10 : 9);
     }
 
