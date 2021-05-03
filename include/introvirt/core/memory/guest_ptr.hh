@@ -362,8 +362,8 @@ class basic_guest_ptr : public basic_guest_ptr_members<
     template <bool Physical = _Physical, typename InPtrType,
               typename std::enable_if_t<Physical>* dummy = nullptr>
     basic_guest_ptr(const basic_guest_ptr<_Tp, InPtrType, false>& in) {
-        introvirt_assert(in.mapping_->length() <= x86::PageDirectory::PAGE_SIZE,
-                         "Cannot convert virtual to physical when crossing page boundaries");
+        static_assert(_is_void_v || sizeof(_Tp) == 1,
+                      "Only void or 1-byte conversions from virtual to physical are supported");
 
         this->_copy(in);
     }
