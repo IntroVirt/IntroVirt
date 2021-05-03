@@ -362,8 +362,11 @@ class basic_guest_ptr : public basic_guest_ptr_members<
     template <bool Physical = _Physical, typename InPtrType,
               typename std::enable_if_t<Physical>* dummy = nullptr>
     basic_guest_ptr(const basic_guest_ptr<_Tp, InPtrType, false>& in) {
-        static_assert(!_is_array_v && (_is_void_v || sizeof(_Tp) == 1),
-                      "Only void or 1-byte conversions from virtual to physical are supported");
+        if constexpr (!_is_void_v) {
+            // In constexpr if to silence compiler warning about sizeof(void)
+            static_assert(!_is_array_v && sizeof(_Tp) == 1,
+                          "Only void or 1-byte conversions from virtual to physical are supported");
+        }
 
         this->_copy(in);
     }
@@ -594,7 +597,11 @@ class basic_guest_ptr : public basic_guest_ptr_members<
             this->ptr_ += offset;
         } else {
             _validate_valid_ptr();
-            this->_reset(this->address_ + (offset * _element_size()));
+            if constexpr (_is_array_v) {
+                this->_reset(this->address_ + (offset * _element_size()), this->length_);
+            } else {
+                this->_reset(this->address_ + (offset * _element_size()));
+            }
         }
         return *this;
     }
@@ -621,7 +628,11 @@ class basic_guest_ptr : public basic_guest_ptr_members<
             this->ptr_ -= offset;
         } else {
             _validate_valid_ptr();
-            this->_reset(this->address_ - (offset * _element_size()));
+            if constexpr (_is_array_v) {
+                this->_reset(this->address_ - (offset * _element_size()), this->length_);
+            } else {
+                this->_reset(this->address_ - (offset * _element_size()));
+            }
         }
         return *this;
     }
