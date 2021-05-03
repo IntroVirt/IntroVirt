@@ -205,8 +205,6 @@ template <typename PtrType>
 OBJECT_ATTRIBUTES_IMPL<PtrType>::OBJECT_ATTRIBUTES_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {
 
     if (ptr_->ObjectName) {
-        std::cerr << "pObjectName: " << ptr_->ObjectName.get(ptr_) << '\n';
-        std::cerr << "Length:" << ptr_->ObjectName.get(ptr_)->Length << '\n';
         ObjectName_.emplace(ptr_->ObjectName.get(ptr_));
     }
     if (ptr_->SecurityDescriptor) {
