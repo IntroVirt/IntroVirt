@@ -18,10 +18,12 @@
 #include "kernel/nt/structs/structs.hh"
 #include "windows/event/WindowsEventImpl.hh"
 #include "windows/event/WindowsSystemCallEventImpl.hh"
+#include "windows/injection/page_fault.hh"
 #include "windows/kernel/nt/structs/structs.hh"
-#include <introvirt/core/event/ThreadLocalEvent.hh>
 
 #include <introvirt/core/core.hh>
+#include <introvirt/core/event/ThreadLocalEvent.hh>
+#include <introvirt/core/injection/system_call.hh>
 #include <introvirt/util/compiler.hh>
 #include <introvirt/windows/WindowsGuest.hh>
 #include <introvirt/windows/kernel/nt/NtKernel.hh>
@@ -304,7 +306,7 @@ GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_page_fault_internal(uint6
             const uint32_t access_mask = ACCESS_MASK::PROCESS_VM_READ |
                                          ACCESS_MASK::PROCESS_VM_OPERATION |
                                          ACCESS_MASK::PROCESS_QUERY_INFORMATION;
-            auto syscall_result = inject::system_call<nt::NtOpenProcess>(
+            auto syscall_result = introvirt::inject::system_call<nt::NtOpenProcess>(
                 process_handle, access_mask, object_attributes, client_id);
 
             if (!syscall_result.NT_SUCCESS()) {
@@ -317,7 +319,7 @@ GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_page_fault_internal(uint6
         auto temp_buffer = inject::allocate<uint8_t>();
 
         auto syscall_result =
-            inject::system_call<NtReadVirtualMemory>(process_handle, gva, temp_buffer, 1, nullptr);
+            introvirt::inject::system_call<NtReadVirtualMemory>(process_handle, gva, temp_buffer, 1, nullptr);
 
         if (!syscall_result.NT_SUCCESS()) {
             LOG4CXX_WARN(logger,
@@ -329,7 +331,7 @@ GuestPageFaultResult WindowsGuestImpl<PtrType>::handle_page_fault_internal(uint6
         }
 
         if (process_handle != NtCurrentProcess())
-            inject::system_call<nt::NtClose>(process_handle);
+            introvirt::inject::system_call<nt::NtClose>(process_handle);
 
 #endif
         return result;
@@ -444,7 +446,7 @@ guest_ptr<void> WindowsGuestImpl<PtrType>::allocate(size_t& RegionSize, bool exe
         ZeroBits = 0x7FFFFFFFF;
     }
 
-    nt::NTSTATUS result = inject::system_call<nt::NtAllocateVirtualMemory>(
+    nt::NTSTATUS result = introvirt::inject::system_call<nt::NtAllocateVirtualMemory>(
         0xFFFFFFFFFFFFFFFFLL, BaseAddress, ZeroBits, RegionSize, nt::MEM_COMMIT | nt::MEM_RESERVE,
         prot);
 
@@ -456,7 +458,7 @@ guest_ptr<void> WindowsGuestImpl<PtrType>::allocate(size_t& RegionSize, bool exe
 
     // Try to lock in the memory region
     size_t LockedRegionSize = RegionSize;
-    result = inject::system_call<nt::NtLockVirtualMemory>(
+    result = introvirt::inject::system_call<nt::NtLockVirtualMemory>(
         0xFFFFFFFFFFFFFFFFLL, BaseAddress, LockedRegionSize, nt::MapType::MAP_PROCESS);
 
     if (!result.NT_SUCCESS()) {
@@ -464,7 +466,7 @@ guest_ptr<void> WindowsGuestImpl<PtrType>::allocate(size_t& RegionSize, bool exe
         // Page the region in
         const auto end_addr = BaseAddress + RegionSize;
         for (auto addr = BaseAddress; addr < end_addr; addr += x86::PageDirectory::PAGE_SIZE) {
-            result = inject::system_call<nt::NtReadVirtualMemory>(
+            result = introvirt::inject::system_call<nt::NtReadVirtualMemory>(
                 0xFFFFFFFFFFFFFFFFLL, guest_ptr<void>(vcpu, addr), guest_ptr<void>(vcpu, addr), 1,
                 nullptr);
             if (unlikely(!result.NT_SUCCESS())) {
@@ -481,7 +483,7 @@ guest_ptr<void> WindowsGuestImpl<PtrType>::allocate(size_t& RegionSize, bool exe
 template <typename PtrType>
 void WindowsGuestImpl<PtrType>::guest_free(const guest_ptr<void>& BaseAddress, size_t RegionSize) {
     try {
-        nt::NTSTATUS result = inject::system_call<nt::NtFreeVirtualMemory>(
+        nt::NTSTATUS result = introvirt::inject::system_call<nt::NtFreeVirtualMemory>(
             nt::NtCurrentProcess(), BaseAddress.address(), RegionSize, nt::MEM_RELEASE);
 
         if (unlikely(!result.NT_SUCCESS())) {
@@ -493,6 +495,13 @@ void WindowsGuestImpl<PtrType>::guest_free(const guest_ptr<void>& BaseAddress, s
     } catch (TraceableException& ex) {
         LOG4CXX_WARN(logger, "Failed to free guest memory due to exception: " << ex);
     }
+}
+
+template <typename PtrType>
+bool WindowsGuestImpl<PtrType>::page_in(Event& event, uint64_t virtual_address) {
+    inject::PageFaultInjector injector(event);
+    injector.call(virtual_address);
+    return true;
 }
 
 template <typename PtrType>

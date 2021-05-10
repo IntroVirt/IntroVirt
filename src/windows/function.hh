@@ -49,16 +49,15 @@ namespace introvirt {
 namespace windows {
 namespace inject {
 
+static log4cxx::LoggerPtr
+    func_injector_logger(log4cxx::Logger::getLogger("introvirt.win.inject.FunctionInjector"));
+
 void dummy_callback(Event& event, std::shared_ptr<Breakpoint>* breakpoint2);
 
 extern thread_local std::optional<WinError> LastErrorValueInject;
 
 template <typename _WindowsFunctionCall>
 class FunctionInjector final {
-  private:
-    static inline log4cxx::LoggerPtr logger =
-        log4cxx::Logger::getLogger("introvirt.win.inject.FunctionInjector");
-
   public:
     /**
      * @brief Sleep the current thread until the function call returns
@@ -74,7 +73,7 @@ class FunctionInjector final {
 
         // Lock the thread affinity
         auto& thread = static_cast<WindowsEvent&>(event_).task().pcr().CurrentThread();
-        const uint64_t desired_affinity = (1u << vcpu.id());
+        const uint64_t desired_affinity = (1u << event_.vcpu().id());
         const auto original_affinity = thread.Affinity();
         const auto original_user_affinity = thread.UserAffinity();
         const auto original_ideal_processor = thread.IdealProcessor();
@@ -82,12 +81,12 @@ class FunctionInjector final {
 
         thread.Affinity(desired_affinity);
         thread.UserAffinity(desired_affinity);
-        thread.IdealProcessor(vcpu.id());
-        thread.UserIdealProcessor(vcpu.id());
+        thread.IdealProcessor(event_.vcpu().id());
+        thread.UserIdealProcessor(event_.vcpu().id());
 
         static_cast<DomainImpl&>(event_.domain()).start_injection(event_);
 
-        LOG4CXX_DEBUG(logger, "Jumping RIP to " << target_function_);
+        LOG4CXX_DEBUG(func_injector_logger, "Jumping RIP to " << target_function_);
 
         // Set RIP to the function address
         regs.rip(target_function_.address());
@@ -106,7 +105,7 @@ class FunctionInjector final {
             return WakeAction::DROP;
         });
 
-        introvirt_assert(vcpu.id() == new_event->vcpu().id(),
+        introvirt_assert(event_.vcpu().id() == new_event->vcpu().id(),
                          "VCPU changed during function injection");
 
         // Update the injection lasterror/laststatus values
@@ -124,7 +123,7 @@ class FunctionInjector final {
         thread.UserIdealProcessor(original_user_ideal_processor);
 
         if (original_cs_) {
-            LOG4CXX_DEBUG(logger, "Restoring original CS");
+            LOG4CXX_DEBUG(func_injector_logger, "Restoring original CS");
             regs.cs(*original_cs_);
         }
 
@@ -132,7 +131,7 @@ class FunctionInjector final {
 
         call.handle_return(*new_event);
 
-        LOG4CXX_DEBUG(logger, "Function call completed");
+        LOG4CXX_DEBUG(func_injector_logger, "Function call completed");
     }
 
     FunctionInjector(Event& event) : guard_(event.vcpu()), event_(event) {
@@ -142,7 +141,8 @@ class FunctionInjector final {
 
         switch (event.type()) {
         case EventType::EVENT_MEM_ACCESS:
-            LOG4CXX_WARN(logger, "Function injection on nested memory access not supported")
+            LOG4CXX_WARN(func_injector_logger,
+                         "Function injection on nested memory access not supported")
             throw InvalidMethodException();
         default:
             break;
@@ -168,18 +168,18 @@ class FunctionInjector final {
 
             if (wow64) {
                 auto& regs = event.vcpu().registers();
-                LOG4CXX_DEBUG(logger, "Beginning WoW64 function call");
+                LOG4CXX_DEBUG(func_injector_logger, "Beginning WoW64 function call");
 
                 // auto cs = regs.cs();
                 if (target_is_x64) {
                     // We're jumping to a 64-bit function ...
                     if (regs.cs().long_mode() == false) {
-                        LOG4CXX_ERROR(logger,
+                        LOG4CXX_ERROR(func_injector_logger,
                                       "Function transition from 64 to 32 bit mode not implemented");
 #if 0
                         // ... but we're in a 32-bit segment. Enter long mode!
                         original_cs_.emplace(cs);
-                        LOG4CXX_WARN(logger, "Forcing long mode");
+                        LOG4CXX_WARN(func_injector_logger, "Forcing long mode");
                         x86::SegmentSelector sel(0x33);
                         x86::Segment seg(sel, 0x0, 0x0, 0xFB, true, 3, false, true, true, false,
                                          false);
@@ -190,12 +190,12 @@ class FunctionInjector final {
                 } else {
                     // We're jumping to a 32-bit function ...
                     if (regs.cs().long_mode() == true) {
-                        LOG4CXX_ERROR(logger,
+                        LOG4CXX_ERROR(func_injector_logger,
                                       "Function transition from 64 to 32 bit mode not implemented");
 #if 0
                         // ... but we're currently in a 64-bit segment. Exit long mode!
                         original_cs_.emplace(cs);
-                        LOG4CXX_WARN(logger, "Forcing long mode exit");
+                        LOG4CXX_WARN(func_injector_logger, "Forcing long mode exit");
                         x86::SegmentSelector sel(0x23);
                         x86::Segment seg(sel, 0x0, 0xfffff, 0xFB, true, 3, true, true, false, true,
                                          false);
@@ -203,18 +203,18 @@ class FunctionInjector final {
 
                         std::optional<pe::Pe> pe;
                         if (!find_pe("wow64cpu", pe)) {
-                            LOG4CXX_WARN(logger, "Failed to find wow64cpu");
+                            LOG4CXX_WARN(func_injector_logger, "Failed to find wow64cpu");
                             throw InvalidMethodException(); // TODO : Proper exception
                         }
                         const auto& pdb = pe->pdb();
                         const auto* symbol = pdb.name_to_symbol("TurboThunkDispatch");
                         if (symbol == nullptr) {
-                            LOG4CXX_WARN(logger, "Failed to find TurboThunkDispatch");
+                            LOG4CXX_WARN(func_injector_logger, "Failed to find TurboThunkDispatch");
                             throw InvalidMethodException(); // TODO : Proper exception
                         }
 
                         auto pTurboThunkDispatch = pe->address() + symbol->image_offset();
-                        LOG4CXX_WARN(logger,
+                        LOG4CXX_WARN(func_injector_logger,
                                      "Loading r15 with TurboThunkDispatch=" << pTurboThunkDispatch);
                         regs.r15(pTurboThunkDispatch.value());
 #endif
@@ -222,12 +222,12 @@ class FunctionInjector final {
                     begin_function_call<uint32_t>();
                 }
             } else {
-                LOG4CXX_DEBUG(logger, "Beginning 64 bit function call");
+                LOG4CXX_DEBUG(func_injector_logger, "Beginning 64 bit function call");
                 begin_function_call<uint64_t>();
             }
         } else {
             allocate_guest_memory<uint32_t>();
-            LOG4CXX_DEBUG(logger, "Beginning 32 bit function call");
+            LOG4CXX_DEBUG(func_injector_logger, "Beginning 32 bit function call");
             begin_function_call<uint32_t>();
         }
     }
@@ -243,7 +243,7 @@ class FunctionInjector final {
             else
                 free_guest_memory<uint32_t>();
         } catch (TraceableException& ex) {
-            LOG4CXX_WARN(logger, "FunctionInjector cleanup failed: " << ex.what());
+            LOG4CXX_WARN(func_injector_logger, "FunctionInjector cleanup failed: " << ex.what());
         }
     }
 
@@ -271,14 +271,15 @@ class FunctionInjector final {
                         break;
                     }
                 } catch (VirtualAddressNotPresentException& ex) {
-                    LOG4CXX_DEBUG(logger, "Failed to read file object at " << ex.virtual_address());
+                    LOG4CXX_DEBUG(func_injector_logger,
+                                  "Failed to read file object at " << ex.virtual_address());
                 }
             }
         }
 
         if (!library_address) {
             // TODO: Get a better exception here
-            LOG4CXX_WARN(logger, "Failed to find library named " << library_name);
+            LOG4CXX_WARN(func_injector_logger, "Failed to find library named " << library_name);
             return false;
         }
 
@@ -300,8 +301,9 @@ class FunctionInjector final {
         if (iter != export_map.end()) {
             target_function_.reset(event_.vcpu(), iter->second.address.address());
         } else {
-            LOG4CXX_WARN(logger, "Failed to find '" << _WindowsFunctionCall::FunctionName << "' in "
-                                                    << _WindowsFunctionCall::LibraryName);
+            LOG4CXX_WARN(func_injector_logger, "Failed to find '"
+                                                   << _WindowsFunctionCall::FunctionName << "' in "
+                                                   << _WindowsFunctionCall::LibraryName);
             return false;
         }
 
@@ -335,10 +337,11 @@ class FunctionInjector final {
         // Allocate executable and data memory
         size_t RegionSize = x86::PageDirectory::PAGE_SIZE;
         data_page_ = guest->allocate(RegionSize);
-        LOG4CXX_DEBUG(logger, "Allocated function injection data page : " << data_page_);
+        LOG4CXX_DEBUG(func_injector_logger,
+                      "Allocated function injection data page : " << data_page_);
 
         executable_page_ = guest->allocate(RegionSize, true);
-        LOG4CXX_DEBUG(logger,
+        LOG4CXX_DEBUG(func_injector_logger,
                       "Allocated function injection executable page : " << executable_page_);
     }
 
@@ -348,10 +351,11 @@ class FunctionInjector final {
         const size_t RegionSize = x86::PageDirectory::PAGE_SIZE;
 
         guest->guest_free(executable_page_, RegionSize);
-        LOG4CXX_DEBUG(logger, "Freed function injection executable page : " << executable_page_);
+        LOG4CXX_DEBUG(func_injector_logger,
+                      "Freed function injection executable page : " << executable_page_);
 
         guest->guest_free(data_page_, RegionSize);
-        LOG4CXX_DEBUG(logger, "Freed function injection data page : " << data_page_);
+        LOG4CXX_DEBUG(func_injector_logger, "Freed function injection data page : " << data_page_);
     }
 
   private:

@@ -19,7 +19,11 @@
 #include <introvirt/core/domain/Domain.hh>
 #include <introvirt/core/domain/Vcpu.hh>
 #include <introvirt/core/event/Event.hh>
+#include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
 #include <introvirt/core/function/FunctionCall.hh>
+#include <introvirt/core/injection/system_call.hh>
+
+#include <log4cxx/logger.h>
 
 #include <functional>
 #include <memory>
@@ -39,6 +43,10 @@ class FunctionCallReturnData {
 
 template <class T>
 class FunctionCallFactory final {
+  private:
+    static inline const log4cxx::LoggerPtr logger =
+        log4cxx::Logger::getLogger("introvirt.FunctionCallFactory");
+
   public:
     void function_breakpoint_hit(Event& event) {
         // Run our filter (if applicable)
@@ -46,10 +54,32 @@ class FunctionCallFactory final {
             return;
 
         // Create an instance
-        auto handler = std::make_unique<T>(event);
+        std::unique_ptr<T> handler;
+    retry:
+        try {
+            LOG4CXX_DEBUG(logger, "Entered TRY block");
+            handler = std::make_unique<T>(event);
+        } catch (VirtualAddressNotPresentException& ex) {
+            auto* guest = event.domain().guest();
+            if (guest) {
+                LOG4CXX_DEBUG(logger, ex);
+                if (guest->page_in(event, ex.virtual_address())) {
+                    LOG4CXX_DEBUG(logger,
+                                  "Successfully paged in " << n2hexstr(ex.virtual_address()));
+                    goto retry;
+                }
+                LOG4CXX_WARN(logger, "Failed to page in " << n2hexstr(ex.virtual_address()));
+                throw;
+            }
+        }
 
         // Deliver it
-        callback_(event, *handler);
+        try {
+            callback_(event, *handler);
+        } catch (TraceableException& ex) {
+            LOG4CXX_WARN(logger, "Exception during callback: " << ex);
+            return;
+        }
 
         // See if we want to hook the return
         if (handler->hook_return()) {
@@ -71,14 +101,17 @@ class FunctionCallFactory final {
 
     void function_ret_breakpoint_hit(Event& event,
                                      std::shared_ptr<FunctionCallReturnData<T>> return_data) {
-
         // Check if this is the matching return
         if (return_data->handler->is_return_event(event)) {
             // Handle the return
             return_data->handler->handle_return(event);
 
             // Run the user's callback
-            return_callback_(event, *(return_data->handler));
+            try {
+                return_callback_(event, *(return_data->handler));
+            } catch (TraceableException& ex) {
+                LOG4CXX_WARN(logger, "Exception during callback: " << ex);
+            }
 
             // Get rid of the breakpoint
             return_data->bp.reset();

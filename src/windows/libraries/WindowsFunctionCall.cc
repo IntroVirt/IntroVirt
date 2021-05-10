@@ -236,6 +236,10 @@ WindowsFunctionCall::WindowsFunctionCall(Event& event, unsigned int argument_cou
         // TODO: Throw an exception
         break;
     }
+
+    for (unsigned int i = 0; i < argument_count; ++i) {
+        LOG4CXX_DEBUG(logger, i << ": " << n2hexstr(get_argument(i)));
+    }
 }
 
 WindowsFunctionCall::~WindowsFunctionCall() = default;

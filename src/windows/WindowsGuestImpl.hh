@@ -82,6 +82,8 @@ class WindowsGuestImpl final : public WindowsGuest, public GuestImpl {
     GuestPageFaultResult handle_prototype_pte(uint64_t prototype_address, uint64_t page_directory,
                                               PteType& pte) const;
 
+    bool page_in(Event& event, uint64_t virtual_address) override;
+
     const nt::structs::MMPTE_HARDWARE* mmpte_hardware_ = nullptr;
     const nt::structs::MMPTE_PROTOTYPE* mmpte_prototype_ = nullptr;
     const nt::structs::MMPTE_SOFTWARE* mmpte_software_ = nullptr;

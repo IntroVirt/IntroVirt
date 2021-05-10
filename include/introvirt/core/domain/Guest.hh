@@ -67,6 +67,11 @@ class Guest {
     virtual void guest_free(const guest_ptr<void>& ptr, size_t region_size) = 0;
 
     /**
+     * Page in the given virtual address for the current process
+     */
+    virtual bool page_in(Event& event, uint64_t virtual_address) = 0;
+
+    /**
      * @brief Used internally
      *
      * @return GuestImpl&
