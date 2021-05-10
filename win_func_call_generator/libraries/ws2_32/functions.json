@@ -635,10 +635,8 @@
                 "optional": true
             },
             {
-                "type": "uint32_t*",
-                "name": "Flags",
-                "in": true,
-                "out": true
+                "type": "uint32_t",
+                "name": "Flags"
             },
             {
                 "type": "WSAOVERLAPPED*",
@@ -678,10 +676,8 @@
                 "optional": true
             },
             {
-                "type": "uint32_t*",
-                "name": "Flags",
-                "in": true,
-                "out": true
+                "type": "uint32_t",
+                "name": "Flags"
             },
             {
                 "type": "SOCKADDR*",
