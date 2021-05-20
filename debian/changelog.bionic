@@ -1,3 +1,9 @@
+introvirt (0.57.0~bionic1) focal; urgency=medium
+
+  * New version, see git for changes
+
+ -- Stephen Pape <srpape@gmail.com>  Fri, 21 May 2021 16:11:56 -0400
+
 introvirt (0.55.0~bionic6) bionic; urgency=medium
 
   * Fix postinstall script for libintrovirt1
