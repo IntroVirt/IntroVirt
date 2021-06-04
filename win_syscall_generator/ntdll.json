@@ -1089,14 +1089,16 @@
             {
                 "type": "HANDLE",
                 "name": "TargetProcessHandle",
-                "index": 2
+                "index": 2,
+                "optional": true
             },
             {
                 "type": "HANDLE",
                 "name": "TargetHandle",
                 "index": 3,
                 "pointer": true,
-                "out": true
+                "out": true,
+                "optional": true
             },
             {
                 "type": "ACCESS_MASK",
