@@ -27,11 +27,11 @@ namespace introvirt {
 namespace windows {
 namespace win32k {
 
-template <typename PtrType, typename _BaseClass = Win32kSystemCall>
-class Win32kSystemCallImpl : public WindowsSystemCallImpl<PtrType, _BaseClass> {
+template <typename PtrType, int ArgumentCount, typename _BaseClass = Win32kSystemCall>
+class Win32kSystemCallImpl : public WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass> {
   public:
     void handle_return_event(Event& event) override {
-        WindowsSystemCallImpl<PtrType, _BaseClass>::handle_return_event(event);
+        WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>::handle_return_event(event);
         raw_return_value_ = this->vcpu().registers().rax();
     }
 
@@ -51,7 +51,7 @@ class Win32kSystemCallImpl : public WindowsSystemCallImpl<PtrType, _BaseClass> {
     }
 
     Win32kSystemCallImpl(WindowsEvent& event, bool supported = true)
-        : WindowsSystemCallImpl<PtrType, _BaseClass>(event, supported) {}
+        : WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>(event, supported) {}
 
   private:
     uint64_t raw_return_value_;

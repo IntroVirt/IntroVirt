@@ -17,7 +17,7 @@
 {%- block helpers %}
 {{ super() }}
 const std::shared_ptr<PROCESS> get_new_process() const override {
-    return const_cast<{{ className }}Impl<PtrType, _BaseClass>*>(this)->get_new_process();
+    return const_cast<{{ className }}Impl<PtrType, ArgumentCount, _BaseClass>*>(this)->get_new_process();
 }
 std::shared_ptr<PROCESS> get_new_process() override {
     // Make sure we're not being called before the call has returned
@@ -39,7 +39,7 @@ std::shared_ptr<PROCESS> get_new_process() override {
     return new_process_;
 }
 const std::shared_ptr<THREAD> get_new_thread() const override {
-    return const_cast<{{ className }}Impl<PtrType, _BaseClass>*>(this)->get_new_thread();
+    return const_cast<{{ className }}Impl<PtrType, ArgumentCount, _BaseClass>*>(this)->get_new_thread();
 }
 std::shared_ptr<THREAD> get_new_thread() override {
     // Make sure we're not being called before the call has returned

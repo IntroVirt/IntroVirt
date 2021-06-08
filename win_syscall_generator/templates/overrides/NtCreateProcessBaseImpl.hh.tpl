@@ -13,7 +13,7 @@
 {%- block helpers %}
 {{ super() }}
 const std::shared_ptr<PROCESS> get_new_process() const override {
-    return const_cast<{{ className }}Impl<PtrType, _BaseClass>*>(this)->get_new_process();
+    return const_cast<{{ className }}Impl<PtrType, ArgumentCount, _BaseClass>*>(this)->get_new_process();
 }
 
 std::shared_ptr<PROCESS> get_new_process() override {

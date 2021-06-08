@@ -37,8 +37,8 @@ inline bool IS_SELF_HANDLE(uint64_t handle) {
     }
 }
 
-template <typename PtrType, typename _BaseClass = NtSystemCall>
-class NtSystemCallImpl : public WindowsSystemCallImpl<PtrType, _BaseClass> {
+template <typename PtrType, int ArgumentCount, typename _BaseClass = NtSystemCall>
+class NtSystemCallImpl : public WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass> {
   public:
     /**
      * @brief Get the result code
@@ -67,13 +67,13 @@ class NtSystemCallImpl : public WindowsSystemCallImpl<PtrType, _BaseClass> {
     }
 
     void handle_return_event(Event& event) override {
-        WindowsSystemCallImpl<PtrType, _BaseClass>::handle_return_event(event);
+        WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>::handle_return_event(event);
 
         result_ = NTSTATUS(static_cast<NTSTATUS_CODE>(this->vcpu().registers().rax()));
     }
 
     void write(std::ostream& os) const override {
-        WindowsSystemCallImpl<PtrType, _BaseClass>::write(os);
+        WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>::write(os);
 
         boost::io::ios_flags_saver ifs(os);
 
@@ -103,7 +103,7 @@ class NtSystemCallImpl : public WindowsSystemCallImpl<PtrType, _BaseClass> {
     }
 
     Json::Value json() const override {
-        Json::Value result = WindowsSystemCallImpl<PtrType, _BaseClass>::json();
+        Json::Value result = WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>::json();
         if (this->has_returned()) {
             result["result"] = result_.json();
         }
@@ -111,7 +111,7 @@ class NtSystemCallImpl : public WindowsSystemCallImpl<PtrType, _BaseClass> {
     }
 
     NtSystemCallImpl(WindowsEvent& event, bool supported = true)
-        : WindowsSystemCallImpl<PtrType, _BaseClass>(event, supported) {}
+        : WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>(event, supported) {}
 
   private:
     NTSTATUS result_;

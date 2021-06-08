@@ -16,7 +16,7 @@
 {%- block helpers %}
 {{ super() }}
 const std::shared_ptr<THREAD> get_new_thread() const override {
-    return const_cast<{{ className }}Impl<PtrType, _BaseClass>*>(this)->get_new_thread();
+    return const_cast<{{ className }}Impl<PtrType, ArgumentCount, _BaseClass>*>(this)->get_new_thread();
 }
 
 std::shared_ptr<THREAD> get_new_thread() override {

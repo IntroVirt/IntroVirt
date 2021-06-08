@@ -45,8 +45,8 @@ namespace introvirt {
 namespace windows {
 namespace {{ namespace }} {
 
-template<typename PtrType, typename _BaseClass = {{className}}>
-class {{ className }}Impl {{ 'final ' if not has_children }}: public {{ parent_name }}Impl<PtrType, _BaseClass> {
+template<typename PtrType, int ArgumentCount = {{ signature | count }}, typename _BaseClass = {{className}}>
+class {{ className }}Impl {{ 'final ' if not has_children }}: public {{ parent_name }}Impl<PtrType, ArgumentCount, _BaseClass> {
   public:
 {%- if arguments %}
 {%- block getters %}
@@ -115,7 +115,7 @@ class {{ className }}Impl {{ 'final ' if not has_children }}: public {{ parent_n
 
 {% block overrides %}
 void write(std::ostream& os) const override {
-    {{ parent_name }}Impl<PtrType, _BaseClass>::write(os);
+    {{ parent_name }}Impl<PtrType, ArgumentCount, _BaseClass>::write(os);
     boost::io::ios_flags_saver ifs(os);
 {%- block write %}
 
@@ -180,7 +180,7 @@ void write(std::ostream& os) const override {
 
 {%- if has_unique_arguments %}
 Json::Value json() const override {
-    Json::Value r = {{ parent_name }}Impl<PtrType, _BaseClass>::json();
+    Json::Value r = {{ parent_name }}Impl<PtrType, ArgumentCount, _BaseClass>::json();
 {%- block json %}
     Json::Value& args = r["arguments"];
 {%- for arg in arguments %}
@@ -352,7 +352,7 @@ Json::Value json() const override {
 
 /* Constructor */
     {{ className }}Impl(WindowsEvent& event) :
-        {{ parent_name }}Impl<PtrType, _BaseClass>(event) {
+        {{ parent_name }}Impl<PtrType, ArgumentCount, _BaseClass>(event) {
 {%- block constructor %}
 
 {%- if has_conditional_indexes %}
@@ -395,7 +395,7 @@ Json::Value json() const override {
 {%- if not helper_base %}
     /* Injection constructor */
     {{ className }}Impl(WindowsEvent& event, {% for arg in signature %}{{ arg['type'] if not arg.get('pointer') else 'const guest_ptr<void>&' }} {{arg['variableName']}}{% if not loop.last %}, {% endif %}{%- endfor %}) :
-        {{ parent_name }}Impl<PtrType, _BaseClass>(event) {
+        {{ parent_name }}Impl<PtrType, ArgumentCount, _BaseClass>(event) {
 
     // Set all of the arguments
 {%- for arg in signature %}

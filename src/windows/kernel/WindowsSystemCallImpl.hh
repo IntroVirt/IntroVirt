@@ -29,7 +29,7 @@
 namespace introvirt {
 namespace windows {
 
-template <typename PtrType, typename _BaseClass = WindowsSystemCall>
+template <typename PtrType, int ArgumentCount, typename _BaseClass = WindowsSystemCall>
 class WindowsSystemCallImpl : public SystemCallImpl<_BaseClass> {
   public:
     SystemCallIndex index() const final { return call_index_; };
@@ -59,18 +59,19 @@ class WindowsSystemCallImpl : public SystemCallImpl<_BaseClass> {
           call_index_(event.guest().syscalls().normalize(event.vcpu().registers().rax())),
           supported_(supported) {
 
-        // TODO: Would be nice if we knew the number of arguments per-call instead of hardcoding
-        static constexpr unsigned int ArgumentCount = 16;
-
-        guest_ptr<void> sp;
         if constexpr (std::is_same_v<PtrType, uint64_t>) {
             // Stack is held in RSP for 64-bit SYSCALL
-            sp.reset(event.vcpu(), event.vcpu().registers().rsp());
+            pstack_.reset(event.vcpu(), event.vcpu().registers().rsp());
+            if constexpr(ArgumentCount > 4) {
+                stack_.reset(pstack_, ArgumentCount + 1);
+            }
         } else {
             // Stack is held in RDX for 32-bit SYSENTER
-            sp.reset(event.vcpu(), event.vcpu().registers().rdx());
+            pstack_.reset(event.vcpu(), event.vcpu().registers().rdx());
+            if constexpr(ArgumentCount > 0) {
+                stack_.reset(pstack_, ArgumentCount + 2);
+            }
         }
-        stack_.reset(sp, ArgumentCount);
     }
 
   protected:
@@ -132,7 +133,7 @@ class WindowsSystemCallImpl : public SystemCallImpl<_BaseClass> {
     }
 
     guest_ptr<void> get_address_argument(unsigned int index) {
-        return stack_.clone(get_argument(index));
+        return pstack_.clone(get_argument(index));
     }
 
     uint64_t get_argument(unsigned int index) const {
@@ -169,7 +170,7 @@ class WindowsSystemCallImpl : public SystemCallImpl<_BaseClass> {
     const SystemCallIndex call_index_;
     bool has_return_event_ = false;
     const bool supported_;
-
+    guest_ptr<void> pstack_;
     guest_ptr<PtrType[]> stack_;
 };
 

@@ -25,6 +25,6 @@ const {{arg['helper']['type']}}* {{arg['name']}}() const override {{ 'final ' if
     {%- endif %}
 }
 {{arg['helper']['type']}}* {{arg['name']}}() override {
-    const auto* const_this = const_cast<const {{ className }}Impl<PtrType, _BaseClass>*>(this);
+    const auto* const_this = const_cast<const {{ className }}Impl<PtrType, ArgumentCount, _BaseClass>*>(this);
     return const_cast<{{arg['helper']['type']}}*>(const_this->{{arg['name']}}());
 }
