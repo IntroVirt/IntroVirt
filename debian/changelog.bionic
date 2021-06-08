@@ -1,3 +1,9 @@
+introvirt (0.57.1~bionic1) bionic; urgency=medium
+
+  * Bug fixes
+
+ -- Stephen Pape <srpape@gmail.com>  Tue, 08 Jun 2021 18:08:55 -0400
+
 introvirt (0.57.0~bionic3) bionic; urgency=medium
 
   * Disable dh_strip stage in build
