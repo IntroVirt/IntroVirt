@@ -54,24 +54,12 @@ class WindowsSystemCallImpl : public SystemCallImpl<_BaseClass> {
         return result;
     }
 
-    WindowsSystemCallImpl(WindowsEvent& event, bool supported = true)
+    WindowsSystemCallImpl(WindowsEvent& event, SystemCallIndex call_index, bool supported = true)
         : event_(&event),
-          call_index_(event.guest().syscalls().normalize(event.vcpu().registers().rax())),
+          call_index_(call_index),
           supported_(supported) {
 
-        if constexpr (std::is_same_v<PtrType, uint64_t>) {
-            // Stack is held in RSP for 64-bit SYSCALL
-            pstack_.reset(event.vcpu(), event.vcpu().registers().rsp());
-            if constexpr(ArgumentCount > 4) {
-                stack_.reset(pstack_, ArgumentCount + 1);
-            }
-        } else {
-            // Stack is held in RDX for 32-bit SYSENTER
-            pstack_.reset(event.vcpu(), event.vcpu().registers().rdx());
-            if constexpr(ArgumentCount > 0) {
-                stack_.reset(pstack_, ArgumentCount + 2);
-            }
-        }
+        initalize_stack(event);
     }
 
   protected:
@@ -164,6 +152,23 @@ class WindowsSystemCallImpl : public SystemCallImpl<_BaseClass> {
             return stack_[index + 2];
         }
     }
+
+    private:
+        void initalize_stack(WindowsEvent& event) {
+            if constexpr (std::is_same_v<PtrType, uint64_t>) {
+                // Stack is held in RSP for 64-bit SYSCALL
+                pstack_.reset(event.vcpu(), event.vcpu().registers().rsp());
+                if constexpr(ArgumentCount > 4) {
+                    stack_.reset(pstack_, ArgumentCount + 1);
+                }
+            } else {
+                // Stack is held in RDX for 32-bit SYSENTER
+                pstack_.reset(event.vcpu(), event.vcpu().registers().rdx());
+                if constexpr(ArgumentCount > 0) {
+                    stack_.reset(pstack_, ArgumentCount + 2);
+                }
+            }
+        }
 
   private:
     WindowsEvent* event_;

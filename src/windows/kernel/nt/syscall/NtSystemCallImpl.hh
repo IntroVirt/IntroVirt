@@ -110,8 +110,8 @@ class NtSystemCallImpl : public WindowsSystemCallImpl<PtrType, ArgumentCount, _B
         return result;
     }
 
-    NtSystemCallImpl(WindowsEvent& event, bool supported = true)
-        : WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>(event, supported) {}
+    NtSystemCallImpl(WindowsEvent& event, SystemCallIndex call_index, bool supported = true)
+        : WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>(event, call_index, supported) {}
 
   private:
     NTSTATUS result_;

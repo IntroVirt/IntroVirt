@@ -50,8 +50,8 @@ class Win32kSystemCallImpl : public WindowsSystemCallImpl<PtrType, ArgumentCount
         this->vcpu().registers().rax(value);
     }
 
-    Win32kSystemCallImpl(WindowsEvent& event, bool supported = true)
-        : WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>(event, supported) {}
+    Win32kSystemCallImpl(WindowsEvent& event, SystemCallIndex call_index, bool supported = true)
+        : WindowsSystemCallImpl<PtrType, ArgumentCount, _BaseClass>(event, call_index, supported) {}
 
   private:
     uint64_t raw_return_value_;
