@@ -560,6 +560,16 @@ MEMBER(PrimaryGroup);
 MEMBER(UserAndGroupCount);
 MEMBER(UserAndGroups);
 MEMBER(Privileges);
+MEMBER(SessionId);
+MEMBER(DynamicCharged);
+MEMBER(DynamicAvailable);
+MEMBER(DefaultOwnerIndex);
+MEMBER(TokenType);
+MEMBER(ImpersonationLevel);
+MEMBER(TokenFlags);
+MEMBER(TokenInUse);
+MEMBER(IntegrityLevelIndex);
+MEMBER(MandatoryPolicy);
 END_NT_STRUCT(TOKEN)
 
 BEGIN_NT_STRUCT(CM_NAME_CONTROL_BLOCK)

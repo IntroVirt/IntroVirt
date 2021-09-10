@@ -39,11 +39,44 @@ class TOKEN_IMPL final : public OBJECT_IMPL<PtrType, TOKEN> {
     const SID* User() const override;
     const SID* PrimaryGroup() const override;
 
+    SID* User() override;
+    SID* PrimaryGroup() override;
+
     uint64_t PrivilegesPresent() const override;
     void PrivilegesPresent(uint64_t Privileges) override;
 
     uint64_t PrivilegesEnabled() const override;
     void PrivilegesEnabled(uint64_t Privileges) override;
+
+    uint32_t SessionId() const override;
+    void SessionId(uint32_t SessionId) override;
+
+    uint32_t DynamicCharged() const override;
+    void DynamicCharged(uint32_t DynamicCharged) override;
+
+    uint32_t DynamicAvailable() const override;
+    void DynamicAvailable(uint32_t DynamicAvailable) override;
+
+    uint32_t DefaultOwnerIndex() const override;
+    void DefaultOwnerIndex(uint32_t DefaultOwnerIndex) override;
+
+    uint32_t TokenType() const override;
+    void TokenType(uint32_t TokenType) override;
+
+    uint32_t ImpersonationLevel() const override;
+    void ImpersonationLevel(uint32_t ImpersonationLevel) override;
+
+    uint32_t TokenFlags() const override;
+    void TokenFlags(uint32_t TokenFlags) override;
+
+    bool TokenInUse() const override;
+    void TokenInUse(bool TokenInUse) override;
+
+    uint32_t IntegrityLevelIndex() const override;
+    void IntegrityLevelIndex(uint32_t IntegrityLevelIndex) override;
+
+    uint32_t MandatoryPolicy() const override;
+    void MandatoryPolicy(uint32_t MandatoryPolicy) override;
 
     TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel,

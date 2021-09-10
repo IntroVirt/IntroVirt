@@ -60,7 +60,8 @@ enum SePrivilege {
     SeRelabelPrivilege = 0x20,
     SeIncreaseWorkingSetPrivilege = 0x21,
     SeTimeZonePrivilege = 0x22,
-    SeCreateSymbolicLinkPrivilege = 0x23
+    SeCreateSymbolicLinkPrivilege = 0x23,
+    SeDelegateSessionUserImpersonatePrivilege = 0x24
 };
 
 class TOKEN : public OBJECT {
@@ -76,6 +77,39 @@ class TOKEN : public OBJECT {
 
     virtual uint64_t PrivilegesEnabled() const = 0;
     virtual void PrivilegesEnabled(uint64_t Privileges) = 0;
+
+    virtual uint32_t SessionId() const = 0;
+    virtual void SessionId(uint32_t SessionId) = 0;
+
+    virtual uint32_t DynamicCharged() const = 0;
+    virtual void DynamicCharged(uint32_t DynamicCharged) = 0;
+
+    virtual uint32_t DynamicAvailable() const = 0;
+    virtual void DynamicAvailable(uint32_t DynamicAvailable) = 0;
+
+    virtual uint32_t DefaultOwnerIndex() const = 0;
+    virtual void DefaultOwnerIndex(uint32_t DefaultOwnerIndex) = 0;
+
+    virtual uint32_t TokenType() const = 0;
+    virtual void TokenType(uint32_t TokenType) = 0;
+
+    virtual uint32_t ImpersonationLevel() const = 0;
+    virtual void ImpersonationLevel(uint32_t ImpersonationLevel) = 0;
+
+    virtual uint32_t TokenFlags() const = 0;
+    virtual void TokenFlags(uint32_t TokenFlags) = 0;
+
+    virtual bool TokenInUse() const = 0;
+    virtual void TokenInUse(bool TokenInUse) = 0;
+
+    virtual uint32_t IntegrityLevelIndex() const = 0;
+    virtual void IntegrityLevelIndex(uint32_t IntegrityLevelIndex) = 0;
+
+    virtual uint32_t MandatoryPolicy() const = 0;
+    virtual void MandatoryPolicy(uint32_t MandatoryPolicy) = 0;
+
+    virtual SID* User() = 0;
+    virtual SID* PrimaryGroup() = 0;
 
     static std::shared_ptr<TOKEN> make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr);
 

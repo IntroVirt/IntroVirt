@@ -34,11 +34,15 @@ namespace nt {
  */
 class SID {
   public:
-    virtual uint8_t Revision() const = 0;
+    virtual uint8_t Revision() const = 0;    
     virtual guest_ptr<const uint8_t[]> IdentifierAuthority() const = 0;
     virtual guest_ptr<const uint32_t[]> SubAuthorities() const = 0;
 
     virtual Json::Value json() const = 0;
+
+    virtual void Revision(uint8_t Revision) = 0;
+    virtual guest_ptr<uint8_t[]> IdentifierAuthority() = 0;
+    virtual guest_ptr<uint32_t[]> SubAuthorities() = 0;
 
     virtual ~SID() = default;
 };
