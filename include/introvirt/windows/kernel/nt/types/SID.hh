@@ -44,6 +44,9 @@ class SID {
     virtual guest_ptr<uint8_t[]> IdentifierAuthority() = 0;
     virtual guest_ptr<uint32_t[]> SubAuthorities() = 0;
 
+    virtual uint8_t SubAuthorityCount() const = 0;
+    virtual void SubAuthorityCount(uint8_t SubAuthorityCount) = 0;
+
     virtual ~SID() = default;
 };
 

@@ -64,6 +64,13 @@ class SID_IMPL final : public SID {
 
     Json::Value json() const override;
 
+    uint8_t SubAuthorityCount() const override {
+        return ptr_->SubAuthorityCount;
+    }
+    void SubAuthorityCount(uint8_t SubAuthorityCount) {
+        ptr_->SubAuthorityCount = SubAuthorityCount;
+    }
+
     SID_IMPL(const guest_ptr<void>& ptr) : ptr_(ptr) {
 
         // Pull out the IdentifierAuthority array
