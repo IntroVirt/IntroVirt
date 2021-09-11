@@ -17,6 +17,7 @@
 
 #include "DISPATCHER_OBJECT_IMPL.hh"
 #include "windows/kernel/nt/structs/structs.hh"
+#include "windows/kernel/nt/types/SEP_LOGON_SESSION_REFERENCES_IMPL.hh"
 #include "windows/kernel/nt/types/SID_AND_ATTRIBUTES_IMPL.hh"
 #include "windows/kernel/nt/types/SID_IMPL.hh"
 
@@ -78,6 +79,9 @@ class TOKEN_IMPL final : public OBJECT_IMPL<PtrType, TOKEN> {
     uint32_t MandatoryPolicy() const override;
     void MandatoryPolicy(uint32_t MandatoryPolicy) override;
 
+    SEP_LOGON_SESSION_REFERENCES* LogonSession() override;
+    const SEP_LOGON_SESSION_REFERENCES* LogonSession() const override;
+
     TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
     TOKEN_IMPL(const NtKernelImpl<PtrType>& kernel,
                std::unique_ptr<OBJECT_HEADER_IMPL<PtrType>>&& object_header);
@@ -86,12 +90,13 @@ class TOKEN_IMPL final : public OBJECT_IMPL<PtrType, TOKEN> {
     void init(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr);
 
     const NtKernelImpl<PtrType>& kernel_;
-    const structs::TOKEN* token;
+    const structs::TOKEN* token_;
 
-    guest_ptr<char[]> buffer;
+    guest_ptr<char[]> buffer_;
 
     std::optional<SID_AND_ATTRIBUTES_IMPL<PtrType>> user_;
     std::optional<SID_IMPL> primary_group_;
+    std::optional<SEP_LOGON_SESSION_REFERENCES_IMPL<PtrType>> LogonSession_;
     std::vector<std::shared_ptr<SID_AND_ATTRIBUTES>> groups_;
 };
 

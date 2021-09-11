@@ -17,6 +17,8 @@
 
 #include "OBJECT.hh"
 
+#include <introvirt/windows/kernel/nt/types/SEP_LOGON_SESSION_REFERENCES.hh>
+
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -110,6 +112,9 @@ class TOKEN : public OBJECT {
 
     virtual SID* User() = 0;
     virtual SID* PrimaryGroup() = 0;
+
+    virtual SEP_LOGON_SESSION_REFERENCES* LogonSession() = 0;
+    virtual const SEP_LOGON_SESSION_REFERENCES* LogonSession() const = 0;
 
     static std::shared_ptr<TOKEN> make_shared(const NtKernel& kernel, const guest_ptr<void>& ptr);
 

@@ -42,6 +42,7 @@
 #include "types/PEB_LDR_DATA.hh"
 #include "types/RTL_USER_PROCESS_PARAMETERS.hh"
 #include "types/SEGMENT.hh"
+#include "types/SEP_LOGON_SESSION_REFERENCES.hh"
 #include "types/SID.hh"
 #include "types/SID_AND_ATTRIBUTES.hh"
 #include "types/TEB.hh"
