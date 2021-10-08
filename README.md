@@ -6,17 +6,15 @@ TBD
 ## **Quick start**
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)
 
-Get the latest version of the IntroVirt from GitHub:
-
-``` bash
-git clone https://github.com/IntroVirt/IntroVirt
-TBD
+Ubuntu install from Launchpad PPA (ensure no VMs are running first):
+```
+sudo add-apt-repository ppa:srpape/introvirt
+sudo apt-get update
+sudo apt-get install kvm-introvirt introvirt-tools libintrovirt-dev
 ```
 
-Enjoy:
-```
-TBD
-```
+You will need to be booted into the correct kernel, based on the latest version of kvm-introvirt.
+If properly configured, running `sudo ivversion` will return a supported hypervisor.
 
 ## Interested In Working For AIS?
 Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and test your skills! Submit your score to show us what you’ve got. We have offices across the country and offer competitive pay and outstanding benefits. Join a team that is not only committed to the future of cyberspace, but to our employee’s success as well.
@@ -27,22 +25,38 @@ Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and t
   </a>
 </p>
 
-## Demo
+### **Building on Ubuntu Linux**
 
-Check out the latest demo for how to compile and use the IntroVirt: <br>
-TBD
+Install build dependencies:
 
-## **Build Requirements**
-TBD
+If using the launchpad PPA, libmspdb-dev can be installed:
+```
+sudo apt-get install cmake libcurl4-openssl-dev libboost-dev libboost-program-options-dev libboost-stacktrace-dev liblog4cxx-dev libmspdb-dev python3-jinja2 python3 doxygen clang-format
+```
 
-### **Windows**
-TBD
+Otherwise, build and install libmspdb
+```
+sudo apt-get -y cmake libcurl4-openssl-dev libboost-dev
+git clone https://github.com/IntroVirt/libmspdb.git
+cd libmspdb/build/
+cmake ..
+make
+sudo make install
+```
+Note: You will also have to build and install [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/) if not using the PPA.
 
-### **Ubuntu Linux**
-TBD
+Build and install IntroVirt:
+```
+cd build
+cmake ..
+make
+sudo make install
+```
 
 ## Usage Instructions
-TBD
+The included IntroVirt tools have their own usage instructions. See the `tools/` folder.
+
+You can try system call monitoring with `sudo ivsyscallmon -D <domain>`. See `sudo ivsyscallmon --help` for more information.
 
 ## **Resources**
 IntroVirt provides some useful resources to learn how to use it including:
