@@ -59,6 +59,12 @@ class SID_AND_ATTRIBUTES_IMPL final : public SID_AND_ATTRIBUTES {
         return nullptr; // TODO: Can this actually happen?
     }
 
+    SID* Sid() override {
+        if (sid)
+            return &(*sid);
+        return nullptr; // TODO: Can this actually happen?
+    }
+
     Json::Value json() const override {
         Json::Value result;
         result["SID"] = Sid()->json();

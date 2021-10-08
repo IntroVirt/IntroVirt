@@ -25,7 +25,9 @@ Architecture: any
 Depends: libc6-dev,
          libintrovirt1 (= ${binary:Version}),
          libmspdb-dev,
-         ${misc:Depends}
+         ${misc:Depends},
+         libboost-stacktrace-dev,
+         liblog4cxx-dev
 Multi-Arch: same
 Description: development library and header files for libintrovirt1
  Headers, static libraries, and documentation for the libintrovirt library.
@@ -60,7 +62,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: libintrovirt1 (= ${binary:Version}),
         libboost-program-options1.65.1,
-        ${misc:Depends}, 
+        ${misc:Depends},
         ${shlibs:Depends}
 Multi-Arch: same
 Description: tools for virtual machine introspection

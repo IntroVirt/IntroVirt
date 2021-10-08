@@ -57,10 +57,10 @@ std::unique_ptr<WindowsSystemCall> make_unique_impl(WindowsEvent& event) {
     default:
         if (event.syscall().raw_index() < 0x1000) {
             // Lower number calls are from ntll
-            return std::make_unique<nt::NtSystemCallImpl<PtrType, 0>>(event, false);
+            return std::make_unique<nt::NtSystemCallImpl<PtrType, 0>>(event, event.syscall().index(), false);
         } else {
             // This is a win32k system call
-            return std::make_unique<win32k::Win32kSystemCallImpl<PtrType, 0>>(event, false);
+            return std::make_unique<win32k::Win32kSystemCallImpl<PtrType, 0>>(event, event.syscall().index(), false);
         }
     }
 

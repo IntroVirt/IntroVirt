@@ -6,6 +6,7 @@ Build-Depends: cmake,
                libcurl4-openssl-dev,
                libboost-dev,
                libboost-program-options-dev,
+               libboost-stacktrace-dev,
                liblog4cxx-dev,
                libmspdb-dev,
                python3-jinja2,
@@ -25,6 +26,8 @@ Architecture: any
 Depends: libc6-dev,
          libintrovirt1 (= ${binary:Version}),
          libmspdb-dev,
+         libboost-stacktrace-dev,
+         liblog4cxx-dev,
          ${misc:Depends}
 Multi-Arch: same
 Description: development library and header files for libintrovirt1

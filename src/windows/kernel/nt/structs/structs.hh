@@ -509,6 +509,16 @@ BEGIN_NT_STRUCT(SID_IDENTIFIER_AUTHORITY)
 MEMBER(Value);
 END_NT_STRUCT(SID_IDENTIFIER_AUTHORITY)
 
+BEGIN_NT_STRUCT(SEP_LOGON_SESSION_REFERENCES)
+MEMBER(LogonId);
+MEMBER(BuddyLogonId);
+MEMBER(ReferenceCount);
+MEMBER(Flags);
+MEMBER(AccountName);
+MEMBER(AuthorityName);
+MEMBER(SiblingAuthId);
+END_NT_STRUCT(SEP_LOGON_SESSION_REFERENCES)
+
 BEGIN_NT_STRUCT(SID)
 MEMBER(Revision);
 MEMBER(SubAuthorityCount);
@@ -560,6 +570,17 @@ MEMBER(PrimaryGroup);
 MEMBER(UserAndGroupCount);
 MEMBER(UserAndGroups);
 MEMBER(Privileges);
+MEMBER(SessionId);
+MEMBER(DynamicCharged);
+MEMBER(DynamicAvailable);
+MEMBER(DefaultOwnerIndex);
+MEMBER(TokenType);
+MEMBER(ImpersonationLevel);
+MEMBER(TokenFlags);
+MEMBER(TokenInUse);
+MEMBER(IntegrityLevelIndex);
+MEMBER(MandatoryPolicy);
+MEMBER(LogonSession);
 END_NT_STRUCT(TOKEN)
 
 BEGIN_NT_STRUCT(CM_NAME_CONTROL_BLOCK)

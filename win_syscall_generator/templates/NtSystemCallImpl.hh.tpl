@@ -351,8 +351,8 @@ Json::Value json() const override {
 
 
 /* Constructor */
-    {{ className }}Impl(WindowsEvent& event) :
-        {{ parent_name }}Impl<PtrType, ArgumentCount, _BaseClass>(event) {
+    {{ className }}Impl(WindowsEvent& event, SystemCallIndex call_index {%- if not helper_base %} = SystemCallIndex::{{name}} {%endif%}) :
+        {{ parent_name }}Impl<PtrType, ArgumentCount, _BaseClass>(event, call_index) {
 {%- block constructor %}
 
 {%- if has_conditional_indexes %}
@@ -395,7 +395,7 @@ Json::Value json() const override {
 {%- if not helper_base %}
     /* Injection constructor */
     {{ className }}Impl(WindowsEvent& event, {% for arg in signature %}{{ arg['type'] if not arg.get('pointer') else 'const guest_ptr<void>&' }} {{arg['variableName']}}{% if not loop.last %}, {% endif %}{%- endfor %}) :
-        {{ parent_name }}Impl<PtrType, ArgumentCount, _BaseClass>(event) {
+        {{ parent_name }}Impl<PtrType, ArgumentCount, _BaseClass>(event, SystemCallIndex::{{name}}) {
 
     // Set all of the arguments
 {%- for arg in signature %}

@@ -64,47 +64,178 @@ const SID* TOKEN_IMPL<PtrType>::PrimaryGroup() const {
 }
 
 template <typename PtrType>
+SID* TOKEN_IMPL<PtrType>::User()  {
+    if (likely(user_.has_value()))
+        return user_->Sid();
+    return nullptr;
+}
+
+template <typename PtrType>
+SID* TOKEN_IMPL<PtrType>::PrimaryGroup() {
+    if (likely(primary_group_.has_value()))
+        return &(*primary_group_);
+    return nullptr;
+}
+
+template <typename PtrType>
 uint64_t TOKEN_IMPL<PtrType>::PrivilegesPresent() const {
     const auto* privs = LoadOffsets<structs::SEP_TOKEN_PRIVILEGES>(kernel_);
-    const auto offset = token->Privileges.offset();
+    const auto offset = token_->Privileges.offset();
 
-    return privs->Present.template get<uint64_t>(buffer.get() + offset);
+    return privs->Present.template get<uint64_t>(buffer_.get() + offset);
 }
 
 template <typename PtrType>
 void TOKEN_IMPL<PtrType>::PrivilegesPresent(uint64_t Privileges) {
     const auto* privs = LoadOffsets<structs::SEP_TOKEN_PRIVILEGES>(kernel_);
-    const auto offset = token->Privileges.offset();
+    const auto offset = token_->Privileges.offset();
 
-    return privs->Present.template set<uint64_t>(buffer.get() + offset, Privileges);
+    return privs->Present.template set<uint64_t>(buffer_.get() + offset, Privileges);
 }
 
 template <typename PtrType>
 uint64_t TOKEN_IMPL<PtrType>::PrivilegesEnabled() const {
     const auto* privs = LoadOffsets<structs::SEP_TOKEN_PRIVILEGES>(kernel_);
-    const auto offset = token->Privileges.offset();
+    const auto offset = token_->Privileges.offset();
 
-    return privs->Enabled.template get<uint64_t>(buffer.get() + offset);
+    return privs->Enabled.template get<uint64_t>(buffer_.get() + offset);
 }
 
 template <typename PtrType>
 void TOKEN_IMPL<PtrType>::PrivilegesEnabled(uint64_t Privileges) {
     const auto* privs = LoadOffsets<structs::SEP_TOKEN_PRIVILEGES>(kernel_);
-    const auto offset = token->Privileges.offset();
+    const auto offset = token_->Privileges.offset();
 
-    return privs->Enabled.template set<uint64_t>(buffer.get() + offset, Privileges);
+    return privs->Enabled.template set<uint64_t>(buffer_.get() + offset, Privileges);
+}
+
+template <typename PtrType>
+uint32_t TOKEN_IMPL<PtrType>::SessionId() const {
+    return token_->SessionId.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::SessionId(uint32_t SessionId) {
+    token_->SessionId.set<uint32_t>(buffer_, SessionId);
+}
+
+template <typename PtrType>
+uint32_t TOKEN_IMPL<PtrType>::DynamicCharged() const {
+    return token_->DynamicCharged.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::DynamicCharged(uint32_t DynamicCharged) {
+    token_->DynamicCharged.set<uint32_t>(buffer_, DynamicCharged);
+}
+
+template <typename PtrType>
+uint32_t TOKEN_IMPL<PtrType>::DynamicAvailable() const {
+    return token_->DynamicAvailable.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::DynamicAvailable(uint32_t DynamicAvailable) {
+    token_->DynamicAvailable.set<uint32_t>(buffer_, DynamicAvailable);
+}
+
+template <typename PtrType>
+uint32_t TOKEN_IMPL<PtrType>::DefaultOwnerIndex() const {
+    return token_->DefaultOwnerIndex.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::DefaultOwnerIndex(uint32_t DefaultOwnerIndex) {
+    token_->DefaultOwnerIndex.set<uint32_t>(buffer_, DefaultOwnerIndex);
+}
+
+template <typename PtrType>
+uint32_t TOKEN_IMPL<PtrType>::TokenType() const {
+    return token_->TokenType.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::TokenType(uint32_t TokenType) {
+    token_->TokenType.set<uint32_t>(buffer_, TokenType);
+}
+
+template <typename PtrType>
+uint32_t TOKEN_IMPL<PtrType>::ImpersonationLevel() const {
+    return token_->ImpersonationLevel.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::ImpersonationLevel(uint32_t ImpersonationLevel) {
+    token_->ImpersonationLevel.set<uint32_t>(buffer_, ImpersonationLevel);
+}
+
+template <typename PtrType>
+uint32_t TOKEN_IMPL<PtrType>::TokenFlags() const {
+    return token_->TokenFlags.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::TokenFlags(uint32_t TokenFlags) {
+    token_->TokenFlags.set<uint32_t>(buffer_, TokenFlags);
+}
+
+template <typename PtrType>
+bool TOKEN_IMPL<PtrType>::TokenInUse() const {
+    return token_->TokenInUse.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::TokenInUse(bool TokenInUse) {
+    token_->TokenInUse.set<uint32_t>(buffer_, TokenInUse);
+}
+
+template <typename PtrType>
+uint32_t TOKEN_IMPL<PtrType>::IntegrityLevelIndex() const {
+    return token_->IntegrityLevelIndex.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::IntegrityLevelIndex(uint32_t IntegrityLevelIndex) {
+    token_->IntegrityLevelIndex.set<uint32_t>(buffer_, IntegrityLevelIndex);
+}
+
+template <typename PtrType>
+uint32_t TOKEN_IMPL<PtrType>::MandatoryPolicy() const {
+    return token_->MandatoryPolicy.get<uint32_t>(buffer_);
+}
+
+template <typename PtrType>
+void TOKEN_IMPL<PtrType>::MandatoryPolicy(uint32_t MandatoryPolicy) {
+    token_->MandatoryPolicy.set<uint32_t>(buffer_, MandatoryPolicy);
+}
+
+template <typename PtrType>
+SEP_LOGON_SESSION_REFERENCES* TOKEN_IMPL<PtrType>::LogonSession() {
+    if (!this->LogonSession_) {
+        guest_ptr<void> pLogonSession = this->buffer_ + this->token_->LogonSession;
+        if (!pLogonSession)
+            return nullptr;
+        this->LogonSession_.emplace(this->kernel_, pLogonSession);
+    }
+    return &(*(this->LogonSession_));
+}
+
+template <typename PtrType>
+const SEP_LOGON_SESSION_REFERENCES* TOKEN_IMPL<PtrType>::LogonSession() const {
+    auto* non_const_this = const_cast<TOKEN_IMPL<PtrType>*>(this);
+    return non_const_this->LogonSession();
 }
 
 template <typename PtrType>
 void TOKEN_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel, const guest_ptr<void>& ptr) {
     // Load offsets
-    token = LoadOffsets<structs::TOKEN>(kernel);
+    token_ = LoadOffsets<structs::TOKEN>(kernel);
     auto sid_and_attributes = LoadOffsets<structs::SID_AND_ATTRIBUTES>(kernel);
 
     // Map in the structure
-    buffer.reset(ptr, token->size());
+    buffer_.reset(ptr, token_->size());
 
-    const uint32_t UserAndGroupCount = token->UserAndGroupCount.get<uint32_t>(buffer);
+    const uint32_t UserAndGroupCount = token_->UserAndGroupCount.get<uint32_t>(buffer_);
     if (unlikely(UserAndGroupCount == 0))
         // No users or groups, what?
         return;
@@ -114,14 +245,14 @@ void TOKEN_IMPL<PtrType>::init(const NtKernelImpl<PtrType>& kernel, const guest_
      * with header->UserAndGroupCount elements. Each element is sizeof(_SID_AND_ATTRIBUTES). The
      * first element is the User, the rest are Groups
      */
-    const auto pUserAndGroups = ptr.clone(token->UserAndGroups.get<PtrType>(buffer));
+    const auto pUserAndGroups = ptr.clone(token_->UserAndGroups.get<PtrType>(buffer_));
     user_.emplace(pUserAndGroups);
     for (size_t i = 1; i < UserAndGroupCount; ++i) {
         const auto pSidAndAttributes = pUserAndGroups + (i * sid_and_attributes->size());
         groups_.emplace_back(std::make_shared<SID_AND_ATTRIBUTES_IMPL<PtrType>>(pSidAndAttributes));
     }
 
-    const auto pPrimaryGroup = ptr.clone(token->PrimaryGroup.get<PtrType>(buffer));
+    const auto pPrimaryGroup = ptr.clone(token_->PrimaryGroup.get<PtrType>(buffer_));
     if (pPrimaryGroup)
         primary_group_.emplace(pPrimaryGroup);
 }

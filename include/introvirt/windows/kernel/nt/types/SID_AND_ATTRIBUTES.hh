@@ -85,6 +85,8 @@ class SID_AND_ATTRIBUTES {
 
     virtual guest_ptr<void> ptr() const = 0;
 
+    virtual SID* Sid() = 0;
+
     static std::shared_ptr<SID_AND_ATTRIBUTES> make_shared(const NtKernel& kernel,
                                                            const guest_ptr<void>& gva);
 
