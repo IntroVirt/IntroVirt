@@ -6,7 +6,7 @@ TBD
 ## **Quick start**
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)
 
-Ubuntu install from Launchpad PPA (ensure no VMs are running first):
+Ubuntu bionic/focal install from Launchpad PPA (ensure no VMs are running first):
 ```
 sudo add-apt-repository ppa:srpape/introvirt
 sudo apt-get update
