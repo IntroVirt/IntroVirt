@@ -29,14 +29,14 @@ Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and t
 
 Install build dependencies:
 
-If using the launchpad PPA, libmspdb-dev can be installed:
+If using the launchpad PPA, libmspdb-dev can be installed as a package:
 ```
-sudo apt-get install cmake libcurl4-openssl-dev libboost-dev libboost-program-options-dev libboost-stacktrace-dev liblog4cxx-dev libmspdb-dev python3-jinja2 python3 doxygen clang-format
+sudo apt-get install cmake libcurl4-openssl-dev libboost-dev libboost-program-options-dev libboost-stacktrace-dev liblog4cxx-dev libmspdb-dev python3-jinja2 python3 doxygen clang-format git
 ```
 
 Otherwise, build and install libmspdb
 ```
-sudo apt-get -y cmake libcurl4-openssl-dev libboost-dev
+sudo apt-get -y cmake libcurl4-openssl-dev libboost-dev git
 git clone https://github.com/IntroVirt/libmspdb.git
 cd libmspdb/build/
 cmake ..
