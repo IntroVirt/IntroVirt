@@ -53,6 +53,28 @@ make
 sudo make install
 ```
 
+## Building a source package for Launchpad ##
+
+First you'll need to copy the distro specific files into place:
+```
+cd debian/
+cp control.focal control
+cp changelog.focal changelog
+dch -i # Bump the package version
+cp changelog changelog.focal
+cd ..
+```
+
+Next, build the source package:
+```
+debuild -S -sa
+```
+
+Finally, upload to launchpad
+```
+dput ppa:<ppa name> introvirt_<version>_source.changes 
+```
+
 ## Usage Instructions
 The included IntroVirt tools have their own usage instructions. See the `tools/` folder.
 
