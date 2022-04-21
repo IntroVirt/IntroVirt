@@ -15,8 +15,8 @@
  */
 #pragma once
 
-#include <introvirt/windows/kernel/nt/types/LUID.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
+#include <introvirt/windows/kernel/nt/types/LUID.hh>
 
 #include <memory>
 #include <string>
@@ -26,7 +26,7 @@ namespace windows {
 namespace nt {
 
 class SEP_LOGON_SESSION_REFERENCES {
-public:
+  public:
     virtual LUID& LogonId() = 0;
     virtual const LUID& LogonId() const = 0;
 
@@ -40,15 +40,15 @@ public:
     virtual void Flags(uint32_t Flags) = 0;
 
     virtual const std::string& AccountName() const = 0;
-    
+
     virtual const std::string& AuthorityName() const = 0;
 
     virtual LUID& SiblingAuthId() = 0;
     virtual const LUID& SiblingAuthId() const = 0;
-    
+
     virtual ~SEP_LOGON_SESSION_REFERENCES() = default;
 };
 
-}
-}
-}
+} // namespace nt
+} // namespace windows
+} // namespace introvirt

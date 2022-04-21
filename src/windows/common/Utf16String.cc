@@ -75,7 +75,7 @@ void Utf16String::invalidate() {
     pImpl->utf16_valid = false;
 }
 
-Utf16String::operator const std::u16string&() const { return utf16(); }
+Utf16String::operator const std::u16string &() const { return utf16(); }
 
 bool Utf16String::operator==(const std::u16string& src) const { return equals(src); }
 
