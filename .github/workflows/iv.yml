@@ -41,6 +41,13 @@ jobs:
             libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
             liblog4cxx-dev python3-jinja2 python3 \
             doxygen clang-format git
+          mkdir /tmp/iv && cd /tmp/iv
+          TAG=$(curl --silent "https://api.github.com/repos/IntroVirt/libmspdb/releases/latest" \
+            | jq --raw-output ".. .tag_name? // empty")
+          curl --location --silent --show-error --output libmspdb.zip \
+            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb-$TAG.zip
+          unzip libmspdb.zip
+          sudo apt-get install -y ./*.deb
         shell: bash
       - name: Validate Release Build
         run: |
@@ -67,6 +74,13 @@ jobs:
             libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
             liblog4cxx-dev python3-jinja2 python3 \
             doxygen clang-format git
+          mkdir /tmp/iv && cd /tmp/iv
+          TAG=$(curl --silent "https://api.github.com/repos/IntroVirt/libmspdb/releases/latest" \
+            | jq --raw-output ".. .tag_name? // empty")
+          curl --location --silent --show-error --output libmspdb.zip \
+            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb-$TAG.zip
+          unzip libmspdb.zip
+          sudo apt-get install -y ./*.deb
         shell: bash
       - name: Validate Debug Build
         run: |
