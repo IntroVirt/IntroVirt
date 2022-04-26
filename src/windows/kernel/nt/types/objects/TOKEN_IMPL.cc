@@ -64,7 +64,7 @@ const SID* TOKEN_IMPL<PtrType>::PrimaryGroup() const {
 }
 
 template <typename PtrType>
-SID* TOKEN_IMPL<PtrType>::User()  {
+SID* TOKEN_IMPL<PtrType>::User() {
     if (likely(user_.has_value()))
         return user_->Sid();
     return nullptr;

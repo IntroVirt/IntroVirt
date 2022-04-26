@@ -41,7 +41,7 @@ class GuestAllocation {
     /**
      * @brief Transparently decay into a guest_ptr<_Tp>
      */
-    operator const guest_ptr<_Tp>&() const { return ptr_; }
+    operator const guest_ptr<_Tp> &() const { return ptr_; }
 
     /**
      * @brief Transparently decay into a guest_ptr<void>

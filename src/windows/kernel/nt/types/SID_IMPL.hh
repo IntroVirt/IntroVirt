@@ -53,20 +53,14 @@ class SID_IMPL final : public SID {
     }
     guest_ptr<const uint32_t[]> SubAuthorities() const override { return pSubAuthorities_; }
 
-    void Revision(uint8_t Revision) override {
-        ptr_->Revision = Revision;
-    }
+    void Revision(uint8_t Revision) override { ptr_->Revision = Revision; }
 
-    guest_ptr<uint8_t[]> IdentifierAuthority()  override {
-        return pIdentifierAuthority_;
-    }
-    guest_ptr<uint32_t[]> SubAuthorities()  override { return pSubAuthorities_; }
+    guest_ptr<uint8_t[]> IdentifierAuthority() override { return pIdentifierAuthority_; }
+    guest_ptr<uint32_t[]> SubAuthorities() override { return pSubAuthorities_; }
 
     Json::Value json() const override;
 
-    uint8_t SubAuthorityCount() const override {
-        return ptr_->SubAuthorityCount;
-    }
+    uint8_t SubAuthorityCount() const override { return ptr_->SubAuthorityCount; }
     void SubAuthorityCount(uint8_t SubAuthorityCount) {
         ptr_->SubAuthorityCount = SubAuthorityCount;
     }

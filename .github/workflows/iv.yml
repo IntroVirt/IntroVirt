@@ -1,0 +1,97 @@
+name: CI Tests
+
+on:
+  push:
+    paths-ignore: ['**.md']
+  pull_request:
+    paths-ignore: ['**.md']
+
+jobs:
+  Clang_Format:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: IntroVirt
+      - name: Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+        shell: bash
+      - name: Validate Source Formatting
+        run: |
+          cd IntroVirt
+          find . -name '*.hh' -o -iname '*.cc' | xargs clang-format -i -style=file
+          if [[ -n $(git diff) ]]; then
+            echo "You must run make format before submitting a pull request"
+            echo ""
+            git diff
+            exit -1
+          fi
+        shell: bash
+
+  Release:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
+            libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
+            liblog4cxx-dev python3-jinja2 python3 \
+            doxygen clang-format git
+          mkdir /tmp/iv && cd /tmp/iv
+          TAG=$(curl --silent "https://api.github.com/repos/IntroVirt/libmspdb/releases/latest" \
+            | jq --raw-output ".. .tag_name? // empty")
+          curl --location --silent --show-error --output libmspdb.zip \
+            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb-$TAG.zip
+          unzip libmspdb.zip
+          sudo apt-get install -y ./*.deb
+        shell: bash
+      - name: Validate Release Build
+        run: |
+          cd build
+          cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release
+          ninja
+          ninja package
+          mkdir release && mv *.deb release/
+        shell: bash
+      - name: Archive debian packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: iv-deb
+          path: build/release/*.deb
+
+  Debug:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
+            libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
+            liblog4cxx-dev python3-jinja2 python3 \
+            doxygen clang-format git
+          mkdir /tmp/iv && cd /tmp/iv
+          TAG=$(curl --silent "https://api.github.com/repos/IntroVirt/libmspdb/releases/latest" \
+            | jq --raw-output ".. .tag_name? // empty")
+          curl --location --silent --show-error --output libmspdb.zip \
+            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb-$TAG.zip
+          unzip libmspdb.zip
+          sudo apt-get install -y ./*.deb
+        shell: bash
+      - name: Validate Debug Build
+        run: |
+          cd build
+          cmake .. -GNinja -DCMAKE_BUILD_TYPE=Debug
+          ninja
+          ninja package
+          mkdir debug && mv ./*.deb debug/
+        shell: bash
+      - name: Archive debian packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: iv-deb
+          path: build/debug/*.deb

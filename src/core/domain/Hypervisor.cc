@@ -33,7 +33,6 @@ namespace filesystem = std::filesystem;
 namespace filesystem = std::experimental::filesystem;
 #endif
 
-
 namespace introvirt {
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("introvirt.core.Hypervisor"));

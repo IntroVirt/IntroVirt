@@ -43,7 +43,6 @@ namespace filesystem = std::filesystem;
 namespace filesystem = std::experimental::filesystem;
 #endif
 
-
 namespace introvirt {
 namespace kvm {
 

@@ -34,7 +34,7 @@ namespace nt {
  */
 class SID {
   public:
-    virtual uint8_t Revision() const = 0;    
+    virtual uint8_t Revision() const = 0;
     virtual guest_ptr<const uint8_t[]> IdentifierAuthority() const = 0;
     virtual guest_ptr<const uint32_t[]> SubAuthorities() const = 0;
 
