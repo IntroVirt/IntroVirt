@@ -143,6 +143,12 @@ ADD_CUSTOM_TARGET(
 
 SET_PROPERTY(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${SYSCALL_GEN_INPUT}")
 
+# Format target
+ADD_CUSTOM_TARGET(
+     format
+     COMMAND find ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include -name '*.hh' -o -iname '*.cc' | xargs clang-format -i -style=file
+)
+
 # Install rule for include headers
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/introvirt DESTINATION include COMPONENT libintrovirt-dev)
 
