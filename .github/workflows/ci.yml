@@ -1,4 +1,4 @@
-name: CI Tests
+name: CI
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
   Clang_Format:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: IntroVirt
       - name: Setup
@@ -33,7 +33,7 @@ jobs:
   Release:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup
         run: |
           sudo apt-get update
@@ -42,10 +42,8 @@ jobs:
             liblog4cxx-dev python3-jinja2 python3 \
             doxygen clang-format git
           mkdir /tmp/iv && cd /tmp/iv
-          TAG=$(curl --silent "https://api.github.com/repos/IntroVirt/libmspdb/releases/latest" \
-            | jq --raw-output ".. .tag_name? // empty")
           curl --location --silent --show-error --output libmspdb.zip \
-            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb-$TAG.zip
+            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb.zip
           unzip libmspdb.zip
           sudo apt-get install -y ./*.deb
         shell: bash
@@ -60,13 +58,13 @@ jobs:
       - name: Archive debian packages
         uses: actions/upload-artifact@v3
         with:
-          name: iv-deb
+          name: introvirt_release_deb
           path: build/release/*.deb
 
   Debug:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup
         run: |
           sudo apt-get update
@@ -75,10 +73,8 @@ jobs:
             liblog4cxx-dev python3-jinja2 python3 \
             doxygen clang-format git
           mkdir /tmp/iv && cd /tmp/iv
-          TAG=$(curl --silent "https://api.github.com/repos/IntroVirt/libmspdb/releases/latest" \
-            | jq --raw-output ".. .tag_name? // empty")
           curl --location --silent --show-error --output libmspdb.zip \
-            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb-$TAG.zip
+            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb.zip
           unzip libmspdb.zip
           sudo apt-get install -y ./*.deb
         shell: bash
@@ -93,5 +89,5 @@ jobs:
       - name: Archive debian packages
         uses: actions/upload-artifact@v3
         with:
-          name: iv-deb
+          name: introvirt_debug_deb
           path: build/debug/*.deb
