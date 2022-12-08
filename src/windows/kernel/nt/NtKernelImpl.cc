@@ -427,9 +427,10 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
                     LOG4CXX_DEBUG(logger, ex.what());
                 }
             }
+            search_ptr -= PageDirectory::PAGE_SIZE / sizeof(uint16_t);
         } catch (VirtualAddressNotPresentException& ex) {
+            LOG4CXX_DEBUG(logger, ex.what());
         }
-        search_ptr -= PageDirectory::PAGE_SIZE / sizeof(uint16_t);
     }
 
     if (!pe_)
