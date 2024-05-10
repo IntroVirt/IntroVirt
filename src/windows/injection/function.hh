@@ -142,7 +142,7 @@ class FunctionInjector final {
 
         switch (event.type()) {
         case EventType::EVENT_MEM_ACCESS:
-            LOG4CXX_WARN(logger, "Function injection on nested memory access not supported")
+            LOG4CXX_WARN(logger, "Function injection on nested memory access not supported");
             throw InvalidMethodException();
         default:
             break;

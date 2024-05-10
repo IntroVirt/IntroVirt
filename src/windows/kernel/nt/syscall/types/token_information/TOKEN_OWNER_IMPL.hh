@@ -22,6 +22,7 @@
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/kernel/nt/syscall/types/token_information/TOKEN_OWNER.hh>
 
+#include <optional>
 #include <mutex>
 
 namespace introvirt {

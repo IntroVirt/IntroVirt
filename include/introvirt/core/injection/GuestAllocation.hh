@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <string_view>
 #include <type_traits>
+#include <optional>
 
 namespace introvirt {
 namespace inject {

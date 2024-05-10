@@ -25,6 +25,8 @@
 #include <introvirt/windows/pe/types/IMAGE_RESOURCE_DIRECTORY.hh>
 #include <introvirt/windows/pe/types/IMAGE_RESOURCE_DIRECTORY_ENTRY.hh>
 
+#include <optional>
+
 namespace introvirt {
 namespace windows {
 namespace pe {

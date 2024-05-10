@@ -125,7 +125,7 @@ InternalBreakpoint::InternalBreakpoint(const guest_phys_ptr<void>& address)
 
     // Configure out watchpoint if supported
     try {
-#if 0        
+#if 0
         auto& domain = const_cast<DomainImpl&>(static_cast<const DomainImpl&>(address.domain()));
         watchpoint_ = domain.create_watchpoint(
             address, 1, true, true, false,
@@ -206,7 +206,7 @@ bool BreakpointManager::handle_int3_event(Event& event, bool deliver_events) {
             vcpu.inject_exception(x86::Exception::INT3);
             return false;
         } else {
-            LOG4CXX_DEBUG(logger, "Hit unknown breakpoint. This is probably bad for the guest.")
+            LOG4CXX_DEBUG(logger, "Hit unknown breakpoint. This is probably bad for the guest.");
         }
         return false;
     }

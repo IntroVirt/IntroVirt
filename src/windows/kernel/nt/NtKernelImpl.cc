@@ -145,7 +145,7 @@ void NtKernelImpl<PtrType>::reparse_drive_letters() {
             // Check to see if this is our result
             const auto* symLink = dynamic_cast<const OBJECT_SYMBOLIC_LINK*>(object.get());
             std::string target = boost::to_lower_copy(symLink->LinkTarget());
-            LOG4CXX_DEBUG(logger, "Found drive " << name << " -> " << target)
+            LOG4CXX_DEBUG(logger, "Found drive " << name << " -> " << target);
             drive_letters_[target] = symLink->ptr();
         } catch (VirtualAddressNotPresentException& ex) {
             LOG4CXX_DEBUG(logger, ex.what());

@@ -239,7 +239,7 @@ void KvmVcpu::inject_exception(x86::Exception vector, int64_t error_code, uint64
 }
 
 void KvmVcpu::inject_syscall() {
-    LOG4CXX_DEBUG(logger, "Vcpu " << id_ << ": Injecting SYSCALL")
+    LOG4CXX_DEBUG(logger, "Vcpu " << id_ << ": Injecting SYSCALL");
 
     // Sync up our registers
     registers_.write();
@@ -255,7 +255,7 @@ void KvmVcpu::inject_syscall() {
 }
 
 void KvmVcpu::inject_sysenter() {
-    LOG4CXX_DEBUG(logger, "Vcpu " << id_ << ": Injecting SYSENTER")
+    LOG4CXX_DEBUG(logger, "Vcpu " << id_ << ": Injecting SYSENTER");
 
     // Sync up our registers
     registers_.write();
