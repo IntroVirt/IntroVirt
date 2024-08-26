@@ -10,37 +10,16 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)
 
-First, we need to get on the same kernel version supported by kvm-introvirt, which is currently Ubuntu Focal's `5.4.0-x`:
-
-```bash
-$ uname -r
-5.4.0-109-generic
-```
-
-On Ubuntu 20.04 (Focal), we can revert to the Linux kernel version `5.4.0-x` by [disabling HWE](https://wiki.ubuntu.com/Kernel/LTSEnablementStack#Ubuntu_20.04_LTS_-_Focal_Fossa). The latest security patches are still provided by Canonical. To check if HWE is enabled, we can run `hwe-support-status` (no output means disabled, otherwise HWE is enabled).
-
-To install on Ubuntu focal from the latest Github release.
-
-```bash
-mkdir introvirt_pkgs && cd introvirt_pkgs
-wget https://github.com/IntroVirt/kvm-introvirt/releases/latest/download/kvm-introvirt.zip
-wget https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb.zip
-wget https://github.com/IntroVirt/IntroVirt/releases/latest/download/introvirt.zip
-unzip *.zip
-sudo apt install *.deb
-```
-
-We will need to be booted into the correct kernel, based on the latest version of kvm-introvirt.
-If properly configured, running `sudo ivversion` will return a supported hypervisor.
+Soon!
 
 ## Building on Ubuntu Linux
 
 1. Install build dependencies:
     ```shell
+    sudo apt update && \
     sudo apt-get install -y \
-        cmake libcurl4-openssl-dev libboost-dev \
-        libboost-program-options-dev git clang-format \
-        liblog4cxx-dev
+        python3 python3-jinja2 cmake make build-essential libcurl4-openssl-dev libboost-dev \
+        libboost-program-options-dev git clang-format liblog4cxx-dev
     ```
 1. Build and install `libmspdb`
     ```shell
@@ -52,49 +31,18 @@ If properly configured, running `sudo ivversion` will return a supported hypervi
     ```
 1. Build and install IntroVirt:
     ```shell
-    cd build
+    git clone https://github.com/IntroVirt/IntroVirt.git
+    cd IntroVirt/build
     cmake ..
     make -j
     sudo make install
     ```
 1. Build and install [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
+1. Confirm: `sudo ivversion`
 
-## Interested In Working For AIS?
+### Post-install steps
 
-Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and test your skills! Submit your score to show us what you’ve got. We have offices across the country and offer competitive pay and outstanding benefits. Join a team that is not only committed to the future of cyberspace, but to our employee’s success as well.
-
-<p align="center">
-  <a href="https://www.ainfosec.com/">
-    <img src="https://github.com/IntroVirt/IntroVirt/raw/main/.github/images/ais.png" alt="ais" height="100" />
-  </a>
-</p>
-
-
-
-## Building a source package for Launchpad
-
-First you'll need to copy the distro specific files into place:
-
-```bash
-cd debian/
-cp control.focal control
-cp changelog.focal changelog
-dch -i # Bump the package version
-cp changelog changelog.focal
-cd ..
-```
-
-Next, build the source package:
-
-```bash
-debuild -S -sa
-```
-
-Finally, upload to launchpad
-
-```bash
-dput ppa:<ppa name> introvirt_<version>_source.changes
-```
+TODO: Create introvirt group, add yourself to it, `newgrp`, mark introvirt tool binaries setuid and owned by root/introvirt
 
 ## Usage Instructions
 
@@ -123,6 +71,16 @@ If you would like to help:
 ## License
 
 IntroVirt is licensed under the Apache v2.0 License.
+
+## Interested In Working For AIS?
+
+Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and test your skills! Submit your score to show us what you’ve got. We have offices across the country and offer competitive pay and outstanding benefits. Join a team that is not only committed to the future of cyberspace, but to our employee’s success as well.
+
+<p align="center">
+  <a href="https://www.ainfosec.com/">
+    <img src="https://github.com/IntroVirt/IntroVirt/raw/main/.github/images/ais.png" alt="ais" height="100" />
+  </a>
+</p>
 
 ## Related
 

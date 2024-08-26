@@ -7,3 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* This changelog
+* A contributing document
+
+### Fixed
+
+* Added missing `#include <cstdint>` to several source files to get build to pass on Ubuntu 24.04
+* Added missing deps to the readme for building from scratch on a clean system
+
+### Changed
+
+* Removed outdated instructions from readme
