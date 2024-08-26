@@ -33,6 +33,32 @@ sudo apt install *.deb
 We will need to be booted into the correct kernel, based on the latest version of kvm-introvirt.
 If properly configured, running `sudo ivversion` will return a supported hypervisor.
 
+## Building on Ubuntu Linux
+
+1. Install build dependencies:
+    ```shell
+    sudo apt-get install -y \
+        cmake libcurl4-openssl-dev libboost-dev \
+        libboost-program-options-dev git clang-format \
+        liblog4cxx-dev
+    ```
+1. Build and install `libmspdb`
+    ```shell
+    git clone https://github.com/IntroVirt/libmspdb.git
+    cd libmspdb/build/
+    cmake ..
+    make -j
+    sudo make install
+    ```
+1. Build and install IntroVirt:
+    ```shell
+    cd build
+    cmake ..
+    make -j
+    sudo make install
+    ```
+1. Build and install [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
+
 ## Interested In Working For AIS?
 
 Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and test your skills! Submit your score to show us what you’ve got. We have offices across the country and offer competitive pay and outstanding benefits. Join a team that is not only committed to the future of cyberspace, but to our employee’s success as well.
@@ -43,40 +69,7 @@ Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and t
   </a>
 </p>
 
-### Building on Ubuntu Linux
 
-Install build dependencies:
-
-If using the launchpad PPA, `libmspdb-dev` can be installed as a package:
-
-```bash
-sudo apt-get install cmake libcurl4-openssl-dev libboost-dev \
-     libboost-program-options-dev libboost-stacktrace-dev \
-     liblog4cxx-dev libmspdb-dev python3-jinja2 python3 \
-     doxygen clang-format git
-```
-
-Otherwise, build and install libmspdb
-
-```bash
-sudo apt-get install -y cmake libcurl4-openssl-dev libboost-dev git
-git clone https://github.com/IntroVirt/libmspdb.git
-cd libmspdb/build/
-cmake ..
-make -j
-sudo make install
-```
-
-Note: You will also have to build and install [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/) if not using the PPA.
-
-Build and install IntroVirt:
-
-```bash
-cd build
-cmake ..
-make -j
-sudo make install
-```
 
 ## Building a source package for Launchpad
 

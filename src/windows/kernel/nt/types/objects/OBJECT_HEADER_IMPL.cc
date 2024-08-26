@@ -23,6 +23,8 @@
 
 #include <log4cxx/logger.h>
 
+#include <cstdint>
+
 namespace introvirt {
 namespace windows {
 namespace nt {
