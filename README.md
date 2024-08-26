@@ -19,16 +19,10 @@ Soon!
     sudo apt update && \
     sudo apt-get install -y \
         python3 python3-jinja2 cmake make build-essential libcurl4-openssl-dev libboost-dev \
-        libboost-program-options-dev git clang-format liblog4cxx-dev
+        libboost-program-options-dev git clang-format liblog4cxx-dev libboost-stacktrace-dev \
+        doxygen
     ```
-1. Build and install `libmspdb`
-    ```shell
-    git clone https://github.com/IntroVirt/libmspdb.git
-    cd libmspdb/build/
-    cmake ..
-    make -j
-    sudo make install
-    ```
+1. Build and install [libmspdb](https://github.com/IntroVirt/libmspdb)
 1. Build and install IntroVirt:
     ```shell
     git clone https://github.com/IntroVirt/IntroVirt.git
@@ -43,6 +37,31 @@ Soon!
 ### Post-install steps
 
 TODO: Create introvirt group, add yourself to it, `newgrp`, mark introvirt tool binaries setuid and owned by root/introvirt
+
+### Building deb package for release
+
+_The deps for these steps can be installed with: `sudo apt install debhelper devscripts`_
+
+1. If releasing a new version, bump the version number in `CMakeLists.txt` in these lines
+    ```cmake
+    SET(PACKAGE_MAJOR_VERSION #)
+    SET(PACKAGE_MINOR_VERSION #)
+    SET(PACKAGE_PATCH_VERSION #)
+    ```
+1. First copy the distro-specific files into place and update the changelog
+    ```shell
+    export DEBEMAIL="youremail@domain.com"
+    cp ./debian/control.$(lsb_release -c -s 2> /dev/null) ./debian/control
+    cp ./debian/changelog.$(lsb_release -c -s 2> /dev/null) ./debian/changelog
+    dch -i # a message about what happened
+    cp ./debian/changelog ./debian/changelog.$(lsb_release -c -s 2> /dev/null)
+    ```
+1. To build the `.deb` files
+    ```shell
+    cd build
+    make package
+    ```
+1. Make sure to `git add -u` and `git commit` the modification to the distro-specific changelog
 
 ## Usage Instructions
 

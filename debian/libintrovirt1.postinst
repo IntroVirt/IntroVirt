@@ -6,4 +6,3 @@ then
 else
     addgroup --system introvirt
 fi
-

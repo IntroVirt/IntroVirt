@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * This changelog
 * A contributing document
+* Added debian changelog files for noble and jammy
 
 ### Fixed
 
@@ -20,3 +21,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 * Removed outdated instructions from readme
+* Updated `debian/copyright`
