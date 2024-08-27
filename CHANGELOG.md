@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * A contributing document
 * Added debian changelog files for noble and jammy
 * Added support for Ubuntu 22.04 and 24.04
+* Added supported kernel chart to README.md
 
 ### Fixed
 

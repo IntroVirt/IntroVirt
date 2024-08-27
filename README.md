@@ -18,6 +18,15 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 1. Unzip the `kvm-introvirt` zip file, change into the new directory and run: `sudo apt install ./*.deb`
 1. Test: `sudo ivversion`
 
+### Supported Kernels
+
+| Ditro | Latest Supported Kernel | Status    |
+| ----- | ----------------------- | --------- |
+| 18.04 | [HWE 5.4.0-150-generic]()   | Supported |
+| 20.04 | [HWE 5.15.0-119-generic]()  | Supported |
+| 22.04 | [HWE 6.8.0-40-generic]()    | Supported |
+| 24.04 | [HWE 6.8.0-40-generic]()    | Supported |
+
 ## Building on Ubuntu Linux
 
 1. Install build dependencies:
