@@ -10,7 +10,13 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)
 
-Soon!
+1. Navigate to the [releases](https://github.com/IntroVirt/IntroVirt/releases)
+1. Download the appropriate IntroVirt `.zip` file for your Ubuntu distribution from the latest release
+1. unzip the zip file, change into the `introvirt-ubuntu-xx.xx` folder and run: `sudo apt install ./*.deb`
+1. Navigate to the [kvm-introvirt releases](https://github.com/IntroVirt/kvm-introvirt/releases) and download the release that matches your kernel version (`uname -a`). If one does not exist, see the instructions in the [kvm-introvirt READEME.md](https://github.com/IntroVirt/kvm-introvirt) for how to build it yourself and please [submit an issue](https://github.com/IntroVirt/kvm-introvirt/issues) for support.
+    * _We try to keep up with the latest kernel for each supported LTS. If you are behind, consider updating._
+1. Unzip the `kvm-introvirt` zip file, change into the new directory and run: `sudo apt install ./*.deb`
+1. Test: `sudo ivversion`
 
 ## Building on Ubuntu Linux
 

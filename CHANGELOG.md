@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * This changelog
 * A contributing document
 * Added debian changelog files for noble and jammy
+* Added support for Ubuntu 22.04 and 24.04
 
 ### Fixed
 
