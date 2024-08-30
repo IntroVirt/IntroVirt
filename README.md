@@ -80,8 +80,7 @@ _The deps for these steps can be installed with: `sudo apt install debhelper dev
     ```
 1. To build the `.deb` files
     ```shell
-    cd build
-    make package
+    ./scripts/build_release.sh
     ```
 1. Make sure to `git add -u` and `git commit` the modification to the distro-specific changelog
 
