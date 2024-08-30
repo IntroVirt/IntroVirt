@@ -22,6 +22,7 @@
 #include <introvirt/windows/kernel/nt/syscall/types/key_value_information/KEY_VALUE_FULL_INFORMATION.hh>
 
 #include <memory>
+#include <optional>
 
 namespace introvirt {
 namespace windows {

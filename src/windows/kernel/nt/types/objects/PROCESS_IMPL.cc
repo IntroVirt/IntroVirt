@@ -66,7 +66,7 @@ const std::string& PROCESS_IMPL<PtrType>::full_path() const {
         // Get the VaD
         auto vad = VadRoot();
         if (!vad) {
-            LOG4CXX_DEBUG(logger, "Failed to find VaD for FullPath()")
+            LOG4CXX_DEBUG(logger, "Failed to find VaD for FullPath()");
             return full_path_;
         }
 
@@ -80,7 +80,7 @@ const std::string& PROCESS_IMPL<PtrType>::full_path() const {
 
         const FILE_OBJECT* file = vad_entry->FileObject();
         if (!file) {
-            LOG4CXX_DEBUG(logger, "Failed to find FileObject in VaD for FullPath()")
+            LOG4CXX_DEBUG(logger, "Failed to find FileObject in VaD for FullPath()");
             return full_path_;
         }
 

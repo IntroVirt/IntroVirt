@@ -47,7 +47,7 @@ const HIVE* HIVE_IMPL<PtrType>::NextHive() const {
                 cmhive_->HiveList.Flink.get<PtrType>(cmhive_buffer_) - cmhive_->HiveList.offset());
             NextHive_ = std::make_unique<HIVE_IMPL<PtrType>>(kernel_, pNextHive);
         } catch (TraceableException& ex) {
-            LOG4CXX_WARN(logger, "NextHive() threw exception: " << ex)
+            LOG4CXX_WARN(logger, "NextHive() threw exception: " << ex);
             return nullptr;
         }
     }

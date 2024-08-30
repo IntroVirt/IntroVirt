@@ -4,33 +4,110 @@
 
 IntroVirt, short for introspective virtualization, is a customized Hypervisor and library that provides a robust virtual machine introspection (VMI) application programming interface (API). VMI is the process of looking at the memory contents of a virtual machine during runtime. By applying knowledge of the guest operating system, introspection can be used for a variety of applications, including reverse engineering, debugging software, and securing guest VMs by limiting access to files or limiting an executing application’s functionality.
 
-IntroVirt consists of two components: a patched version of the [KVM Hypervisor](https://github.com/IntroVirt/kvm-introvirt), and the [IntroVirt userland library](https://github.com/IntroVirt/IntroVirt).
+IntroVirt consists of three components: a patched version of the [KVM Hypervisor](https://github.com/IntroVirt/kvm-introvirt), the [IntroVirt userland library](https://github.com/IntroVirt/IntroVirt), and a Microsoft Program Database (MS PDB) parsing library [libmspdb](https://github.com/IntroVirt/libmspdb/tree/main).
 
-## **Quick start**
+## Quick start
+
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)
 
-First, we need to get on the same kernel version supported by kvm-introvirt, which is currently Ubuntu Focal's `5.4.0-x`:
-```
-$ uname -r
-5.4.0-109-generic
-```
+1. Navigate to the [releases](https://github.com/IntroVirt/IntroVirt/releases)
+1. Download the appropriate IntroVirt `.zip` file for your Ubuntu distribution from the latest release
+1. unzip the zip file, change into the `introvirt-ubuntu-xx.xx` folder and run: `sudo apt install ./*.deb`
+1. Navigate to the [kvm-introvirt releases](https://github.com/IntroVirt/kvm-introvirt/releases) and download the release that matches your kernel version (`uname -a`). If one does not exist, see the instructions in the [kvm-introvirt READEME.md](https://github.com/IntroVirt/kvm-introvirt) for how to build it yourself and please [submit an issue](https://github.com/IntroVirt/kvm-introvirt/issues) for support.
+    * _We try to keep up with the latest kernel for each supported LTS. If you are behind, consider updating._
+1. Unzip the `kvm-introvirt` zip file, change into the new directory and run: `sudo apt install ./*.deb`
+1. Test: `sudo ivversion`
 
-On Ubuntu 20.04 (Focal), we can revert to the Linux kernel version `5.4.0-x` by [disabling HWE](https://wiki.ubuntu.com/Kernel/LTSEnablementStack#Ubuntu_20.04_LTS_-_Focal_Fossa). The latest security patches are still provided by Canonical. To check if HWE is enabled, we can run `hwe-support-status` (no output means disabled, otherwise HWE is enabled).
+### Supported Kernels
 
-To install on Ubuntu focal from the latest Github release.
-```
-mkdir introvirt_pkgs && cd introvirt_pkgs
-wget https://github.com/IntroVirt/kvm-introvirt/releases/latest/download/kvm-introvirt.zip
-wget https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb.zip
-wget https://github.com/IntroVirt/IntroVirt/releases/latest/download/introvirt.zip
-unzip *.zip
-sudo apt install *.deb
-```
+| Ditro | Latest Supported Kernel | Status    |
+| ----- | ----------------------- | --------- |
+| 18.04 | [HWE 5.4.0-150-generic]()   | Supported |
+| 20.04 | [HWE 5.15.0-119-generic]()  | Supported |
+| 22.04 | [HWE 6.5.0-35-generic]()    | Supported |
+| 24.04 | [HWE 6.8.0-41-generic]()    | Supported |
 
-We will need to be booted into the correct kernel, based on the latest version of kvm-introvirt.
-If properly configured, running `sudo ivversion` will return a supported hypervisor.
+## Building on Ubuntu Linux
+
+1. Install build dependencies:
+    ```shell
+    sudo apt update && \
+    sudo apt-get install -y \
+        python3 python3-jinja2 cmake make build-essential libcurl4-openssl-dev libboost-dev \
+        libboost-program-options-dev git clang-format liblog4cxx-dev libboost-stacktrace-dev \
+        doxygen
+    ```
+1. Build and install [libmspdb](https://github.com/IntroVirt/libmspdb)
+1. Build and install IntroVirt:
+    ```shell
+    git clone https://github.com/IntroVirt/IntroVirt.git
+    cd IntroVirt/build
+    cmake ..
+    make -j
+    sudo make install
+    ```
+1. Build and install [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
+1. Confirm: `sudo ivversion`
+
+### Post-install steps
+
+TODO: Create introvirt group, add yourself to it, `newgrp`, mark introvirt tool binaries setuid and owned by root/introvirt
+
+### Building deb package for release
+
+_The deps for these steps can be installed with: `sudo apt install debhelper devscripts`_
+
+1. If releasing a new version, bump the version number in `CMakeLists.txt` in these lines
+    ```cmake
+    SET(PACKAGE_MAJOR_VERSION #)
+    SET(PACKAGE_MINOR_VERSION #)
+    SET(PACKAGE_PATCH_VERSION #)
+    ```
+1. First copy the distro-specific files into place and update the changelog
+    ```shell
+    export DEBEMAIL="youremail@domain.com"
+    cp ./debian/control.$(lsb_release -c -s 2> /dev/null) ./debian/control
+    cp ./debian/changelog.$(lsb_release -c -s 2> /dev/null) ./debian/changelog
+    dch -i # a message about what happened
+    cp ./debian/changelog ./debian/changelog.$(lsb_release -c -s 2> /dev/null)
+    ```
+1. To build the `.deb` files
+    ```shell
+    cd build
+    make package
+    ```
+1. Make sure to `git add -u` and `git commit` the modification to the distro-specific changelog
+
+## Usage Instructions
+
+The included IntroVirt tools have their own usage instructions. See the `tools/` folder.
+
+You can try system call monitoring with `sudo ivsyscallmon -D <domain>`. See `sudo ivsyscallmon --help` for more information.
+
+## Resources
+
+IntroVirt provides some useful resources to learn how to use it including:
+
+- **Documentation**: TBD
+- **Examples**: TBD
+- **Unit Tests**: TBD
+
+If you have any questions, bugs, or feature requests, please feel free to ask on any of the following:
+
+- **Chat**: TBD
+- **Issue Tracker**: <https://github.com/IntroVirt/IntroVirt/issues>
+
+If you would like to help:
+
+- **Pull Requests**: <https://github.com/IntroVirt/IntroVirt/pulls>
+- **Contributing Guidelines**: <https://github.com/IntroVirt/IntroVirt/blob/master/contributing.md>
+
+## License
+
+IntroVirt is licensed under the Apache v2.0 License.
 
 ## Interested In Working For AIS?
+
 Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and test your skills! Submit your score to show us what you’ve got. We have offices across the country and offer competitive pay and outstanding benefits. Join a team that is not only committed to the future of cyberspace, but to our employee’s success as well.
 
 <p align="center">
@@ -39,90 +116,12 @@ Check out our [Can You Hack It?®](https://www.canyouhackit.com) challenge and t
   </a>
 </p>
 
-### **Building on Ubuntu Linux**
-
-Install build dependencies:
-
-If using the launchpad PPA, libmspdb-dev can be installed as a package:
-```
-sudo apt-get install cmake libcurl4-openssl-dev libboost-dev libboost-program-options-dev libboost-stacktrace-dev liblog4cxx-dev libmspdb-dev python3-jinja2 python3 doxygen clang-format git
-```
-
-Otherwise, build and install libmspdb
-```
-sudo apt-get -y cmake libcurl4-openssl-dev libboost-dev git
-git clone https://github.com/IntroVirt/libmspdb.git
-cd libmspdb/build/
-cmake ..
-make
-sudo make install
-```
-Note: You will also have to build and install [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/) if not using the PPA.
-
-Build and install IntroVirt:
-```
-cd build
-cmake ..
-make
-sudo make install
-```
-
-## Building a source package for Launchpad ##
-
-First you'll need to copy the distro specific files into place:
-```
-cd debian/
-cp control.focal control
-cp changelog.focal changelog
-dch -i # Bump the package version
-cp changelog changelog.focal
-cd ..
-```
-
-Next, build the source package:
-```
-debuild -S -sa
-```
-
-Finally, upload to launchpad
-```
-dput ppa:<ppa name> introvirt_<version>_source.changes 
-```
-
-## Usage Instructions
-The included IntroVirt tools have their own usage instructions. See the `tools/` folder.
-
-You can try system call monitoring with `sudo ivsyscallmon -D <domain>`. See `sudo ivsyscallmon --help` for more information.
-
-## **Resources**
-IntroVirt provides some useful resources to learn how to use it including:
--   **Documentation**: TBD
--   **Examples**: TBD
--   **Unit Tests**: TBD
-
-If you have any questions, bugs, or feature requests, please feel free to ask on any of the following:
--   **Chat**: TBD
--   **Issue Tracker**: <https://github.com/IntroVirt/IntroVirt/issues>
-
-If you would like to help:
--   **Pull Requests**: <https://github.com/IntroVirt/IntroVirt/pulls>
--   **Contributing Guidelines**: <https://github.com/IntroVirt/IntroVirt/blob/master/contributing.md>
-
-## License
-IntroVirt is licensed under the Apache v2.0 License.
-
 ## Related
+
 If you’re interested in IntroVirt, you might also be interested in the
 following projects:
 
-**LibVMI:** <br>
-https://github.com/libvmi/libvmi
-
-**Bitdefender:**  <br>
-https://github.com/bitdefender
-
-**HVMI:**  <br>
-https://github.com/hvmi/hvmi
-
-**libmicrovmi:**  <br>
-https://github.com/Wenzel/libmicrovmi
+- **LibVMI:** https://github.com/libvmi/libvmi
+- **Bitdefender:** ttps://github.com/bitdefender
+- **HVMI**: https://github.com/hvmi/hvmi
+- **libmicrovmi**: https://github.com/Wenzel/libmicrovmi

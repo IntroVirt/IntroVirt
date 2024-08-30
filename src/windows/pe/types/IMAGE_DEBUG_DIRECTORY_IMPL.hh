@@ -20,6 +20,8 @@
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/windows/pe/types/IMAGE_DEBUG_DIRECTORY.hh>
 
+#include <optional>
+
 namespace introvirt {
 namespace windows {
 namespace pe {

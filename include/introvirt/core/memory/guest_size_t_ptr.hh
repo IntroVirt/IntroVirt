@@ -327,8 +327,7 @@ class GUEST_SIZET_TYPE final
 
     // Move constructor and assignment
     template <typename InTp, typename InPtrType>
-    GUEST_SIZET_TYPE(basic_guest_ptr<InTp, InPtrType, _Physical>&& in)
-    noexcept {
+    GUEST_SIZET_TYPE(basic_guest_ptr<InTp, InPtrType, _Physical>&& in) noexcept {
         *this = std::move(in);
     }
     template <typename Tp = _Tp, typename InTp, typename InPtrType>

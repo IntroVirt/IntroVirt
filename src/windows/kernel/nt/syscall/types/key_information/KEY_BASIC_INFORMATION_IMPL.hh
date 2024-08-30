@@ -19,6 +19,8 @@
 #include <introvirt/windows/common/WStr.hh>
 #include <introvirt/windows/kernel/nt/syscall/types/key_information/KEY_BASIC_INFORMATION.hh>
 
+#include <optional>
+
 namespace introvirt {
 namespace windows {
 namespace nt {

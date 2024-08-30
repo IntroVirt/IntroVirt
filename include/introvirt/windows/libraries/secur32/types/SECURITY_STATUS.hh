@@ -18,6 +18,8 @@
 #include <introvirt/windows/libraries/WindowsFunctionCall.hh>
 #include <introvirt/windows/libraries/secur32/types/types.hh>
 
+#include <cstdint>
+
 namespace introvirt {
 namespace windows {
 namespace secur32 {

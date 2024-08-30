@@ -23,6 +23,7 @@
 #include <introvirt/windows/kernel/nt/syscall/types/token_information/TOKEN_OWNER.hh>
 
 #include <mutex>
+#include <optional>
 
 namespace introvirt {
 namespace windows {

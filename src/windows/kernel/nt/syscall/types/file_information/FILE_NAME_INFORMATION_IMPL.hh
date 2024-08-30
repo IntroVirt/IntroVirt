@@ -19,6 +19,8 @@
 #include <introvirt/windows/common/WStr.hh>
 #include <introvirt/windows/kernel/nt/syscall/types/file_information/FILE_NAME_INFORMATION.hh>
 
+#include <optional>
+
 namespace introvirt {
 namespace windows {
 namespace nt {

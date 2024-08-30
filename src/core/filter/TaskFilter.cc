@@ -19,6 +19,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <mutex>
+
 namespace introvirt {
 
 bool TaskFilter::matches(const Event& event) const {
