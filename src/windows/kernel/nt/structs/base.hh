@@ -35,7 +35,7 @@ union _LARGE_INTEGER { // 0x8 bytes
     struct {           // offset 0x0
         ULONG LowPart; // offset   0x0 size   0x4
         LONG HighPart; // offset   0x4 size   0x4
-    };                 // struct size 0x8
+    }; // struct size 0x8
     LONGLONG QuadPart; // offset   0x0 size   0x8
 };
 
@@ -43,7 +43,7 @@ union _ULARGE_INTEGER { // 0x8 bytes
     struct {            // offset 0x0
         ULONG LowPart;  // offset   0x0 size   0x4
         ULONG HighPart; // offset   0x4 size   0x4
-    };                  // struct size 0x8
+    }; // struct size 0x8
     ULONGLONG QuadPart; // offset   0x0 size   0x8
 };
 

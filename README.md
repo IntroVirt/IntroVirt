@@ -24,8 +24,8 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 | ----- | ----------------------- | --------- |
 | 18.04 | [HWE 5.4.0-150-generic]()   | Supported |
 | 20.04 | [HWE 5.15.0-119-generic]()  | Supported |
-| 22.04 | [HWE 6.8.0-40-generic]()    | Supported |
-| 24.04 | [HWE 6.8.0-40-generic]()    | Supported |
+| 22.04 | [HWE 6.5.0-35-generic]()    | Supported |
+| 24.04 | [HWE 6.8.0-41-generic]()    | Supported |
 
 ## Building on Ubuntu Linux
 

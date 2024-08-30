@@ -22,7 +22,6 @@
 
 #include <optional>
 
-
 namespace introvirt {
 namespace windows {
 namespace pe {

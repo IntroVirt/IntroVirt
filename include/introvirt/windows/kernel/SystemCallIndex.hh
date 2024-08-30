@@ -15,9 +15,9 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <ostream>
 #include <string>
-#include <cstdint>
 
 namespace introvirt {
 namespace windows {

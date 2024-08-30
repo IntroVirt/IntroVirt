@@ -21,8 +21,8 @@
 #include <introvirt/windows/common/WStr.hh>
 #include <introvirt/windows/kernel/nt/syscall/types/key_value_information/KEY_VALUE_FULL_INFORMATION.hh>
 
-#include <optional>
 #include <memory>
+#include <optional>
 
 namespace introvirt {
 namespace windows {

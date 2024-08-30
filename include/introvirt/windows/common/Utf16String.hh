@@ -70,7 +70,7 @@ class Utf16String {
     /**
      * Operator overload for converting to const std::u16string&
      */
-    operator const std::u16string &() const;
+    operator const std::u16string&() const;
 
   public:
     /**

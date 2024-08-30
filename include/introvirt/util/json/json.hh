@@ -1749,7 +1749,7 @@ class JSON_API CharReader {
          */
         virtual CharReader* newCharReader() const = 0;
     }; // Factory
-};     // CharReader
+}; // CharReader
 
 /** \brief Build a CharReader implementation.
  *
@@ -1951,7 +1951,7 @@ class JSON_API StreamWriter {
          */
         virtual StreamWriter* newStreamWriter() const = 0;
     }; // Factory
-};     // StreamWriter
+}; // StreamWriter
 
 /** \brief Write into stringstream, then return string, for convenience.
  * A StreamWriter will be created from the factory, used, and then deleted.
