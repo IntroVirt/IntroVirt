@@ -13,7 +13,7 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 1. Navigate to the [releases](https://github.com/IntroVirt/IntroVirt/releases)
 1. Download the appropriate IntroVirt `.zip` file for your Ubuntu distribution from the latest release
 1. unzip the zip file, change into the `introvirt-ubuntu-xx.xx` folder and run: `sudo apt install ./*.deb`
-1. Navigate to the [kvm-introvirt releases](https://github.com/IntroVirt/kvm-introvirt/releases) and download the release that matches your kernel version (`uname -a`). If one does not exist, see the instructions in the [kvm-introvirt READEME.md](https://github.com/IntroVirt/kvm-introvirt) for how to build it yourself and please [submit an issue](https://github.com/IntroVirt/kvm-introvirt/issues) for support.
+1. Navigate to the [kvm-introvirt releases](https://github.com/IntroVirt/kvm-introvirt/releases) and download the file from the latest release that matches your kernel version (`uname -a`). If one does not exist, see the instructions in the [kvm-introvirt READEME.md](https://github.com/IntroVirt/kvm-introvirt) for how to build it yourself and please [submit an issue](https://github.com/IntroVirt/kvm-introvirt/issues) for support.
     * _We try to keep up with the latest kernel for each supported LTS. If you are behind, consider updating._
 1. Unzip the `kvm-introvirt` zip file, change into the new directory and run: `sudo apt install ./*.deb`
 1. Test: `sudo ivversion`
@@ -22,36 +22,43 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 
 | Ditro | Latest Supported Kernel | Status    |
 | ----- | ----------------------- | --------- |
-| 18.04 | [HWE 5.4.0-150-generic]()   | Supported |
-| 20.04 | [HWE 5.15.0-119-generic]()  | Supported |
-| 22.04 | [HWE 6.5.0-35-generic]()    | Supported |
-| 24.04 | [HWE 6.8.0-41-generic]()    | Supported |
+| 18.04 | [HWE 5.4.0-150-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | Supported |
+| 20.04 | [HWE 5.15.0-119-generic](https://github.com/IntroVirt/kvm-introvirt/releases) | Supported |
+| 22.04 | [HWE 6.5.0-35-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported |
+| 24.04 | [HWE 6.8.0-41-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported |
 
 ## Building on Ubuntu Linux
 
-1. Install build dependencies:
-    ```shell
-    sudo apt update && \
-    sudo apt-get install -y \
-        python3 python3-jinja2 cmake make build-essential libcurl4-openssl-dev libboost-dev \
-        libboost-program-options-dev git clang-format liblog4cxx-dev libboost-stacktrace-dev \
-        doxygen
-    ```
-1. Build and install [libmspdb](https://github.com/IntroVirt/libmspdb)
-1. Build and install IntroVirt:
-    ```shell
-    git clone https://github.com/IntroVirt/IntroVirt.git
-    cd IntroVirt/build
-    cmake ..
-    make -j
-    sudo make install
-    ```
-1. Build and install [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
-1. Confirm: `sudo ivversion`
+First, build and install [libmspdb](https://github.com/IntroVirt/libmspdb) and [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
 
-### Post-install steps
+Then, build from source:
 
-TODO: Create introvirt group, add yourself to it, `newgrp`, mark introvirt tool binaries setuid and owned by root/introvirt
+```shell
+sudo apt-get install -y \
+    python3 python3-jinja2 cmake make build-essential libcurl4-openssl-dev libboost-dev \
+    libboost-program-options-dev git clang-format liblog4cxx-dev libboost-stacktrace-dev \
+    doxygen
+
+git clone https://github.com/IntroVirt/IntroVirt.git
+cd IntroVirt/build
+cmake ..
+make -j
+```
+
+Debian packages can then be built and installed (recommended):
+
+```bash
+make package
+sudo apt install ./*.deb
+```
+
+Or `make` can be used directly to install:
+
+```bash
+sudo make install
+```
+
+Confirm everything is installed with: `sudo ivversion`
 
 ### Building deb package for release
 
