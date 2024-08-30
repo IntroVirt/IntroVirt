@@ -22,7 +22,7 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 
 | Ditro | Latest Supported Kernel | Status    |
 | ----- | ----------------------- | --------- |
-| 18.04 | [HWE 5.4.0-150-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | Supported |
+| 18.04 | [HWE 5.4.0-150-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | EoL       |
 | 20.04 | [HWE 5.15.0-119-generic](https://github.com/IntroVirt/kvm-introvirt/releases) | Supported |
 | 22.04 | [HWE 6.5.0-35-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported |
 | 24.04 | [HWE 6.8.0-41-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported |
