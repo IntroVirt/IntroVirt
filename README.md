@@ -10,13 +10,29 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)
 
-1. Navigate to the [releases](https://github.com/IntroVirt/IntroVirt/releases)
-1. Download the appropriate IntroVirt `.zip` file for your Ubuntu distribution from the latest release
-1. unzip the zip file, change into the `introvirt-ubuntu-xx.xx` folder and run: `sudo apt install ./*.deb`
-1. Navigate to the [kvm-introvirt releases](https://github.com/IntroVirt/kvm-introvirt/releases) and download the file from the latest release that matches your kernel version (`uname -a`). If one does not exist, see the instructions in the [kvm-introvirt READEME.md](https://github.com/IntroVirt/kvm-introvirt) for how to build it yourself and please [submit an issue](https://github.com/IntroVirt/kvm-introvirt/issues) for support.
+1. Download the latest [release](https://github.com/IntroVirt/IntroVirt/releases) for your Ubuntu version and install
+
+    ```shell
+    wget https://github.com/IntroVirt/IntroVirt/releases/latest/download/Ubuntu-$(lsb_release -sc)-$(lsb_release -sr).tar.xz
+    tar -Jxvf Ubuntu-$(lsb_release -sc)-$(lsb_release -sr).tar.xz
+    cd Ubuntu-$(lsb_release -sc)-$(lsb_release -sr)
+    sudo apt install ./*.deb
+    ```
+
+1. Make sure all VMs on the current system are off before installing kvm-introvirt.
+1. Download and install the latest [kvm-introvirt release](https://github.com/IntroVirt/kvm-introvirt/releases) that matches your kernel version (`uname -a`). If one does not exist, see the instructions in the [kvm-introvirt READEME.md](https://github.com/IntroVirt/kvm-introvirt) for how to build it yourself and please [submit an issue](https://github.com/IntroVirt/kvm-introvirt/issues) for support.
     * _We try to keep up with the latest kernel for each supported LTS. If you are behind, consider updating._
-1. Unzip the `kvm-introvirt` zip file, change into the new directory and run: `sudo apt install ./*.deb`
-1. Test: `sudo ivversion`
+
+    ```shell
+    wget https://github.com/IntroVirt/kvm-introvirt/releases/latest/download/kvm-introvirt-$(uname -r).$(lsb_release -sr)-1.0.0.deb
+    sudo apt install ./kvm-introvirt-$(uname -r).$(lsb_release -sr)-1.0.0.deb
+    ```
+
+1. Test with: `sudo ivversion`
+1. Get a live system call trace from a running Windows 10 VM: `sudo ivsyscallmon -D win10-22H2`
+    * _This assumes you've installed a Windows 10 22H2 VM, named it "win10-22H2" and it is running._
+
+![demo](./demo.gif)
 
 ### Supported Kernels
 
