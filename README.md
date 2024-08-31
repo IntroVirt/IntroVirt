@@ -27,6 +27,17 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 | 22.04 | [HWE 6.5.0-35-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported |
 | 24.04 | [HWE 6.8.0-41-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported |
 
+### Supported Introspection Targets
+
+IntroVirt is used to introspect a running virtual machine. The current release of IntroVirt supports Windows XP through Windows 10 22H2. Newer versions of Windows 10 may work, but you may experience unhandled exceptions in the user-land tools for changes to the Windows kernel that IntroVirt has not been updated for yet (hopefully soon though). Windows 11 is completely untested...so feel free to give it a try, though it will likely not work.
+
+| OS | Latest Supported Version | Status |
+| -- | ------------------------ | ------ |
+| Windows XP | All  | EoL       |
+| Windows 7 | All | EoL |
+| Windows 10 | 22H2   | Supported |
+| Windows 11 | None   | Unsupported (yet) |
+
 ## Building on Ubuntu Linux
 
 First, build and install [libmspdb](https://github.com/IntroVirt/libmspdb) and [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
