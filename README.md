@@ -10,6 +10,8 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)
 
+1. Make sure SecureBoot is disabled on your system (you can also run IntroVirt nested in KVM)
+    * _If someone wants to help me figure out a way around this please do!_
 1. Download the latest [release](https://github.com/IntroVirt/IntroVirt/releases) for your Ubuntu version and install
 
     ```shell
