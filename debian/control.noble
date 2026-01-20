@@ -41,7 +41,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libcurl4,
-         liblog4cxx10v5,
+         liblog4cxx15,
          libmspdb1,
          ${shlibs:Depends}
 Multi-Arch: same
@@ -62,7 +62,7 @@ Section: utils
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: libintrovirt1 (= ${binary:Version}),
-        ${misc:Depends},         
+        ${misc:Depends},
          libboost-program-options1.74.0,
          ${shlibs:Depends}
 Multi-Arch: same
