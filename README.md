@@ -157,6 +157,6 @@ If you’re interested in IntroVirt, you might also be interested in the
 following projects:
 
 - **LibVMI:** https://github.com/libvmi/libvmi
-- **Bitdefender:** ttps://github.com/bitdefender
+- **Bitdefender:** https://github.com/bitdefender
 - **HVMI**: https://github.com/hvmi/hvmi
 - **libmicrovmi**: https://github.com/Wenzel/libmicrovmi
