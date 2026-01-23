@@ -1,5 +1,10 @@
 ![IntroVirt](.github/images/introvirt-logo.png)
 
+[![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/YSdGvAhSmH?style=flat)](https://discord.gg/YSdGvAhSmH)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)](https://github.com/IntroVirt/IntroVirt/releases/latest)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+
 ## Description
 
 IntroVirt, short for introspective virtualization, is a customized Hypervisor and library that provides a robust virtual machine introspection (VMI) application programming interface (API). VMI is the process of looking at the memory contents of a virtual machine during runtime. By applying knowledge of the guest operating system, introspection can be used for a variety of applications, including reverse engineering, debugging software, and securing guest VMs by limiting access to files or limiting an executing application’s functionality.
@@ -7,8 +12,6 @@ IntroVirt, short for introspective virtualization, is a customized Hypervisor an
 IntroVirt consists of three components: a patched version of the [KVM Hypervisor](https://github.com/IntroVirt/kvm-introvirt), the [IntroVirt userland library](https://github.com/IntroVirt/IntroVirt), and a Microsoft Program Database (MS PDB) parsing library [libmspdb](https://github.com/IntroVirt/libmspdb/tree/main).
 
 ## Quick start
-
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)
 
 1. Make sure SecureBoot is disabled on your system (you can also run IntroVirt nested in KVM)
     * _If someone wants to help me figure out a way around this please do!_
@@ -124,18 +127,18 @@ You can try system call monitoring with `sudo ivsyscallmon -D <domain>`. See `su
 IntroVirt provides some useful resources to learn how to use it including:
 
 - **Documentation**: TBD
-- **Examples**: TBD
+- **Examples**: [IntroVirt Tools](./tools/)
 - **Unit Tests**: TBD
 
 If you have any questions, bugs, or feature requests, please feel free to ask on any of the following:
 
-- **Chat**: TBD
-- **Issue Tracker**: <https://github.com/IntroVirt/IntroVirt/issues>
+- **Chat**: https://discord.gg/YSdGvAhSmH
+- **Issue Tracker**: https://github.com/IntroVirt/IntroVirt/issues
 
 If you would like to help:
 
-- **Pull Requests**: <https://github.com/IntroVirt/IntroVirt/pulls>
-- **Contributing Guidelines**: <https://github.com/IntroVirt/IntroVirt/blob/master/contributing.md>
+- **Pull Requests**: https://github.com/IntroVirt/IntroVirt/pulls
+- **Contributing Guidelines**: https://github.com/IntroVirt/IntroVirt/blob/master/contributing.md
 
 ## License
 
