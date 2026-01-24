@@ -2,6 +2,7 @@
 
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/YSdGvAhSmH?style=flat)](https://discord.gg/YSdGvAhSmH)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)](https://github.com/IntroVirt/IntroVirt/releases/latest)
+[![CI Tests](https://github.com/IntroVirt/IntroVirt/actions/workflows/ci.yml/badge.svg)](https://github.com/IntroVirt/IntroVirt/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 

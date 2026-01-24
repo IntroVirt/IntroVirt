@@ -1,0 +1,85 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  # Build and publish release assets
+  build:
+    runs-on: ${{ matrix.os }}
+
+    # Build releases for supported Ubuntu versions
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install build deps
+      - name: Install Dependencies
+        run: |
+          # Deps
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
+            libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
+            liblog4cxx-dev python3-jinja2 python3 \
+            doxygen clang-format git wget unzip
+
+          # libmspdb
+          mkdir libmspdb_pkg && cd libmspdb_pkg
+          wget https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
+          unzip libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
+          sudo apt install ./libmspdb_ubuntu-$(lsb_release -sr)_Release/*.deb
+        shell: bash
+
+      # Run the build
+      - name: ${{ matrix.os }} Build Release
+        run: |
+          cd build
+          cmake -GNinja -DCMAKE_BUILD_TYPE=Release ..
+          ninja package
+        shell: bash
+
+      # Upload build .debs
+      - name: Archive debian release packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: introvirt_${{ matrix.os }}_Release
+          path: build/*.deb
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Download the built debs from the build job
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-debs
+          pattern: introvirt_*_Release
+
+      # Create and upload the debs to a new release
+      - name: Upload Release Asset
+        id: upload_release-asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ls -lah ./all-debs
+          cd ./all-debs
+          for os in introvirt_*_Release; do
+              echo "Zipping ${os}"
+              zip -r "${os}.zip" "${os}"
+          done
+
+          echo "Uploading release assets"
+          gh release create ${{ github.ref_name }} \
+            --title "Release ${{ github.ref_name }}" \
+            --draft \
+            *.zip
+        shell: bash
