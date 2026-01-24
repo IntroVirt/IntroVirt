@@ -145,8 +145,8 @@ class EventHandler : public EventCallback {
             return_code = service_write_protect(event);
             break;
         default:
-            std::cout << '\t' << "Unknown service code: 0x" << std::hex << regs.rcx()
-                      << std::dec << '\n';
+            std::cout << '\t' << "Unknown service code: 0x" << std::hex << regs.rcx() << std::dec
+                      << '\n';
             break;
         }
 
