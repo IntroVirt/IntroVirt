@@ -60,6 +60,7 @@ class EventHandler : public EventCallback {
             break;
         default:
             // We don't care about other events
+            std::cout << "Unhandled event type: " << event.type() << "\n";
             break;
         }
     }
@@ -137,13 +138,16 @@ class EventHandler : public EventCallback {
         // Handle some special cases
         // RDX holds the function code
         switch (regs.rcx()) {
-        case CSTRING_REVERSE: {
+        case CSTRING_REVERSE:
             return_code = service_string_reverse(event);
             break;
         case WRITE_PROTECT:
             return_code = service_write_protect(event);
             break;
-        }
+        default:
+            std::cout << '\t' << "Unknown service code: 0x" << std::hex << regs.rcx()
+                      << std::dec << '\n';
+            break;
         }
 
         regs.rax(return_code);
