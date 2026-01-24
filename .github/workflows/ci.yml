@@ -1,18 +1,21 @@
-name: CI
+name: CI Tests
 
 on:
-  push:
-    paths-ignore: ['**.md']
   pull_request:
     paths-ignore: ['**.md']
+    branches:
+      - main
+  push:
+    paths-ignore: ['**.md']
+    branches:
+      - main
 
 jobs:
-  Clang_Format:
-    runs-on: ubuntu-24.04
+  # Validate code formatting
+  quality:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          path: IntroVirt
+      - uses: actions/checkout@v4
       - name: Setup
         run: |
           sudo apt-get update
@@ -20,74 +23,59 @@ jobs:
         shell: bash
       - name: Validate Source Formatting
         run: |
-          cd IntroVirt
-          find . -name '*.hh' -o -iname '*.cc' | xargs clang-format -i -style=file
-          if [[ -n $(git diff) ]]; then
-            echo "You must run make format before submitting a pull request"
-            echo ""
-            git diff
-            exit -1
+          mapfile -t source < <(find . -iname "*.cc")
+          mapfile -t headers < <(find . -iname "*.hh")
+          code=("${source[@]}" "${headers[@]}")
+          if ! clang-format -style=file "${code[@]}" -i -Werror --dry-run; then
+              echo "You must run make format before submitting a pull request"
+              echo ""
+              git diff
+              exit 1
           fi
+          echo "Your source is formatted real good!"
         shell: bash
 
-  Release:
-    runs-on: ubuntu-24.04
+  build:
+    runs-on: ${{ matrix.os }}
+
+    # Test builds for several Ubuntus with both release and debug
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        build_type: [Release, Debug]
+
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup
+      - uses: actions/checkout@v4
+
+      # Install build deps
+      - name: Install Dependencies
         run: |
+          # Deps
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
             libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
             liblog4cxx-dev python3-jinja2 python3 \
-            doxygen clang-format git
-          mkdir /tmp/iv && cd /tmp/iv
-          curl --location --silent --show-error --output libmspdb.zip \
-            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb.zip
-          unzip libmspdb.zip
-          sudo apt-get install -y ./*.deb
-        shell: bash
-      - name: Validate Release Build
-        run: |
-          cd build
-          cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release
-          ninja
-          ninja package
-          mkdir release && mv *.deb release/
-        shell: bash
-      - name: Archive debian packages
-        uses: actions/upload-artifact@v3
-        with:
-          name: introvirt_release_deb
-          path: build/release/*.deb
+            doxygen clang-format git wget unzip
 
-  Debug:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
-            libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
-            liblog4cxx-dev python3-jinja2 python3 \
-            doxygen clang-format git
-          mkdir /tmp/iv && cd /tmp/iv
-          curl --location --silent --show-error --output libmspdb.zip \
-            https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb.zip
-          unzip libmspdb.zip
-          sudo apt-get install -y ./*.deb
+          # libmspdb
+          mkdir libmspdb_pkg && cd libmspdb_pkg
+          wget https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
+          unzip libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
+          sudo apt install ./libmspdb_ubuntu-$(lsb_release -sr)_Release/*.deb
         shell: bash
-      - name: Validate Debug Build
+
+      # Run the build
+      - name: Validate ${{ matrix.build_type }} Build
         run: |
           cd build
-          cmake .. -GNinja -DCMAKE_BUILD_TYPE=Debug
-          ninja
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ..
           ninja package
-          mkdir debug && mv ./*.deb debug/
         shell: bash
+
+      # Upload build .debs
       - name: Archive debian packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: introvirt_debug_deb
-          path: build/debug/*.deb
+          name: introvirt_${{ matrix.os }}_${{ matrix.build_type }}
+          path: build/*.deb
