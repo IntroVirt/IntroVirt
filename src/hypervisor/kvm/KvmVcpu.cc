@@ -26,9 +26,9 @@
 
 #include <cassert>
 #include <cerrno>
+#include <sstream>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include <sstream>
 
 namespace introvirt {
 namespace kvm {
