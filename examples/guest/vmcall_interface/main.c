@@ -9,18 +9,31 @@
 #include <stdio.h>
 #include <stdint.h>
 
-// This is the value, that will be stored in RAX, that is used to trigger IntroVirt hypercall handling.
-// In the kvm-introvirt KVM patch, in the  `kvm_emulate_hypercall` function, we check for this value and
-// pass the event to IntroVirt for processing.
-#define INTROVIRT_HYPERCALL_OPCODE 0xFACE
-
 // Tell the compiler this function exists in another file (hypercall.obj)
-extern uint64_t HypercallReverseCString(uint64_t control_code, uint64_t input_gpa, uint64_t output_gpa);
-extern uint64_t HypercallWriteProtectMemory(uint64_t control_code, uint64_t input_gpa, uint64_t output_gpa);
+extern uint64_t HypercallReverseCString(char *c_str);
+extern uint64_t HypercallWriteProtectMemory(void* buffer, uint64_t length);
 
 int main() {
-    printf("Invoking hypercall...\n");
-    //uint64_t status = InvokeHypercall(0xFACE, 0, 0);
-    printf("Hypercall returned status: 0x%llx\n", status);
+    char *test_str = "Hello, IntroVirt!";
+    printf("Original string: %s\n", test_str);
+
+    // Call the hypercall to reverse the string
+    uint64_t status = HypercallReverseCString(test_str);
+    if (status == 0) {
+        printf("Reversed string: %s\n", test_str);
+    } else {
+        printf("Failed to reverse string, status code: %llu\n", status);
+    }
+
+    // Now demonstrate write-protecting a memory region
+    char buffer[] = "This buffer will be write-protected.";
+    printf("Original buffer: %s\n", buffer);
+    status = HypercallWriteProtectMemory(buffer, sizeof(buffer));
+    if (status == 0) {
+        printf("Buffer write-protected successfully.\n");
+    } else {
+        printf("Failed to write-protect buffer, status code: %llu\n", status);
+    }
+
     return 0;
 }
