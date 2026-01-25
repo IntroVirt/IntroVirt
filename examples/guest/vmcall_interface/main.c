@@ -14,7 +14,7 @@ extern uint64_t HypercallReverseCString(char *c_str);
 extern uint64_t HypercallWriteProtectMemory(void* buffer, uint64_t length);
 
 int main() {
-    char *test_str = "Hello, IntroVirt!";
+    char test_str[] = "Hello, IntroVirt!";
     printf("Original string: %s\n", test_str);
 
     // Call the hypercall to reverse the string

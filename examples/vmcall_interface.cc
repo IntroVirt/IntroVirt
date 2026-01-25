@@ -78,6 +78,7 @@ class EventHandler : public EventCallback {
         switch (event.type()) {
         case EventType::EVENT_HYPERCALL:
             handle_hypercall(event);
+            cout << "Hypercall handled.\n";
             break;
         case EventType::EVENT_FAST_SYSCALL:
             handle_syscall(event);
@@ -225,10 +226,12 @@ class EventHandler : public EventCallback {
         switch (regs.rcx()) {
         case CSTRING_REVERSE:
             // They asked to reverse a string
+            cout << '\t' << "CSTRING_REVERSE requested\n";
             return_code = service_string_reverse(event);
             break;
         case WRITE_PROTECT:
             // They asked to write-protect a memory region
+            cout << '\t' << "WRITE_PROTECT requested\n";
             return_code = service_write_protect(event);
             break;
         default:
@@ -239,6 +242,7 @@ class EventHandler : public EventCallback {
 
         // Set the return code in RAX
         // This follows the x86-64 calling convention for integer return values.
+        cout << '\t' << "Returning status code: " << return_code << '\n';
         regs.rax(return_code);
     }
 
@@ -265,11 +269,13 @@ class EventHandler : public EventCallback {
             // Reverse it in place
             cout << '\t' << "Reversing input string [" << str.get() << "]\n";
             reverse(str.begin(), str.end());
+            cout << '\t' << "Reversed string is now [" << str.get() << "]\n";
         } catch (VirtualAddressNotPresentException& ex) {
             // Invalid memory address provided
             cout << ex;
             return -1;
         }
+        cout << '\t' << "String reversed successfully\n";
         return 0;
     }
 
