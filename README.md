@@ -3,8 +3,8 @@
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/YSdGvAhSmH?style=flat)](https://discord.gg/YSdGvAhSmH)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)](https://github.com/IntroVirt/IntroVirt/releases/latest)
 [![CI Tests](https://github.com/IntroVirt/IntroVirt/actions/workflows/ci.yml/badge.svg)](https://github.com/IntroVirt/IntroVirt/actions/workflows/ci.yml)
+[![Create Release](https://github.com/IntroVirt/IntroVirt/actions/workflows/release.yml/badge.svg)](https://github.com/IntroVirt/IntroVirt/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
 
 ## Description
 
@@ -128,8 +128,9 @@ You can try system call monitoring with `sudo ivsyscallmon -D <domain>`. See `su
 IntroVirt provides some useful resources to learn how to use it including:
 
 - **Documentation**: TBD
-- **Examples**: [IntroVirt Tools](./tools/)
-- **Unit Tests**: TBD
+- **Examples**:
+    * [IntroVirt Tools](./tools/) are great examples of the things you can do with IntroVirt.
+    * [IntroVirt Examples](./examples/) are more verbosely documented and intended to be a good starting point.
 
 If you have any questions, bugs, or feature requests, please feel free to ask on any of the following:
 
@@ -161,6 +162,8 @@ If you’re interested in IntroVirt, you might also be interested in the
 following projects:
 
 - **LibVMI:** https://github.com/libvmi/libvmi
+- **KVM-VMI:** https://github.com/KVM-VMI/kvm-vmi
 - **Bitdefender:** https://github.com/bitdefender
 - **HVMI**: https://github.com/hvmi/hvmi
 - **libmicrovmi**: https://github.com/Wenzel/libmicrovmi
+- **Drakvuf**: https://github.com/tklengyel/drakvuf
