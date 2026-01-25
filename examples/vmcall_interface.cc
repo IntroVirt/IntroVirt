@@ -54,7 +54,8 @@ unique_ptr<Domain> domain;
 enum IVServiceCode { CSTRING_REVERSE = 0xF000, WRITE_PROTECT = 0xF001 };
 
 void sig_handler(int signum);
-void parse_program_options(int argc, char** argv, po::options_description& desc, po::variables_map& vm);
+void parse_program_options(int argc, char** argv, po::options_description& desc,
+                           po::variables_map& vm);
 
 /**
  * This is our callback class for handling IntroVirt events.
@@ -93,12 +94,13 @@ class EventHandler : public EventCallback {
 
     /**
      * This method is called when we receive a EVENT_FAST_SYSCALL event.
-    */
+     */
     void handle_syscall(Event& event) {
         // We know it's a WindowsEvent, because we only support windows guests in this example.
         auto& wevent = static_cast<WindowsEvent&>(event);
 
-        // This shouldn't even be necessary since we're filtering to only NtTerminateProcess, but we'll check anyway.
+        // This shouldn't even be necessary since we're filtering to only NtTerminateProcess, but
+        // we'll check anyway.
         if (unlikely(wevent.syscall().index() != SystemCallIndex::NtTerminateProcess)) {
             // We only care about NtTerminateProcess calls
             return;
@@ -116,19 +118,18 @@ class EventHandler : public EventCallback {
             if (read_only_protections_.erase(wevent.task().pid())) {
                 // Just some logging after removing from the list.
                 auto& task = event.task();
-                cout << task.process_name() << " [" << task.pid() << ":" << task.tid()
-                            << "]\n";
+                cout << task.process_name() << " [" << task.pid() << ":" << task.tid() << "]\n";
                 cout << '\t' << "Self terminated\n";
             }
-            return;  // Nothing else to do. The call won't return, so we're done.
+            return; // Nothing else to do. The call won't return, so we're done.
         }
 
         //
         // The call will return, so we need to wait for that to happen before cleaning up.
         // We can't just remove the protections now, because the process might still need them.
         // Furthermore, the call to NtTerminateProcess might fail, in which case we don't want to
-        // remove the protections at all. We can't be sure the process trying to terminate this process
-        // is even allowed to do so.
+        // remove the protections at all. We can't be sure the process trying to terminate this
+        // process is even allowed to do so.
         //
 
         // In order to handle the return, we need to set the syscall to hook its return.
@@ -138,8 +139,9 @@ class EventHandler : public EventCallback {
         // will no longer be valid and so we won't be able to get its PID then. So we need to get
         // it now.
         //
-        // However, IntroVirt has a built-in mechanism for us to store arbitrary data with system call handlers.
-        // We can store key-value pairs with the handler that will persist until the handler is destroyed.
+        // However, IntroVirt has a built-in mechanism for us to store arbitrary data with system
+        // call handlers. We can store key-value pairs with the handler that will persist until the
+        // handler is destroyed.
         //
         // So we can put our PID in a "target_pid" key and look it up later when the call returns.
         handler->data("target_pid", make_shared<uint64_t>(handler->target_pid()));
@@ -147,12 +149,13 @@ class EventHandler : public EventCallback {
 
     /**
      * This method is called when we receive a EVENT_FAST_SYSCALL_RET event.
-    */
+     */
     void handle_sysret(Event& event) {
         // We know it's a WindowsEvent, because we only support windows guests in this example.
         auto& wevent = static_cast<WindowsEvent&>(event);
 
-        // This shouldn't even be necessary since we're filtering to only NtTerminateProcess, but we'll check anyway.
+        // This shouldn't even be necessary since we're filtering to only NtTerminateProcess, but
+        // we'll check anyway.
         if (unlikely(wevent.syscall().index() != SystemCallIndex::NtTerminateProcess)) {
             // We only care about NtTerminateProcess calls
             return;
@@ -161,12 +164,12 @@ class EventHandler : public EventCallback {
         // Now that we know it's NtTerminateProcess, we can cast the handler to the correct type
         auto* handler = static_cast<nt::NtTerminateProcess*>(wevent.syscall().handler());
 
-        // Now, possibly unintuitively, unless you work in the Windows kernel often, we actually want to
-        // check the result of the call here. If the call failed, we don't need to do anything. The
-        // process isn't going to be terminated, so we can just return.
+        // Now, possibly unintuitively, unless you work in the Windows kernel often, we actually
+        // want to check the result of the call here. If the call failed, we don't need to do
+        // anything. The process isn't going to be terminated, so we can just return.
         //
-        // This is a common pattern when dealing with system call returns. Always check if the call succeeded
-        // before taking any action based on the assumption that it did.
+        // This is a common pattern when dealing with system call returns. Always check if the call
+        // succeeded before taking any action based on the assumption that it did.
         if (!handler->result().NT_SUCCESS()) {
             return;
         }
@@ -183,8 +186,7 @@ class EventHandler : public EventCallback {
         if (read_only_protections_.erase(target_pid)) {
             // Just some logging after removing from the list.
             auto& task = event.task();
-            cout << task.process_name() << " [" << task.pid() << ":" << task.tid()
-                        << "]\n";
+            cout << task.process_name() << " [" << task.pid() << ":" << task.tid() << "]\n";
             cout << '\t' << "Terminated PID " << target_pid << '\n';
         }
     }
@@ -231,8 +233,7 @@ class EventHandler : public EventCallback {
             break;
         default:
             // They asked for something we don't recognize
-            cout << '\t' << "Unknown service code: 0x" << hex << regs.rcx() << dec
-                      << '\n';
+            cout << '\t' << "Unknown service code: 0x" << hex << regs.rcx() << dec << '\n';
             break;
         }
 
@@ -296,8 +297,7 @@ class EventHandler : public EventCallback {
                 pBuffer, length, false, true, false,
                 bind(&EventHandler::memory_access_violation, this, placeholders::_1));
 
-            cout << '\t' << "Write protecting buffer [" << pBuffer << " Len: " << length
-                      << "]\n";
+            cout << '\t' << "Write protecting buffer [" << pBuffer << " Len: " << length << "]\n";
 
             // Store this watchpoint so we can clean it up later when the process exits.
             lock_guard lock(mtx_);
@@ -322,8 +322,7 @@ class EventHandler : public EventCallback {
         if (event.mem_access().write_violation()) {
             cout << task.process_name() << " [" << task.pid() << ":" << task.tid() << "]\n";
             cout << '\t' << "Process wrote to read-only memory!\n";
-            cout << '\t' << "Physical Address: " << event.mem_access().physical_address()
-                      << '\n';
+            cout << '\t' << "Physical Address: " << event.mem_access().physical_address() << '\n';
             cout << '\t' << "RIP: 0x" << hex << regs.rip() << dec << '\n';
 
             // Inject a general protection fault into the guest
@@ -351,9 +350,8 @@ int main(int argc, char** argv) {
     //
     string domain_name;
     po::options_description desc("Options");
-    desc.add_options()
-      ("domain,D", po::value<string>(&domain_name)->required(), "The domain name or ID attach to")
-      ("help", "Display program help");
+    desc.add_options()("domain,D", po::value<string>(&domain_name)->required(),
+                       "The domain name or ID attach to")("help", "Display program help");
 
     po::variables_map vm;
     parse_program_options(argc, argv, desc, vm);
@@ -407,7 +405,8 @@ int main(int argc, char** argv) {
     // This minimizes overhead.
     //
     auto* guest = static_cast<WindowsGuest*>(domain->guest());
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtTerminateProcess, true);
+    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtTerminateProcess,
+                                  true);
 
     // We also need to enable the system call filter
     domain->system_call_filter().enabled(true);
@@ -419,7 +418,8 @@ int main(int argc, char** argv) {
     // Finally we can create our EventHandler and start polling for events.
     // The events will be delivered to our EventHandler's process_event() method.
     //
-    // Now is a good time to scroll up and read through the EventHandler class if you haven't already.
+    // Now is a good time to scroll up and read through the EventHandler class if you haven't
+    // already.
     //
     EventHandler handler;
     domain->poll(handler);
@@ -430,16 +430,15 @@ int main(int argc, char** argv) {
  * It simply tells the domain to interrupt its polling loop so we can
  * cleanly detach and exit.
  */
-void sig_handler(int signum) {
-    domain->interrupt();
-}
+void sig_handler(int signum) { domain->interrupt(); }
 
 /**
  * This function parses our command line options using boost::program_options.
  * Parsing command line options is not specific to IntroVirt, so this could be
  * done in any way you like.
  */
-void parse_program_options(int argc, char** argv, po::options_description& desc, po::variables_map& vm) {
+void parse_program_options(int argc, char** argv, po::options_description& desc,
+                           po::variables_map& vm) {
     try {
         po::store(po::parse_command_line(argc, argv, desc), vm);
         /*
