@@ -146,7 +146,7 @@ SET_PROPERTY(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${SYSCALL_GEN_IN
 # Format target
 ADD_CUSTOM_TARGET(
      format
-     COMMAND find ${PROJECT_SOURCE_DIR}/tests ${PROJECT_SOURCE_DIR}/tools ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include -name '*.hh' -o -iname '*.cc' | xargs clang-format -i -style=file
+     COMMAND find ${PROJECT_SOURCE_DIR}/tests ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/tools ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include -name '*.hh' -o -iname '*.cc' | xargs clang-format -i -style=file
 )
 
 # Install rule for include headers

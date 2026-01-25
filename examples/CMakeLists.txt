@@ -8,5 +8,4 @@ FUNCTION(ADD_EXAMPLE_EXECUTABLE EXE_NAME )
     TARGET_LINK_LIBRARIES(${EXE_NAME} introvirt boost_program_options)
 ENDFUNCTION()
 
-ADD_EXAMPLE_EXECUTABLE(syscall_monitor "syscall_monitor.cc")
 ADD_EXAMPLE_EXECUTABLE(vmcall_interface "vmcall_interface.cc")

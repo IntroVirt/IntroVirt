@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <cerrno>
+#include <sstream>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -68,7 +69,15 @@ void KvmVcpu::pause() {
         if (unlikely(ioctl(fd_, KVM_VCPU_PAUSE) < 0)) {
             throw CommandFailedException("Failed to pause vcpu", errno);
         }
-        LOG4CXX_TRACE(logger, "Domain " << domain().id() << " Vcpu " << id() << " paused");
+
+        // When this function runs during the destructor this log causes a segfault
+        // unless we build the log message first. Fixes #15
+        if (unlikely(logger->isTraceEnabled())) {
+            std::stringstream ss;
+            ss << "Domain " << domain().id() << " Vcpu" << id() << " paused";
+            LOG4CXX_TRACE(logger, ss.str());
+        }
+
         /*
          * If we're in an event, mark the registers as pause loaded.
          * That way if the event is completed, but the vpcu remains paused,
@@ -87,7 +96,15 @@ void KvmVcpu::resume() {
         if (unlikely(ioctl(fd_, KVM_VCPU_UNPAUSE) < 0)) {
             throw CommandFailedException("Failed to resume vcpu", errno);
         }
-        LOG4CXX_TRACE(logger, "Domain " << domain().id() << " Vcpu " << id() << " resumed");
+
+        // When this function runs during the destructor this log causes a segfault
+        // unless we build the log message first. Fixes #15
+        if (unlikely(logger->isTraceEnabled())) {
+            std::stringstream ss;
+            ss << "Domain " << domain().id() << " Vcpu " << id() << " resumed";
+            LOG4CXX_TRACE(logger, ss.str());
+        }
+
         pause_loaded_registers_ = false;
     }
 }
@@ -100,8 +117,15 @@ void KvmVcpu::intercept_system_calls(bool enabled) {
     if (enabled != syscall_intercept_) {
         if (syscall_injection_count_ == 0) {
             _send_command(KVM_SET_SYSCALL_HOOK, enabled, error_string);
-            LOG4CXX_DEBUG(logger, "Domain " << domain().name() << " Vcpu " << id_
-                                            << " intercept_system_calls(" << enabled << ")");
+
+            // When this function runs during the destructor this log causes a segfault
+            // unless we build the log message first. Fixes #15
+            if (unlikely(logger->isDebugEnabled())) {
+                std::stringstream ss;
+                ss << "Domain " << domain().name() << " Vcpu" << id_ << " intercept_system_calls("
+                   << enabled << ")";
+                LOG4CXX_DEBUG(logger, ss.str());
+            }
         }
         syscall_intercept_ = enabled;
     }
@@ -185,8 +209,14 @@ void KvmVcpu::intercept_exception(x86::Exception vector, bool enabled) {
         throw NotImplementedException("Exception type not supported");
     }
 
-    LOG4CXX_DEBUG(logger, "Domain " << domain().name() << " Vcpu" << id_ << " intercept_exception("
-                                    << to_string(vector) << ", " << enabled << ")");
+    // When this function runs during the destructor this log causes a segfault
+    // unless we build the log message first. Fixes #15
+    if (unlikely(logger->isDebugEnabled())) {
+        std::stringstream ss;
+        ss << "Domain " << domain().name() << " Vcpu" << id_ << " intercept_exception("
+           << to_string(vector) << ", " << enabled << ")";
+        LOG4CXX_DEBUG(logger, ss.str());
+    }
 }
 
 bool KvmVcpu::intercept_exception(x86::Exception vector) const {
