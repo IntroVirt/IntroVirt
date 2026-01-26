@@ -38,14 +38,8 @@ HypercallReverseCString PROC
 HypercallReverseCString ENDP
 
 HypercallWriteProtectMemory PROC
-    ; When invoking a hypercall, we need to set RAX to the hypercall opcode.
-    ; The KVM IntroVirt patch checks for this value to identify IntroVirt hypercalls.
     mov rax, 0FACEh
 
-    ; Now we need to build our call to the running vmcall_interface tool
-    ; The INTROVIRT_HYPERCALL_OPCODE triggers the vmcall to be sent as an event
-    ; to any running IntroVirt tools. Then we need to pass our parameters.
-    ;
     ; In this case we're passing 3 parameters:
     ;   1) RCX: The service code = WRITE_PROTECT (0xF001) (write-protect memory)
     ;   2) RDX: buffer = pointer to a buffer
@@ -57,8 +51,18 @@ HypercallWriteProtectMemory PROC
     mov rdx, rcx      ; Move buffer pointer to RDX
     mov rcx, 0F001h   ; WRITE_PROTECT service code
     vmcall            ; Transition to the hypervisor (make the hypercall)
-
-    ; The status code (0 or non-zero) is returned in RAX.
-    ; Since RAX is the standard return register, we just return.
     ret
+HypercallWriteProtectMemory ENDP
+
+HypercallProtectProcess PROC
+    mov rax, 0FACEh
+
+    ; In this case we're passing 1 parameter:
+    ;   1) RCX: The service code = PROTECT_PROCESS (0xF002) (protect the process)
+    ;
+    ; This just needs the service code and then protections are applied to the calling process.
+    mov rcx, 0F002h   ; PROTECT_PROCESS service code
+    vmcall            ; Transition to the hypervisor (make the hypercall)
+    ret
+HypercallProtectProcess ENDP
 END

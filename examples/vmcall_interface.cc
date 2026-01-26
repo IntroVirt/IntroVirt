@@ -51,7 +51,11 @@ unique_ptr<Domain> domain;
 
 // These are our service codes. They are arbitrary values chosen for this example.
 // They define the actions that the hypervisor will take upon receiving a VMCALL.
-enum IVServiceCode { CSTRING_REVERSE = 0xF000, WRITE_PROTECT = 0xF001 };
+enum IVServiceCode {
+    CSTRING_REVERSE = 0xF000,    // Reverse a C-style string in place
+    WRITE_PROTECT = 0xF001,      // Write-protect a memory region
+    PROTECT_PROCESS = 0xF002     // Prevent the process from being terminated, injected into, or debugged
+};
 
 void sig_handler(int signum);
 void parse_program_options(int argc, char** argv, po::options_description& desc,
@@ -100,52 +104,107 @@ class EventHandler : public EventCallback {
         // We know it's a WindowsEvent, because we only support windows guests in this example.
         auto& wevent = static_cast<WindowsEvent&>(event);
 
-        // This shouldn't even be necessary since we're filtering to only NtTerminateProcess, but
-        // we'll check anyway.
-        if (unlikely(wevent.syscall().index() != SystemCallIndex::NtTerminateProcess)) {
-            // We only care about NtTerminateProcess calls
-            return;
-        }
+        switch (wevent.syscall().index()) {
+        /**
+         * Handle NtTerminateProcess to clean up protections when a process exits.
+         * Also, prevent termination of protected processes.
+         */
+        case SystemCallIndex::NtTerminateProcess: {
+            // Now that we know it's NtTerminateProcess, we can cast the handler to the correct type
+            auto* handler = static_cast<nt::NtTerminateProcess*>(wevent.syscall().handler());
 
-        // Now that we know it's NtTerminateProcess, we can cast the handler to the correct type
-        auto* handler = static_cast<nt::NtTerminateProcess*>(wevent.syscall().handler());
+            // NtTerminateProcess will not return when a process is terminating itself.
+            // We need to handle this case and check if we have any protections to clean up.
+            if (!handler->will_return()) {
+                lock_guard lock(mtx_);
 
-        // NtTerminateProcess will not return when a process is terminating itself.
-        // We need to handle this case and check if we have any write-protections to clean up.
-        if (!handler->will_return()) {
-            lock_guard lock(mtx_);
+                // If we have any write-protections for this PID, remove them now
+                if (read_only_protections_.erase(wevent.task().pid())) {
+                    // Just some logging after removing from the list.
+                    auto& task = event.task();
+                    cout << task.process_name() << " [" << task.pid() << ":" << task.tid() << "]\n";
+                    cout << '\t' << "Self terminated. Read-only memory protections removed.\n";
+                }
 
-            // If we have any write-protections for this PID, remove them now
-            if (read_only_protections_.erase(wevent.task().pid())) {
-                // Just some logging after removing from the list.
-                auto& task = event.task();
-                cout << task.process_name() << " [" << task.pid() << ":" << task.tid() << "]\n";
-                cout << '\t' << "Self terminated\n";
+                // If we have general protections for this PID, remove them now
+                if (protected_pids_.erase(wevent.task().pid())) {
+                    // Just some logging after removing from the list.
+                    auto& task = event.task();
+                    cout << task.process_name() << " [" << task.pid() << ":" << task.tid() << "]\n";
+                    cout << '\t' << "Self terminated. Process protections removed.\n";
+                }
+                break; // Nothing else to do. The call won't return, so we're done.
             }
-            return; // Nothing else to do. The call won't return, so we're done.
+
+            if (protected_pids_.count(handler->target_pid()) != 0) {
+                // This process is protected. Deny the termination attempt.
+                // How do we do that? We could hook the return and change the result code,
+                // however, NtTerminateProcess will have already done the termination by the time it
+                // returns. Instead, we can just change the ProcessHandle parameter to
+                // INVALID_HANDLE_VALUE, which will cause the call to fail immediately.
+                handler->ProcessHandle(0xFFFFFFFFFFFFFFFF);
+                cout << "Blocked termination of protected PID " << handler->target_pid()
+                     << " by " << wevent.task().process_name() << "[" << wevent.task().pid()
+                     << ":" << wevent.task().tid() << "]\n";
+                break;  // We don't need to hook the return, it will fail.
+            }
+
+            //
+            // It's not a protected process so now we need to check if we have any write-protections.
+            // The call will return, so we need to wait for that to happen before cleaning up.
+            // We can't just remove the protections now, because the process might still need them.
+            // Furthermore, the call to NtTerminateProcess might fail, in which case we don't want to
+            // remove the protections at all. We can't be sure the process trying to terminate this
+            // process is even allowed to do so.
+            //
+
+            // In order to handle the return, we need to set the syscall to hook its return.
+            wevent.syscall().hook_return(true);
+
+            // Unfortunately, upon return from NtTerminateProcess, the process being terminated
+            // will no longer be valid and so we won't be able to get its PID then. So we need to get
+            // it now.
+            //
+            // However, IntroVirt has a built-in mechanism for us to store arbitrary data with system
+            // call handlers. We can store key-value pairs with the handler that will persist until the
+            // handler is destroyed.
+            //
+            // So we can put our PID in a "target_pid" key and look it up later when the call returns.
+            handler->data("target_pid", make_shared<uint64_t>(handler->target_pid()));
+            break;
         }
+        case SystemCallIndex::NtOpenProcess: {
+            // Handle NtOpenProcess to prevent opening protected processes with certain rights
+            auto* handler = static_cast<nt::NtOpenProcess*>(wevent.syscall().handler());
+            auto desired_access = handler->DesiredAccess();
+            auto* client_id = handler->ClientId();
+            const uint64_t target_pid = client_id->UniqueProcess();
 
-        //
-        // The call will return, so we need to wait for that to happen before cleaning up.
-        // We can't just remove the protections now, because the process might still need them.
-        // Furthermore, the call to NtTerminateProcess might fail, in which case we don't want to
-        // remove the protections at all. We can't be sure the process trying to terminate this
-        // process is even allowed to do so.
-        //
+            lock_guard lock(mtx_);
+            if (protected_pids_.count(target_pid)) {
+                // Check if the desired access includes termination, write, operation, or debug rights
+                if (desired_access.has(nt::PROCESS_TERMINATE) ||
+                    desired_access.has(nt::PROCESS_VM_WRITE) ||
+                    desired_access.has(nt::PROCESS_VM_OPERATION) ||
+                    desired_access.has(nt::PROCESS_CREATE_THREAD) ||
+                    desired_access.has(nt::PROCESS_CREATE_PROCESS) ||
+                    desired_access.has(nt::PROCESS_SET_INFORMATION)) {
+                    // Deny the open attempt
+                    cout << "Blocked NtOpenProcess attempt for protected PID " << target_pid
+                         << " by " << wevent.task().process_name() << "[" << wevent.task().pid()
+                         << ":" << wevent.task().tid() << "]\n";
 
-        // In order to handle the return, we need to set the syscall to hook its return.
-        wevent.syscall().hook_return(true);
-
-        // Unfortunately, upon return from NtTerminateProcess, the process being terminated
-        // will no longer be valid and so we won't be able to get its PID then. So we need to get
-        // it now.
-        //
-        // However, IntroVirt has a built-in mechanism for us to store arbitrary data with system
-        // call handlers. We can store key-value pairs with the handler that will persist until the
-        // handler is destroyed.
-        //
-        // So we can put our PID in a "target_pid" key and look it up later when the call returns.
-        handler->data("target_pid", make_shared<uint64_t>(handler->target_pid()));
+                    // NtOpenProcess uses the ClientId structure to specify the target process.
+                    // We can set the ClientId pointer to null to cause the call to fail immediately.
+                    handler->ClientIdPtr(guest_ptr<void>()); // Set to null pointer
+                }
+            }
+            break;
+        }
+        default:
+            // We don't care about other system calls
+            break;
+        }
     }
 
     /**
@@ -232,7 +291,13 @@ class EventHandler : public EventCallback {
         case WRITE_PROTECT:
             // They asked to write-protect a memory region
             cout << '\t' << "WRITE_PROTECT requested\n";
-            return_code = service_write_protect(event);
+            cout << '\t' << "TODO: Not implemented in this example (bug in watch points)\n";
+            //return_code = service_write_protect(event);
+            break;
+        case PROTECT_PROCESS:
+            // They asked to protect the process from termination, injection, and debugging
+            cout << '\t' << "PROTECT_PROCESS requested\n";
+            return_code = service_protect_process(event);
             break;
         default:
             // They asked for something we don't recognize
@@ -298,12 +363,14 @@ class EventHandler : public EventCallback {
             // R8 holds the length of the buffer
             const uint64_t length = regs.r8();
 
+            cout << '\t' << "Write protecting buffer [" << pBuffer << " Len: " << length << "]\n";
+
             // Create a watchpoint on this buffer to make it read-only
             auto wp = domain->create_watchpoint(
                 pBuffer, length, false, true, false,
                 bind(&EventHandler::memory_access_violation, this, placeholders::_1));
 
-            cout << '\t' << "Write protecting buffer [" << pBuffer << " Len: " << length << "]\n";
+            cout << '\t' << "Watchpoint created successfully\n";
 
             // Store this watchpoint so we can clean it up later when the process exits.
             lock_guard lock(mtx_);
@@ -336,11 +403,34 @@ class EventHandler : public EventCallback {
         }
     }
 
-    // A list of our active watchpoints, by PID
+    /**
+     * This is the handler for the PROTECT_PROCESS service code.
+     *
+     * It demonstrates how to protect a process from being terminated,
+     * injected into, or debugged by other processes in the guest.
+     *
+     * The logic that performs the protection is not in this method. Instead,
+     * we do the protection in our system call handler. All this needs to do
+     * is add the PID to our protected list.
+     */
+    int service_protect_process(Event& event) {
+        auto& task = event.task();
+
+        cout << '\t' << "Protected PID " << task.pid() << " from termination, injection, and debugging\n";
+
+        lock_guard lock(mtx_);
+        protected_pids_.insert(task.pid());
+        return 0;
+    }
+
+    // A map of our active watchpoints, by PID
     // When a watchpoint goes off-scope, it is removed.
     map<uint64_t, list<unique_ptr<Watchpoint>>> read_only_protections_;
 
-    // Mutex to protect our map
+    // A map of our protected PIDs to prevent termination, injection, and debugging
+    set<uint64_t> protected_pids_;
+
+    // Mutex to protect our maps
     // IntroVirt is inherently multi-threaded. Events can be delivered
     // on different threads and VCPUs, so we need to protect our data structures.
     mutex mtx_;
@@ -407,12 +497,34 @@ int main(int argc, char** argv) {
     // Now we can tell IntroVirt to treat this domain as a Windows guest and configure
     // the system call filter appropriately.
     //
-    // We want to filter for NtTerminateProcess because it's the only one we need.
-    // This minimizes overhead.
+    // We want to filter for a few system calls to perform the service actions we support.
+    // Filtering system calls improves performance by only delivering the calls we care about.
     //
     auto* guest = static_cast<WindowsGuest*>(domain->guest());
+
+    // We filter for NtTerminateProcess so we can clean up protections when a process exits
+    // and so we can prevent termination of protected processes.
     guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtTerminateProcess,
                                   true);
+
+    // We also need to filter for NtOpenProcess so we can prevent protected processes from being opened
+    // with certain access rights. This gets us anti-debugging, and anti-injection protections.
+    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtOpenProcess,
+                                  true);
+
+    //
+    // A quick note about system call filtering:
+    //
+    // It's possible to filter for many system calls, and it's easy to overdo it. For a task like
+    // preventing injection, termination, and debugging, you may think it necessary to filter for
+    // all process manipulation system calls. This could include things like NtDebugActiveProcess,
+    // NtWriteVirtualMemory, NtCreateThread, etc. However, all of those calls require a handle to the
+    // target process with appropriate priveleges. If we simply prevent opening the process with the
+    // necessary rights in NtOpenProcess, we don't need to filter for the other calls at all.
+    //
+    // Reading the Windows kernel API documentation and understanding how the various calls work together
+    // is key to effective IntroVirt tool development.
+    //
 
     // We also need to enable the system call filter
     domain->system_call_filter().enabled(true);
