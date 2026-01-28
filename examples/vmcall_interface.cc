@@ -52,9 +52,10 @@ unique_ptr<Domain> domain;
 // These are our service codes. They are arbitrary values chosen for this example.
 // They define the actions that the hypervisor will take upon receiving a VMCALL.
 enum IVServiceCode {
-    CSTRING_REVERSE = 0xF000,    // Reverse a C-style string in place
-    WRITE_PROTECT = 0xF001,      // Write-protect a memory region
-    PROTECT_PROCESS = 0xF002     // Prevent the process from being terminated, injected into, or debugged
+    CSTRING_REVERSE = 0xF000, // Reverse a C-style string in place
+    WRITE_PROTECT = 0xF001,   // Write-protect a memory region
+    PROTECT_PROCESS =
+        0xF002 // Prevent the process from being terminated, injected into, or debugged
 };
 
 void sig_handler(int signum);
@@ -143,33 +144,34 @@ class EventHandler : public EventCallback {
                 // returns. Instead, we can just change the ProcessHandle parameter to
                 // INVALID_HANDLE_VALUE, which will cause the call to fail immediately.
                 handler->ProcessHandle(0xFFFFFFFFFFFFFFFF);
-                cout << "Blocked termination of protected PID " << handler->target_pid()
-                     << " by " << wevent.task().process_name() << "[" << wevent.task().pid()
-                     << ":" << wevent.task().tid() << "]\n";
-                break;  // We don't need to hook the return, it will fail.
+                cout << "Blocked termination of protected PID " << handler->target_pid() << " by "
+                     << wevent.task().process_name() << "[" << wevent.task().pid() << ":"
+                     << wevent.task().tid() << "]\n";
+                break; // We don't need to hook the return, it will fail.
             }
 
             //
-            // It's not a protected process so now we need to check if we have any write-protections.
-            // The call will return, so we need to wait for that to happen before cleaning up.
-            // We can't just remove the protections now, because the process might still need them.
-            // Furthermore, the call to NtTerminateProcess might fail, in which case we don't want to
-            // remove the protections at all. We can't be sure the process trying to terminate this
-            // process is even allowed to do so.
+            // It's not a protected process so now we need to check if we have any
+            // write-protections. The call will return, so we need to wait for that to happen before
+            // cleaning up. We can't just remove the protections now, because the process might
+            // still need them. Furthermore, the call to NtTerminateProcess might fail, in which
+            // case we don't want to remove the protections at all. We can't be sure the process
+            // trying to terminate this process is even allowed to do so.
             //
 
             // In order to handle the return, we need to set the syscall to hook its return.
             wevent.syscall().hook_return(true);
 
             // Unfortunately, upon return from NtTerminateProcess, the process being terminated
-            // will no longer be valid and so we won't be able to get its PID then. So we need to get
-            // it now.
+            // will no longer be valid and so we won't be able to get its PID then. So we need to
+            // get it now.
             //
-            // However, IntroVirt has a built-in mechanism for us to store arbitrary data with system
-            // call handlers. We can store key-value pairs with the handler that will persist until the
-            // handler is destroyed.
+            // However, IntroVirt has a built-in mechanism for us to store arbitrary data with
+            // system call handlers. We can store key-value pairs with the handler that will persist
+            // until the handler is destroyed.
             //
-            // So we can put our PID in a "target_pid" key and look it up later when the call returns.
+            // So we can put our PID in a "target_pid" key and look it up later when the call
+            // returns.
             handler->data("target_pid", make_shared<uint64_t>(handler->target_pid()));
             break;
         }
@@ -182,7 +184,8 @@ class EventHandler : public EventCallback {
 
             lock_guard lock(mtx_);
             if (protected_pids_.count(target_pid)) {
-                // Check if the desired access includes termination, write, operation, or debug rights
+                // Check if the desired access includes termination, write, operation, or debug
+                // rights
                 if (desired_access.has(nt::PROCESS_TERMINATE) ||
                     desired_access.has(nt::PROCESS_VM_WRITE) ||
                     desired_access.has(nt::PROCESS_VM_OPERATION) ||
@@ -195,7 +198,8 @@ class EventHandler : public EventCallback {
                          << ":" << wevent.task().tid() << "]\n";
 
                     // NtOpenProcess uses the ClientId structure to specify the target process.
-                    // We can set the ClientId pointer to null to cause the call to fail immediately.
+                    // We can set the ClientId pointer to null to cause the call to fail
+                    // immediately.
                     handler->ClientIdPtr(guest_ptr<void>()); // Set to null pointer
                 }
             }
@@ -292,7 +296,7 @@ class EventHandler : public EventCallback {
             // They asked to write-protect a memory region
             cout << '\t' << "WRITE_PROTECT requested\n";
             cout << '\t' << "TODO: Not implemented in this example (bug in watch points)\n";
-            //return_code = service_write_protect(event);
+            return_code = service_write_protect(event);
             break;
         case PROTECT_PROCESS:
             // They asked to protect the process from termination, injection, and debugging
@@ -392,6 +396,9 @@ class EventHandler : public EventCallback {
         auto& vcpu = event.vcpu();
         auto& regs = vcpu.registers();
 
+        cout << "Memory access violation in " << task.process_name() << " [" << task.pid() << ":"
+             << task.tid() << "]\n";
+
         if (event.mem_access().write_violation()) {
             cout << task.process_name() << " [" << task.pid() << ":" << task.tid() << "]\n";
             cout << '\t' << "Process wrote to read-only memory!\n";
@@ -416,11 +423,22 @@ class EventHandler : public EventCallback {
     int service_protect_process(Event& event) {
         auto& task = event.task();
 
-        cout << '\t' << "Protected PID " << task.pid() << " from termination, injection, and debugging\n";
+        cout << '\t' << "Protected PID " << task.pid()
+             << " from termination, injection, and debugging\n";
 
         lock_guard lock(mtx_);
         protected_pids_.insert(task.pid());
         return 0;
+    }
+
+    /*
+     * Simple cleanup function to make sure our watch points and protected PIDs are cleared.
+     * This is called when the tool is exiting to ensure we don't leave the guest in a bad state.
+     */
+    void cleanup() {
+        lock_guard lock(mtx_);
+        read_only_protections_.clear();
+        protected_pids_.clear();
     }
 
     // A map of our active watchpoints, by PID
@@ -435,6 +453,9 @@ class EventHandler : public EventCallback {
     // on different threads and VCPUs, so we need to protect our data structures.
     mutex mtx_;
 };
+
+// So we have global access to our event handler for cleanup on exit
+EventHandler event_handler;
 
 /**
  * The main entry point for this example.
@@ -507,8 +528,9 @@ int main(int argc, char** argv) {
     guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtTerminateProcess,
                                   true);
 
-    // We also need to filter for NtOpenProcess so we can prevent protected processes from being opened
-    // with certain access rights. This gets us anti-debugging, and anti-injection protections.
+    // We also need to filter for NtOpenProcess so we can prevent protected processes from being
+    // opened with certain access rights. This gets us anti-debugging, and anti-injection
+    // protections.
     guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtOpenProcess,
                                   true);
 
@@ -518,12 +540,12 @@ int main(int argc, char** argv) {
     // It's possible to filter for many system calls, and it's easy to overdo it. For a task like
     // preventing injection, termination, and debugging, you may think it necessary to filter for
     // all process manipulation system calls. This could include things like NtDebugActiveProcess,
-    // NtWriteVirtualMemory, NtCreateThread, etc. However, all of those calls require a handle to the
-    // target process with appropriate priveleges. If we simply prevent opening the process with the
-    // necessary rights in NtOpenProcess, we don't need to filter for the other calls at all.
+    // NtWriteVirtualMemory, NtCreateThread, etc. However, all of those calls require a handle to
+    // the target process with appropriate priveleges. If we simply prevent opening the process with
+    // the necessary rights in NtOpenProcess, we don't need to filter for the other calls at all.
     //
-    // Reading the Windows kernel API documentation and understanding how the various calls work together
-    // is key to effective IntroVirt tool development.
+    // Reading the Windows kernel API documentation and understanding how the various calls work
+    // together is key to effective IntroVirt tool development.
     //
 
     // We also need to enable the system call filter
@@ -539,8 +561,7 @@ int main(int argc, char** argv) {
     // Now is a good time to scroll up and read through the EventHandler class if you haven't
     // already.
     //
-    EventHandler handler;
-    domain->poll(handler);
+    domain->poll(event_handler);
 }
 
 /**
@@ -548,7 +569,10 @@ int main(int argc, char** argv) {
  * It simply tells the domain to interrupt its polling loop so we can
  * cleanly detach and exit.
  */
-void sig_handler(int signum) { domain->interrupt(); }
+void sig_handler(int signum) {
+    event_handler.cleanup();
+    domain->interrupt();
+}
 
 /**
  * This function parses our command line options using boost::program_options.
