@@ -37,11 +37,22 @@ int main(int argc, char** argv) {
         }
     } else if (strcmp(argv[1], "mem-protect") == 0) {
         // Now demonstrate write-protecting a memory region
-        char buffer[] = "This buffer will be write-protected.";
-        printf("Original buffer: %s\n", buffer);
+        char buffer[] = "MOD";
+        printf("Original buffer[%llu]: %s\n", sizeof(buffer), buffer);
         status = HypercallWriteProtectMemory(buffer, sizeof(buffer));
         if (status == 0) {
             printf("Buffer write-protected successfully.\n");
+            int count = 0;
+            while(1) {
+                printf("Write protected\n");
+                Sleep(100);
+                count++;
+                if (count == 20) {
+                    printf("Attempting to modify the protected buffer...\n");
+                    buffer[0] = 'B'; // Attempt to modify the buffer
+                    printf("Buffer after modification attempt: %s\n", buffer);
+                }
+            }
         } else {
             printf("Failed to write-protect buffer, status code: %llu\n", status);
         }
@@ -49,8 +60,8 @@ int main(int argc, char** argv) {
         status = HypercallProtectProcess();
         if (status == 0) {
             while (1) {
-                printf("This process is protected. You can't do anything!!!");
-                Sleep(2);
+                printf("This process is protected. You can't do anything!!!\n");
+                Sleep(100);
             }
         } else {
             printf("Failed to protect the process: %llu\n", status);
