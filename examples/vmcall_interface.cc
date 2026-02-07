@@ -141,13 +141,13 @@ class EventHandler : public EventCallback {
                 if (protected_pids_.count(handler->target_pid()) != 0) {
                     // This process is protected. Deny the termination attempt.
                     // How do we do that? We could hook the return and change the result code,
-                    // however, NtTerminateProcess will have already done the termination by the time it
-                    // returns. Instead, we can just change the ProcessHandle parameter to
+                    // however, NtTerminateProcess will have already done the termination by the
+                    // time it returns. Instead, we can just change the ProcessHandle parameter to
                     // INVALID_HANDLE_VALUE, which will cause the call to fail immediately.
                     handler->ProcessHandle(0xFFFFFFFFFFFFFFFF);
-                    cout << "Blocked termination of protected PID " << handler->target_pid() << " by "
-                        << wevent.task().process_name() << "[" << wevent.task().pid() << ":"
-                        << wevent.task().tid() << "]\n";
+                    cout << "Blocked termination of protected PID " << handler->target_pid()
+                         << " by " << wevent.task().process_name() << "[" << wevent.task().pid()
+                         << ":" << wevent.task().tid() << "]\n";
                     break; // We don't need to hook the return, it will fail.
                 }
             }
