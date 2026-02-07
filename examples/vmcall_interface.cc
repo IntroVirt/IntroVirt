@@ -115,8 +115,9 @@ class EventHandler : public EventCallback {
             auto* handler = static_cast<nt::NtTerminateProcess*>(wevent.syscall().handler());
 
             // NtTerminateProcess will not return when a process is terminating itself.
-            // We need to handle this case and check if we have any protections to clean up.
-            if (!handler->will_return()) {
+            // We need to handle this case adn the case where the PID of the target and task match
+            // and check if we have any protections to clean up.
+            if (!handler->will_return() || handler->target_pid() == wevent.task().pid()) {
                 lock_guard lock(mtx_);
 
                 // If we have any write-protections for this PID, remove them now
@@ -134,20 +135,21 @@ class EventHandler : public EventCallback {
                     cout << task.process_name() << " [" << task.pid() << ":" << task.tid() << "]\n";
                     cout << '\t' << "Self terminated. Process protections removed.\n";
                 }
-                break; // Nothing else to do. The call won't return, so we're done.
-            }
-
-            if (protected_pids_.count(handler->target_pid()) != 0) {
-                // This process is protected. Deny the termination attempt.
-                // How do we do that? We could hook the return and change the result code,
-                // however, NtTerminateProcess will have already done the termination by the time it
-                // returns. Instead, we can just change the ProcessHandle parameter to
-                // INVALID_HANDLE_VALUE, which will cause the call to fail immediately.
-                handler->ProcessHandle(0xFFFFFFFFFFFFFFFF);
-                cout << "Blocked termination of protected PID " << handler->target_pid() << " by "
-                     << wevent.task().process_name() << "[" << wevent.task().pid() << ":"
-                     << wevent.task().tid() << "]\n";
-                break; // We don't need to hook the return, it will fail.
+                break; // Nothing else to do, we don't need the return here.
+            } else {
+                lock_guard lock(mtx_);
+                if (protected_pids_.count(handler->target_pid()) != 0) {
+                    // This process is protected. Deny the termination attempt.
+                    // How do we do that? We could hook the return and change the result code,
+                    // however, NtTerminateProcess will have already done the termination by the time it
+                    // returns. Instead, we can just change the ProcessHandle parameter to
+                    // INVALID_HANDLE_VALUE, which will cause the call to fail immediately.
+                    handler->ProcessHandle(0xFFFFFFFFFFFFFFFF);
+                    cout << "Blocked termination of protected PID " << handler->target_pid() << " by "
+                        << wevent.task().process_name() << "[" << wevent.task().pid() << ":"
+                        << wevent.task().tid() << "]\n";
+                    break; // We don't need to hook the return, it will fail.
+                }
             }
 
             //
@@ -295,7 +297,6 @@ class EventHandler : public EventCallback {
         case WRITE_PROTECT:
             // They asked to write-protect a memory region
             cout << '\t' << "WRITE_PROTECT requested\n";
-            cout << '\t' << "TODO: Not implemented in this example (bug in watch points)\n";
             return_code = service_write_protect(event);
             break;
         case PROTECT_PROCESS:
