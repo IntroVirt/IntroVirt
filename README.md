@@ -3,8 +3,8 @@
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/YSdGvAhSmH?style=flat)](https://discord.gg/YSdGvAhSmH)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/IntroVirt/IntroVirt?color=brightgreen)](https://github.com/IntroVirt/IntroVirt/releases/latest)
 [![CI Tests](https://github.com/IntroVirt/IntroVirt/actions/workflows/ci.yml/badge.svg)](https://github.com/IntroVirt/IntroVirt/actions/workflows/ci.yml)
+[![Create Release](https://github.com/IntroVirt/IntroVirt/actions/workflows/release.yml/badge.svg)](https://github.com/IntroVirt/IntroVirt/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
 
 ## Description
 
@@ -42,23 +42,24 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 
 ### Supported Kernels
 
-| Ditro | Latest Supported Kernel | Status    |
-| ----- | ----------------------- | --------- |
-| 18.04 | [HWE 5.4.0-150-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | EoL       |
-| 20.04 | [HWE 5.15.0-119-generic](https://github.com/IntroVirt/kvm-introvirt/releases) | Supported |
-| 22.04 | [HWE 6.5.0-35-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported |
-| 24.04 | [HWE 6.8.0-41-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported |
+| Ditro | Latest Supported Kernel                                                       | Status    |
+| ----- | ----------------------------------------------------------------------------- | ----------- |
+| 18.04 | [HWE 5.4.0-150-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | EoL         |
+| 20.04 | [HWE 5.15.0-119-generic](https://github.com/IntroVirt/kvm-introvirt/releases) | EoL         |
+| 22.04 | [HWE 6.5.0-35-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | EoL         |
+| 24.04 | [HWE 6.8.0-90-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported   |
+| 26.04 | coming soon                                                                   | Coming Soon |
 
 ### Supported Introspection Targets
 
 IntroVirt is used to introspect a running virtual machine. The current release of IntroVirt supports Windows XP through Windows 10 22H2. Newer versions of Windows 10 may work, but you may experience unhandled exceptions in the user-land tools for changes to the Windows kernel that IntroVirt has not been updated for yet (hopefully soon though). Windows 11 is completely untested...so feel free to give it a try, though it will likely not work.
 
-| OS | Latest Supported Version | Status |
-| -- | ------------------------ | ------ |
-| Windows XP | All  | EoL       |
-| Windows 7 | All | EoL |
-| Windows 10 | 22H2   | Supported |
-| Windows 11 | None   | Unsupported (yet) |
+| OS         | Latest Supported Version | Status    |
+| ---------- | ------------------------ | --------- |
+| Windows XP | All                      | EoL       |
+| Windows 7  | All                      | EoL       |
+| Windows 10 | All                      | Supported |
+| Windows 11 | 25H2                     | Partial   |
 
 ## Building on Ubuntu Linux
 
@@ -128,8 +129,9 @@ You can try system call monitoring with `sudo ivsyscallmon -D <domain>`. See `su
 IntroVirt provides some useful resources to learn how to use it including:
 
 - **Documentation**: TBD
-- **Examples**: [IntroVirt Tools](./tools/)
-- **Unit Tests**: TBD
+- **Examples**:
+    * [IntroVirt Tools](./tools/) are great examples of the things you can do with IntroVirt.
+    * [IntroVirt Examples](./examples/) are more verbosely documented and intended to be a good starting point.
 
 If you have any questions, bugs, or feature requests, please feel free to ask on any of the following:
 
@@ -161,6 +163,8 @@ If you’re interested in IntroVirt, you might also be interested in the
 following projects:
 
 - **LibVMI:** https://github.com/libvmi/libvmi
+- **KVM-VMI:** https://github.com/KVM-VMI/kvm-vmi
 - **Bitdefender:** https://github.com/bitdefender
 - **HVMI**: https://github.com/hvmi/hvmi
 - **libmicrovmi**: https://github.com/Wenzel/libmicrovmi
+- **Drakvuf**: https://github.com/tklengyel/drakvuf
