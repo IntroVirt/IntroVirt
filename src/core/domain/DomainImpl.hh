@@ -171,6 +171,13 @@ class DomainImpl : public Domain {
      */
     void initialize();
 
+    /**
+     * @brief Release the Guest before destroying vCPUs (for shutdown order).
+     * Subclass destructors should call this before clearing vcpus_ so that
+     * Guest/PDB teardown runs while the domain and vCPUs are still valid.
+     */
+    void reset_guest() { guest_.reset(); }
+
   private:
     void handle_breakpoint(Event& event);
 
