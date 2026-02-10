@@ -29,7 +29,7 @@ class SymbolNotFoundException final : public TraceableException {
   public:
     /**
      * @brief Construct a new SymbolNotFoundException instance
-     * @param message The nameof thes ymbol
+     * @param symbol The name of the symbol that was not found
      */
     SymbolNotFoundException(const std::string& symbol);
 };

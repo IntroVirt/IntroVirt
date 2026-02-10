@@ -15,7 +15,7 @@
     virtual std::shared_ptr<PROCESS> get_new_process() = 0;
 
     /**
-     * @copydoc {{ className }}::get_new_thread()
+     * @copydoc {{ className }}::get_new_process()
      */
     virtual const std::shared_ptr<PROCESS> get_new_process() const = 0;
 {%- endblock %}

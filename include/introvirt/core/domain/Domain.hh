@@ -54,11 +54,15 @@ class Domain {
                                                           std::function<void(Event&)> callback) = 0;
 
     /**
-     * @brief Create an execution breakpoint
+     * @brief Create a watchpoint on guest memory (e.g. break on read/write)
      *
-     * @param address The address to place the breakpoint
-     * @param callback The callback function to run
-     * @return std::shared_ptr<Breakpoint> That clears the breakpoint when it goes off-scope
+     * @param address The guest address to watch
+     * @param length Size in bytes of the watched region
+     * @param read Trigger on read access
+     * @param write Trigger on write access
+     * @param execute Trigger on execute access
+     * @param callback Called when the watchpoint fires
+     * @return std::unique_ptr<Watchpoint> Clears the watchpoint when destroyed
      */
     virtual std::unique_ptr<Watchpoint> create_watchpoint(const guest_ptr<void>& address,
                                                           uint64_t length, bool read, bool write,

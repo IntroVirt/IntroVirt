@@ -63,7 +63,7 @@ class PAGE_PROTECTION final {
     /**
      * Assignment operator
      *
-     * @other PAGE_PROECTION to copy
+     * @param other PAGE_PROTECTION to copy
      */
     PAGE_PROTECTION& operator=(const PAGE_PROTECTION& other);
 

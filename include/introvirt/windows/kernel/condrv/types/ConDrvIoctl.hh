@@ -26,7 +26,7 @@ namespace windows {
 namespace condrv {
 
 /**
- * @brief A wrapper class for an ioctl to \Device\ConDrv\CurrentOut
+ * @brief A wrapper class for an ioctl to \\Device\\ConDrv\\CurrentOut
  */
 class ConDrvIoctl final {
   public:

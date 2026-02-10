@@ -46,10 +46,7 @@ class TOKEN_PRIVILEGES : public TOKEN_INFORMATION {
     virtual const LUID_AND_ATTRIBUTES& operator[](uint32_t index) const = 0;
 
     /**
-     * @copydoc TOKEN_GROUPS::operator[](uint32_t)
-     *
-     * @param index
-     * @return LUID_AND_ATTRIBUTES&
+     * @copydoc TOKEN_PRIVILEGES::operator[](uint32_t)
      */
     virtual LUID_AND_ATTRIBUTES& at(uint32_t index) = 0;
     virtual const LUID_AND_ATTRIBUTES& at(uint32_t index) const = 0;

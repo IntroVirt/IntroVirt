@@ -182,9 +182,7 @@ class Flags {
     void value(uint64_t value);
 
     /**
-     * @brief Construct a new Flags instances
-     *
-     * @param flags A reference to the flags value to use/update
+     * @brief Construct a new Flags instance (default)
      */
     explicit Flags();
 

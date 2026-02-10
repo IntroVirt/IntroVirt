@@ -215,16 +215,13 @@ class SYSTEM_PROCESS_INFORMATION_ENTRY {
          * @brief Get an entry at the specified index
          *
          * @param index The index into the array
-         * @return PS_ATTRIBUTE&
+         * @return SYSTEM_THREAD&
          */
         virtual SYSTEM_THREAD& operator[](uint32_t index) = 0;
         virtual const SYSTEM_THREAD& operator[](uint32_t index) const = 0;
 
         /**
-         * @copydoc PS_ATTRIBUTE_LIST::operator[](uint32_t)
-         *
-         * @param index
-         * @return PS_ATTRIBUTE&
+         * @copydoc SYSTEM_PROCESS_INFORMATION_ENTRY::ThreadArray::operator[](uint32_t)
          */
         virtual SYSTEM_THREAD& at(uint32_t index) = 0;
         virtual const SYSTEM_THREAD& at(uint32_t index) const = 0;

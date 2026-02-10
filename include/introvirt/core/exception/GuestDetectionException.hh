@@ -32,12 +32,14 @@ class GuestDetectionException : public TraceableException {
     /**
      * @brief Construct a new GuestDetectionException instance
      * @param vcpu The vcpu related to the error message
+     * @param message The error message
      */
     GuestDetectionException(const Vcpu& vcpu, const std::string& message);
 
     /**
      * @brief Construct a new GuestDetectionException instance
      * @param domain The domain related to the error message
+     * @param message The error message
      */
     GuestDetectionException(const Domain& domain, const std::string& message);
 };
