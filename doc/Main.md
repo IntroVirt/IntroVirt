@@ -72,7 +72,8 @@ int main(int argc, char** argv) {
 
 Build and run (replace `win10` with your domain name or ID):
 
-    ./minimal_syscall_monitor win10
+    g++ main.cc -o basic_syscallmon -lintrovirt
+    sudo ./basic_syscallmon win10
 
 Use Ctrl+C to detach cleanly. For a full-featured syscall monitor with filtering and JSON output, see the \ref ivsyscallmon.cc "ivsyscallmon" tool.
 
