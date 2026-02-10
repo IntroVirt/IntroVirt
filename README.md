@@ -5,6 +5,7 @@
 [![CI Tests](https://github.com/IntroVirt/IntroVirt/actions/workflows/ci.yml/badge.svg)](https://github.com/IntroVirt/IntroVirt/actions/workflows/ci.yml)
 [![Create Release](https://github.com/IntroVirt/IntroVirt/actions/workflows/release.yml/badge.svg)](https://github.com/IntroVirt/IntroVirt/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Github Pages](https://img.shields.io/badge/github%20pages-121013?style=&logo=github&logoColor=white)](https://introvirt.github.io/IntroVirt/)
 
 ## Description
 
@@ -116,7 +117,7 @@ You can try system call monitoring with `sudo ivsyscallmon -D <domain>`. See `su
 
 IntroVirt provides some useful resources to learn how to use it including:
 
-- **Documentation**: [API reference (Doxygen)](https://introvirt.github.io/IntroVirt/) is built from the repo and published to GitHub Pages on push to `main`. To build locally: `cmake -DDOXYGEN=1 ..` then `make doc` (output in `build/html/`). To enable auto-deploy: in the repo **Settings → Pages**, set **Source** to **GitHub Actions**.
+- **Documentation**: [API reference (Doxygen)](https://introvirt.github.io/IntroVirt/) is built from the repo and published to GitHub Pages on push to `main`. To build locally: `cmake -G Ninja -DDOXYGEN=ON ..` then `ninja doc` (output in `build/html/`).
 - **Examples**:
     * [IntroVirt Tools](./tools/) are great examples of the things you can do with IntroVirt.
     * [IntroVirt Examples](./examples/) are more verbosely documented and intended to be a good starting point.
