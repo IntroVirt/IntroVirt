@@ -1,4 +1,3 @@
-# Build API documentation and deploy to GitHub Pages on push to main
 name: Deploy API docs to GitHub Pages
 
 on:
