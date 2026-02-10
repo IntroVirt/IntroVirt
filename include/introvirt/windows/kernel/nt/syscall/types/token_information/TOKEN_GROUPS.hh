@@ -45,9 +45,6 @@ class TOKEN_GROUPS : public TOKEN_INFORMATION {
 
     /**
      * @copydoc TOKEN_GROUPS::operator[](uint32_t)
-     *
-     * @param index
-     * @return SID_AND_ATTRIBUTES&
      */
     virtual SID_AND_ATTRIBUTES& at(uint32_t index) = 0;
     virtual const SID_AND_ATTRIBUTES& at(uint32_t index) const = 0;

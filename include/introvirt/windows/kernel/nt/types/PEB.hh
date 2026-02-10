@@ -98,7 +98,8 @@ class PEB {
     virtual bool BeingDebugged() const = 0;
 
     /**
-     * @returns The value of the BeingDebugged field
+     * Set the BeingDebugged field
+     * @param BeingDebugged The value to set
      */
     virtual void BeingDebugged(bool BeingDebugged) = 0;
 

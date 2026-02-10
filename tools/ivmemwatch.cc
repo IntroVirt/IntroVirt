@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @example ivmemwatch.cc
+ *
+ * Sets watchpoints on guest memory and reports access events. Demonstrates
+ * Domain::create_watchpoint and MemAccessEvent handling for read/write
+ * monitoring.
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/algorithm/string.hpp>

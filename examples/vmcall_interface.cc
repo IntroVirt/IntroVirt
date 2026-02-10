@@ -24,14 +24,12 @@
  * This example shows how IntroVirt can be used to add powerful protections
  * to in-guest applications with minimal code changes.
  *
+ * For full documentation, build instructions, guest setup, and usage, see the
+ * \ref examples_doc "Example documentation" page.
+ *
  * To read this example, it's best to skip down to main() first before looking at
- * the EventHandler class.
- *
- * This example is more verbosely documented than other examples in the tools/ directory
- * as it is intended to be instructional.
- *
- * There is a companion example in the examples/guest/vmcall_interface/ directory
- * that shows how to make VMCALLs from within a Windows guest.
+ * the EventHandler class. There is a companion guest-side example in
+ * examples/guest/vmcall_interface/ that shows how to make VMCALLs from Windows.
  */
 #include <boost/program_options.hpp>
 #include <introvirt/introvirt.hh>

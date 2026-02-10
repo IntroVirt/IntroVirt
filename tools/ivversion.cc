@@ -1,3 +1,10 @@
+/**
+ * @example ivversion.cc
+ *
+ * Prints IntroVirt library version and hypervisor/patch information.
+ * Minimal example of Hypervisor::instance() and VersionInfo usage.
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <iostream>

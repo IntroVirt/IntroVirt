@@ -65,31 +65,19 @@ IntroVirt is used to introspect a running virtual machine. The current release o
 
 First, build and install [libmspdb](https://github.com/IntroVirt/libmspdb) and [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
 
-Then, build from source:
+Then, build from source and install debs:
 
 ```shell
 sudo apt-get install -y \
     python3 python3-jinja2 cmake make build-essential libcurl4-openssl-dev libboost-dev \
     libboost-program-options-dev git clang-format liblog4cxx-dev libboost-stacktrace-dev \
-    doxygen
+    doxygen graphviz ninja-build
 
 git clone https://github.com/IntroVirt/IntroVirt.git
 cd IntroVirt/build
-cmake ..
-make -j
-```
-
-Debian packages can then be built and installed (recommended):
-
-```bash
-make package
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOXYGEN=ON ..
+ninja -j$(nproc) package
 sudo apt install ./*.deb
-```
-
-Or `make` can be used directly to install:
-
-```bash
-sudo make install
 ```
 
 Confirm everything is installed with: `sudo ivversion`
@@ -128,7 +116,7 @@ You can try system call monitoring with `sudo ivsyscallmon -D <domain>`. See `su
 
 IntroVirt provides some useful resources to learn how to use it including:
 
-- **Documentation**: TBD
+- **Documentation**: [API reference (Doxygen)](https://introvirt.github.io/IntroVirt/) is built from the repo and published to GitHub Pages on push to `main`. To build locally: `cmake -DDOXYGEN=1 ..` then `make doc` (output in `build/html/`). To enable auto-deploy: in the repo **Settings → Pages**, set **Source** to **GitHub Actions**.
 - **Examples**:
     * [IntroVirt Tools](./tools/) are great examples of the things you can do with IntroVirt.
     * [IntroVirt Examples](./examples/) are more verbosely documented and intended to be a good starting point.

@@ -222,7 +222,9 @@ class NtKernel {
     virtual KPCR& kpcr(const Vcpu& vcpu) = 0;
 
     /**
-     * @copydoc NtKernel::kpcr(Vcpu&)
+     * @brief Get the KPCR that belongs to the given vcpu (const overload)
+     * @param vcpu The vcpu to get the KPCR for
+     * @return The KPCR that belongs to the given vcpu
      */
     virtual const KPCR& kpcr(const Vcpu& vcpu) const = 0;
 
@@ -249,17 +251,17 @@ class NtKernel {
     virtual const mspdb::PDB& pdb() const = 0;
 
     /**
-     * @brief Get the THRAD at the given address
+     * @brief Get the THREAD at the given address
      *
-     * @param address
-     * @return std::shared_ptr<nt::PROCESS>
+     * @param ptr Guest address of the thread object
+     * @return std::shared_ptr<nt::THREAD>
      */
     virtual std::shared_ptr<THREAD> thread(const guest_ptr<void>& ptr) const = 0;
 
     /**
      * @brief Get the PROCESS at the given address
      *
-     * @param address
+     * @param ptr Guest address of the process object
      * @return std::shared_ptr<nt::PROCESS>
      */
     virtual std::shared_ptr<PROCESS> process(const guest_ptr<void>& ptr) const = 0;

@@ -27,7 +27,7 @@ namespace introvirt {
 /**
  * @brief Information about a domain
  *
- * A vector of DomainInformation is by Hypervisor::get_running_domains()
+ * A vector of DomainInformation is retrieved by calling Hypervisor::get_running_domains()
  */
 class DomainInformation {
   public:
@@ -43,7 +43,7 @@ class DomainInformation {
 };
 
 /**
- * @brief A abstract class for managing a hypervisor
+ * @brief Abstract class for managing a hypervisor
  */
 class Hypervisor {
   public:

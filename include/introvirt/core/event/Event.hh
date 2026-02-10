@@ -38,7 +38,7 @@ enum class OS { Unknown, Windows, Linux };
 class EventImpl;
 
 /**
- * @brief Inferface class for hypervisor events
+ * @brief Interface class for hypervisor events
  */
 class Event {
   public:

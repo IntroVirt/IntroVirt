@@ -85,10 +85,9 @@ class SystemCallFilter {
      * matches() will always return true if the filter is not enabled.
      *
      * This version is more naive, and assumes the call number is held in rax.
-     * This seems like a reasonable assumption.
      *
-     * @param event The incoming event
-     * @return true if the event mathces out filter
+     * @param vcpu The vcpu to check (syscall number read from vcpu registers)
+     * @return true if the event matches our filter
      * @return false if the event does not match our filter
      */
     bool matches(const Vcpu& vcpu) const;

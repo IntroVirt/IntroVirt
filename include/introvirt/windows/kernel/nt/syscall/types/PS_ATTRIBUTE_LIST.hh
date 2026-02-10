@@ -129,9 +129,6 @@ class PS_ATTRIBUTE_LIST {
 
     /**
      * @copydoc PS_ATTRIBUTE_LIST::operator[](uint32_t)
-     *
-     * @param index
-     * @return PS_ATTRIBUTE&
      */
     virtual PS_ATTRIBUTE& at(uint32_t index) = 0;
     virtual const PS_ATTRIBUTE& at(uint32_t index) const = 0;

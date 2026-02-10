@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @example ivservicetable.cc
+ *
+ * Prints the Windows guest service table (dispatch table). Demonstrates
+ * attaching to a domain, guest detection, and reading kernel structures
+ * to enumerate services.
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/algorithm/string.hpp>

@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @example ivguestinfo.cc
+ *
+ * Prints Windows guest information: kernel version, loaded drivers, and
+ * PDB path. Demonstrates attaching to a domain, guest detection, and
+ * reading kernel structures (PE, debug directory, PsLoadedModuleList).
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/algorithm/string.hpp>

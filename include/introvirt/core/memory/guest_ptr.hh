@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/** @file guest_ptr.hh
+ * @brief Type-safe guest virtual address pointer and guest_ptr template.
+ */
 #pragma once
 
 #include <introvirt/core/arch/x86/PageDirectory.hh>
