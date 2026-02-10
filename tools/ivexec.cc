@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @example ivexec.cc
+ *
+ * Executes a command in the guest by injecting a process creation (e.g.
+ * NtCreateUserProcess/CreateProcess). Demonstrates system-call injection
+ * and waiting for completion via event handling.
+ */
+
 #include "shared/SystemCallMonitor.hh"
 
 #include <introvirt/introvirt.hh>

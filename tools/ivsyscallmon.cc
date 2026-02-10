@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @example ivsyscallmon.cc
+ *
+ * Monitors Windows system calls in the guest. Filters selected syscalls
+ * and prints arguments/return values (optionally JSON). Demonstrates
+ * system-call filtering, WindowsEvent, and SystemCallMonitor usage.
+ */
+
 #include "shared/SystemCallMonitor.hh"
 
 #include <introvirt/introvirt.hh>

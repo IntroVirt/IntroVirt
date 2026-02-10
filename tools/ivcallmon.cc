@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+/**
+ * @example ivcallmon.cc
+ *
+ * Monitors Windows API function calls in a guest by setting breakpoints on
+ * specified library/function names. Demonstrates breakpoint creation and
+ * event handling for a target process.
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/algorithm/string.hpp>

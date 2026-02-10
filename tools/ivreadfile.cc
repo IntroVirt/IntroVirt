@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
+/**
+ * @example ivreadfile.cc
+ *
+ * Reads a file from the guest into the host. Uses injected NtOpenFile and
+ * NtReadFile (or equivalent) to copy guest file contents. Demonstrates
+ * guest allocation (inject::allocate), system-call injection, and
+ * EventCallback-based waiting.
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/algorithm/string.hpp>

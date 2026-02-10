@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+/**
+ * @example ivwritefile.cc
+ *
+ * Writes host file contents into a file in the guest. Uses injected
+ * NtCreateFile and NtWriteFile (or equivalent). Demonstrates
+ * system-call injection to write guest files from the host.
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/algorithm/string.hpp>

@@ -13,6 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @example ivsessions.cc
+ *
+ * Lists Windows sessions (user logon sessions) in the guest. Demonstrates
+ * attaching to a domain, guest detection, and walking session structures.
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/program_options.hpp>

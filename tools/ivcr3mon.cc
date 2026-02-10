@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @example ivcr3mon.cc
+ *
+ * Monitors CR3 (page-directory base) writes in the guest. Demonstrates
+ * control-register write events (EVENT_CR_WRITE) and logging context
+ * switches.
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/algorithm/string.hpp>

@@ -55,7 +55,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
             libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
-            liblog4cxx-dev python3-jinja2 python3 \
+            liblog4cxx-dev python3-jinja2 python3 graphviz \
             doxygen clang-format git wget unzip
 
           # libmspdb

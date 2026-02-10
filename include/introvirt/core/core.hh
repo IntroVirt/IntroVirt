@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/** @file core.hh
+ * @brief Umbrella header for the IntroVirt core API (domain, events, injection, etc.)
+ */
 #pragma once
 
 #include <introvirt/core/arch/arch.hh>

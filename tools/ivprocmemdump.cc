@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @example ivprocmemdump.cc
+ *
+ * Dumps memory of a guest process to a file. Demonstrates attaching to a
+ * domain, resolving a process by name, and reading guest virtual memory
+ * (e.g. via NtReadVirtualMemory or guest memory mapping).
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/algorithm/string.hpp>

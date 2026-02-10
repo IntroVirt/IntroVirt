@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @example ivprocinfo.cc
+ *
+ * Lists Windows guest processes and optional token/process details.
+ * Demonstrates walking the process list (PsActiveProcessHead), reading
+ * EPROCESS, and optional filtering by name or PID.
+ */
+
 #include <introvirt/introvirt.hh>
 
 #include <boost/algorithm/string.hpp>
