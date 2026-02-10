@@ -426,22 +426,17 @@ KvmVcpu::KvmVcpu(const KvmVcpu& src)
 
 KvmVcpu::~KvmVcpu() {
     if (fd_) {
-        LOG4CXX_DEBUG(logger, "~KvmVcpu()");
-        pause();
-        LOG4CXX_DEBUG(logger, "~pause");
-        intercept_exception(x86::Exception::INT3, false);
-        LOG4CXX_DEBUG(logger, "~intercept_exception");
-        intercept_system_calls(false);
-        LOG4CXX_DEBUG(logger, "~intercept_system_calls");
-        if (single_step())
-            single_step(false);
-
-        resume();
-        LOG4CXX_DEBUG(logger, "~resume");
-
+        LOG4CXX_DEBUG(logger, "~KvmVcpu(" << id() << ") fd: " << fd_);
+        /*
+         * Do NOT call pause(), intercept_exception, intercept_system_calls,
+         * single_step, or resume here. Those all take mtx_ and we may deadlock.
+         * Instead, we rely on kvm_vcpu_introvirt_release in the kernel patch
+         * to do the teardown on fd_ close.
+         */
         close(fd_);
-        LOG4CXX_DEBUG(logger, "~close");
+        LOG4CXX_DEBUG(logger, "~KvmVcpu() close done");
     }
+    LOG4CXX_DEBUG(logger, "~KvmVcpu() completed");
 }
 
 } // namespace kvm

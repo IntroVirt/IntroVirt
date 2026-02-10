@@ -163,6 +163,12 @@ KvmDomain::KvmDomain(const KvmHypervisor& hypervisor, const std::string& name, u
 }
 
 KvmDomain::~KvmDomain() {
+    // Destroy the Guest first while vCPUs and domain are
+    // still valid. Destroying vCPUs first can lead to heap
+    // corruption since the domain is still around but the vCPUs
+    // are gone.
+    reset_guest();
+
     // Release the VCPUs before closing the domain
     vcpus_.clear();
 

@@ -571,8 +571,8 @@ int main(int argc, char** argv) {
  * cleanly detach and exit.
  */
 void sig_handler(int signum) {
-    event_handler.cleanup();
     domain->interrupt();
+    event_handler.cleanup();
 }
 
 /**
