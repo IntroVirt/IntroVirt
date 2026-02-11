@@ -29,8 +29,10 @@ using namespace introvirt;
 
 %template(DomainInformationVector) std::vector<introvirt::DomainInformation>;
 
-/* Enable directors for EventCallback so Python can override process_event() */
-%feature("director") introvirt::EventCallback;
+%feature("director") EventCallback;
+%feature("director") BreakpointCallback;
+%feature("director") DomainMonitor;
+%feature("director") SingleStepCallback;
 
 /* Ignore Domain methods that use std::function, guest_ptr, or complex types */
 %ignore introvirt::Domain::create_breakpoint;

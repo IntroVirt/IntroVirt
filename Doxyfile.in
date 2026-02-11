@@ -896,7 +896,7 @@ EXAMPLE_PATH           = @CMAKE_CURRENT_SOURCE_DIR@/examples/ @CMAKE_CURRENT_SOU
 # *.h) to filter out the source-files in the directories. If left blank all
 # files are included.
 
-EXAMPLE_PATTERNS       = *.cc
+EXAMPLE_PATTERNS       = *.cc *.py
 
 # If the EXAMPLE_RECURSIVE tag is set to YES then subdirectories will be
 # searched for input files to be used with the \include or \dontinclude commands

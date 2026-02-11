@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
-"""
+"""@example list_domains.py
+
 IntroVirt Python example: List running VM domains.
+
+Demonstrates the minimal Python API: obtain a hypervisor instance, query
+running domains, and print their names and IDs. Requires the IntroVirt
+Python bindings (built with -DINTROVIRT_PYTHON_BINDINGS=ON).
 
 Usage:
   python3 list_domains.py
 
 Requires root/sudo and an IntroVirt-patched hypervisor (e.g. KVM).
+
+For full documentation, build instructions, and usage, see the
+\\ref examples_doc "Example documentation" page.
 """
 import introvirt
 

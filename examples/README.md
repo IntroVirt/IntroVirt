@@ -1,8 +1,43 @@
 # Example documentation {#examples_doc}
 
-This page describes the example programs included with IntroVirt. The main instructional example is **vmcall_interface**, which shows how to implement a custom hypercall interface between a Windows guest and an IntroVirt tool.
+This page describes the example programs included with IntroVirt. The main instructional example is **vmcall_interface**, which shows how to implement a custom hypercall interface between a Windows guest and an IntroVirt tool. A Python example, **list_domains**, demonstrates the IntroVirt Python bindings.
 
 Example **source files** (marked with `@example` in code) are listed in the **Examples** menu in the navigation; each entry links to the full source. Use this page for walkthroughs, build, and usage; use the Examples list for the actual code.
+
+---
+
+## list_domains (Python)
+
+**Source:** \ref list_domains.py — listed in the **Examples** menu.
+
+The list_domains example is a minimal Python script that uses the IntroVirt Python bindings to list running VM domains. It obtains a hypervisor instance via `Hypervisor.instance()`, queries `get_running_domains()`, and prints each domain's name and ID.
+
+### Requirements
+
+- IntroVirt built with Python bindings (`-DINTROVIRT_PYTHON_BINDINGS=ON`)
+- Root/sudo to access the hypervisor
+- An IntroVirt-patched hypervisor (e.g. KVM) with kvm-introvirt installed
+
+### Building
+
+Ensure IntroVirt is built with Python bindings enabled (see the main README). The Python module `_introvirt_py.so` and `introvirt.py` will be in `build/` or installed to the Python site-packages.
+
+### Usage
+
+From the build directory (module built but not installed):
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/list_domains.py
+```
+
+If the Python bindings are installed (e.g. via the deb package), run from anywhere:
+
+```bash
+sudo python3 /path/to/IntroVirt/examples/list_domains.py
+```
+
+With no running VMs, the script prints "No running domains found." With one or more VMs running, it prints the hypervisor name/version and a list of domain names and IDs.
 
 ---
 
