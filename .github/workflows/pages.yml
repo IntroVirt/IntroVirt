@@ -26,7 +26,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
             libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
-            liblog4cxx-dev python3-jinja2 python3 graphviz \
+            liblog4cxx-dev python3-jinja2 python3 python3-dev swig graphviz \
             doxygen clang-format git wget unzip
           mkdir libmspdb_pkg && cd libmspdb_pkg
           wget -q https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb_ubuntu-$(lsb_release -sr)_Release.zip

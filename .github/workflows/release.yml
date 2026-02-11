@@ -26,7 +26,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
             libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
-            liblog4cxx-dev python3-jinja2 python3 graphviz \
+            liblog4cxx-dev python3-jinja2 python3 python3-dev swig graphviz \
             doxygen clang-format git wget unzip
 
           # libmspdb
@@ -40,7 +40,7 @@ jobs:
       - name: ${{ matrix.os }} Build Release
         run: |
           cd build
-          cmake -GNinja -DCMAKE_BUILD_TYPE=Release ..
+          cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DINTROVIRT_PYTHON_BINDINGS=ON -DDOXYGEN=ON ..
           ninja package
         shell: bash
 
