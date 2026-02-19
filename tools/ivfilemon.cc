@@ -158,14 +158,15 @@ private:
             std::lock_guard lock(handles_mtx_);
             if (handles_.count(HandleKey(pid, handle))) {
                 handles_.erase(HandleKey(pid, handle));
-                emit_event(wevent);
                 wevent.syscall().hook_return(true);
+                emit_event(wevent);
             }
             break;
         }
-        case SystemCallIndex::NtDuplicateObject:
+        case SystemCallIndex::NtDuplicateObject: {
             wevent.syscall().hook_return(true);
             break;
+        }
         case SystemCallIndex::NtReadFile:
         case SystemCallIndex::NtWriteFile:
         case SystemCallIndex::NtQueryInformationFile:
@@ -184,8 +185,7 @@ private:
     }
 
     void handle_syscall_return(WindowsEvent& wevent) {
-        WindowsSystemCall* handler =
-            static_cast<WindowsSystemCall*>(wevent.syscall().handler());
+        WindowsSystemCall* handler = static_cast<WindowsSystemCall*>(wevent.syscall().handler());
         if (handler == nullptr || !handler->supported())
             return;
 
@@ -198,8 +198,7 @@ private:
 
         switch (index) {
         case SystemCallIndex::NtCreateFile: {
-            const nt::OBJECT_ATTRIBUTES* obj_attr =
-                static_cast<const NtCreateFile*>(handler)->ObjectAttributes();
+            const nt::OBJECT_ATTRIBUTES* obj_attr = static_cast<const NtCreateFile*>(handler)->ObjectAttributes();
             if (path_matches(target_path_normalized_, obj_attr, wevent.task().pcr())) {
                 uint64_t handle = static_cast<const NtCreateFile*>(handler)->FileHandle();
                 std::lock_guard lock(handles_mtx_);
