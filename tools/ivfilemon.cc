@@ -111,10 +111,10 @@ public:
 
         switch (event.type()) {
         case EventType::EVENT_FAST_SYSCALL:
-            handle_syscall_entry(wevent);
+            handle_syscall(wevent);
             break;
         case EventType::EVENT_FAST_SYSCALL_RET:
-            handle_syscall_return(wevent);
+            handle_sysret(wevent);
             break;
         default:
             break;
@@ -125,7 +125,7 @@ public:
 private:
     using HandleKey = std::pair<uint64_t, uint64_t>;
 
-    void handle_syscall_entry(WindowsEvent& wevent) {
+    void handle_syscall(WindowsEvent& wevent) {
         WindowsSystemCall* handler = static_cast<WindowsSystemCall*>(wevent.syscall().handler());
         if (handler == nullptr || !handler->supported())
             return;
@@ -184,7 +184,7 @@ private:
         }
     }
 
-    void handle_syscall_return(WindowsEvent& wevent) {
+    void handle_sysret(WindowsEvent& wevent) {
         WindowsSystemCall* handler = static_cast<WindowsSystemCall*>(wevent.syscall().handler());
         if (handler == nullptr || !handler->supported())
             return;
