@@ -41,6 +41,36 @@ With no running VMs, the script prints "No running domains found." With one or m
 
 ---
 
+## syscallmon (Python)
+
+**Source:** \ref syscallmon.py — listed in the **Examples** menu.
+
+The syscallmon example is a Python port of the C++ **ivsyscallmon** tool. It attaches to a domain, detects the guest OS, and monitors system calls (and optionally their returns), printing each event as text or as one JSON object per line. For Windows guests, it uses the IntroVirt Windows guest support to enable the default system-call filter when not using `--unsupported`.
+
+### Requirements
+
+- Same as list_domains (Python bindings, root/sudo, IntroVirt-patched hypervisor)
+- A running VM (e.g. Windows) to attach to
+
+### Usage
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/syscallmon.py DOMAIN [--procname NAME] [--no-flush] [--unsupported] [--json]
+```
+
+| Option | Description |
+|--------|-------------|
+| `DOMAIN` | Domain name or ID to attach to (required). |
+| `--procname NAME` | Filter events to this process name (prefix match). |
+| `--no-flush` | Don't flush stdout after each event. |
+| `--unsupported` | Also show system calls that don't have handlers. |
+| `--json` | Output one JSON object per event (built in Python with `json.dumps()`, no C++ JSON). |
+
+Without `--json`, each event is printed as two lines: a line with Vcpu id, PID, TID, and process name, then the system call name. With `--json`, each event is a single line containing a JSON object with fields such as `event`, `vcpu_id`, `pid`, `tid`, `process_name`, `syscall_name`, `raw_index`, and optionally `handler_supported` and `handler_will_return`.
+
+---
+
 ## vmcall_interface
 
 **Source (host tool):** \ref vmcall_interface.cc — listed in the **Examples** menu.
