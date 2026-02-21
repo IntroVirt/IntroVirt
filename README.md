@@ -48,7 +48,7 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 | 18.04 | [HWE 5.4.0-150-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | EoL         |
 | 20.04 | [HWE 5.15.0-119-generic](https://github.com/IntroVirt/kvm-introvirt/releases) | EoL         |
 | 22.04 | [HWE 6.5.0-35-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | EoL         |
-| 24.04 | [HWE 6.8.0-90-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported   |
+| 24.04 | [HWE 6.17.0-14-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | Supported   |
 | 26.04 | coming soon                                                                   | Coming Soon |
 
 ### Supported Introspection Targets
