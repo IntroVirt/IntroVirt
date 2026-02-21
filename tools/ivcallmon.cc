@@ -209,7 +209,8 @@ class CallMonitor final : public EventCallback {
                 break;
             }
         } catch (VirtualAddressNotPresentException& ex) {
-            LOG4CXX_ERROR(logger, "Unhandled Address not present error during event processing for " << ex.what());
+            LOG4CXX_ERROR(logger, "Unhandled Address not present error during event processing for "
+                                      << ex.what());
         }
     }
 
@@ -340,7 +341,7 @@ class CallMonitor final : public EventCallback {
                         breakpoints_.emplace_back(wevent.domain(), ptr, symbol->name(),
                                                   process.UniqueProcessId());
                         LOG4CXX_INFO(logger, "Added breakpoint for " << matched_dll << "!"
-                                                                      << symbol->name());
+                                                                     << symbol->name());
                     } catch (VirtualAddressNotPresentException& ex) {
                         LOG4CXX_DEBUG(logger, "Address not present for " << matched_dll << "!"
                                                                          << symbol->name());
