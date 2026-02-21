@@ -51,8 +51,25 @@ jobs:
           name: introvirt_${{ matrix.os }}_Release
           path: build/*.deb
 
+  build-pyintrovirt:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Build pyintrovirt wheel
+        run: uv build --directory pyintrovirt
+
+      - name: Archive pyintrovirt dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyintrovirt_dist
+          path: pyintrovirt/dist/*
+
   release:
-    needs: build
+    needs: [build, build-pyintrovirt]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +81,13 @@ jobs:
           path: all-debs
           pattern: introvirt_*_Release
 
-      # Create and upload the debs to a new release
+      # Download pyintrovirt wheel and sdist
+      - name: Download pyintrovirt artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pyintrovirt_dist
+
+      # Create and upload the debs and pyintrovirt to a new release
       - name: Upload Release Asset
         id: upload_release-asset
         env:
@@ -78,8 +101,10 @@ jobs:
           done
 
           echo "Uploading release assets"
+          shopt -s nullglob
           gh release create ${{ github.ref_name }} \
             --title "Release ${{ github.ref_name }}" \
             --draft \
-            *.zip
+            *.zip \
+            ../pyintrovirt_dist/*.whl ../pyintrovirt_dist/*.tar.gz
         shell: bash
