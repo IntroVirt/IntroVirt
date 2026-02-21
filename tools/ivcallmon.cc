@@ -26,20 +26,24 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
+#include <log4cxx/logger.h>
 
+#include <atomic>
 #include <csignal>
 #include <iostream>
 #include <mutex>
-#include <unordered_map>
 #include <set>
+#include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
-#include <atomic>
 
 using namespace introvirt;
 using namespace introvirt::windows;
 
 namespace po = boost::program_options;
+
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("introvirt.tools.ivcallmon"));
 
 void parse_program_options(int argc, char** argv, po::options_description& desc,
                            po::variables_map& vm);
@@ -64,9 +68,7 @@ static bool symbol_matches_pattern(const std::string& pattern, const std::string
 
 std::unique_ptr<Domain> domain;
 
-void sig_handler(int signum) {
-    domain->interrupt();
-}
+void sig_handler(int signum) { domain->interrupt(); }
 
 class BreakpointHandler final {
   public:
@@ -102,8 +104,8 @@ class BreakpointHandler final {
         if (event.task().tid() != return_tid_)
             return;
         if (event.vcpu().registers().rsp() != return_rsp_) {
-            std::cout << "    BAD return RSP 0x" << std::hex << event.vcpu().registers().rsp()
-                      << std::dec << " for " << name_ << "\n";
+            LOG4CXX_ERROR(logger, "BAD return RSP 0x" << std::hex << event.vcpu().registers().rsp()
+                                                      << std::dec << " for " << name_);
             return;
         }
 
@@ -151,26 +153,31 @@ class BreakpointHandler final {
 };
 
 class CallMonitor final : public EventCallback {
-public:
-    CallMonitor(bool flush, const std::vector<std::string> &symbols) : flush_(flush) {
+  public:
+    CallMonitor(const std::vector<std::string>& symbols) {
         for (const auto& symbol : symbols) {
             std::string lower_sym = symbol;
             boost::algorithm::to_lower(lower_sym);
             std::vector<std::string> parts;
             boost::algorithm::split(parts, lower_sym, boost::algorithm::is_any_of("!"),
                                     boost::algorithm::token_compress_off);
-            if (parts.size() != 2)
+            if (parts.size() != 2) {
                 throw std::invalid_argument("Invalid symbol format: " + symbol);
+            }
             std::string module_name = parts[0];
             std::string symbol_name = parts[1];
             requested_symbols_[module_name].insert(symbol_name);
+            LOG4CXX_DEBUG(logger, "Requested symbol: " << module_name << "!" << symbol_name);
         }
         for (const auto& kv : requested_symbols_) {
             std::string dll = kv.first;
             if (!boost::algorithm::iends_with(dll, ".dll"))
                 dll += ".dll";
             requested_dlls_.insert(dll);
+            LOG4CXX_DEBUG(logger, "Requested DLL: " << dll);
         }
+        LOG4CXX_DEBUG(logger, "Requested symbols: " << requested_symbols_.size());
+        LOG4CXX_DEBUG(logger, "Requested DLLs: " << requested_dlls_.size());
     }
 
     void process_event(Event& event) override {
@@ -178,28 +185,44 @@ public:
             return;
         }
         auto& wevent = static_cast<WindowsEvent&>(event);
-
-        switch (event.type()) {
-        case EventType::EVENT_FAST_SYSCALL:
-            handle_syscall(wevent);
-            break;
-        case EventType::EVENT_FAST_SYSCALL_RET:
-            handle_sysret(wevent);
-            break;
-        default:
-            std::cout << "Unhandled event: " << event.type() << '\n';
-            break;
+        try {
+            switch (event.type()) {
+            case EventType::EVENT_FAST_SYSCALL:
+                handle_syscall(wevent);
+                break;
+            case EventType::EVENT_FAST_SYSCALL_RET:
+                handle_sysret(wevent);
+                break;
+            case EventType::EVENT_CR_WRITE:
+                if (unlikely(event.cr().index() != 3)) {
+                    return;
+                }
+                if (!initial_check_.test_and_set()) {
+                    LOG4CXX_DEBUG(logger, "First CR3 write event, turning off CR3 monitoring");
+                    domain->intercept_cr_writes(3, false);
+                    set_breakpoints(wevent);
+                }
+                break;
+            default:
+                // Should never happen
+                LOG4CXX_ERROR(logger, "Unhandled event: " << event.type());
+                break;
+            }
+        } catch (VirtualAddressNotPresentException& ex) {
+            LOG4CXX_ERROR(logger, "Unhandled Address not present error during event processing for " << ex.what());
         }
     }
 
     ~CallMonitor() { std::cout.flush(); }
-private:
+
+  private:
     void handle_syscall(WindowsEvent& wevent) {
         if (!initial_check_.test_and_set()) {
+            LOG4CXX_DEBUG(logger, "First syscall event, setting breakpoints");
             set_breakpoints(wevent);
         }
 
-        switch(wevent.syscall().index()) {
+        switch (wevent.syscall().index()) {
         case SystemCallIndex::NtMapViewOfSection: {
             // Could be a library being mapped in.
             wevent.syscall().hook_return(true);
@@ -210,10 +233,11 @@ private:
     }
 
     void handle_sysret(WindowsEvent& wevent) {
-        switch(wevent.syscall().index()) {
+        switch (wevent.syscall().index()) {
         case SystemCallIndex::NtMapViewOfSection: {
             auto* handler = static_cast<nt::NtMapViewOfSection*>(wevent.syscall().handler());
             if (likely(handler->result().NT_SUCCESS())) {
+                LOG4CXX_DEBUG(logger, "NtMapViewOfSection succeeded, setting breakpoints");
                 set_breakpoints(wevent);
             }
         }
@@ -229,22 +253,34 @@ private:
             return;
         }
 
+        LOG4CXX_INFO(logger, "Setting breakpoints for " << wevent.task().process_name());
         auto& process = wevent.task().pcr().CurrentThread().Process();
         auto vadroot = process.VadRoot();
         if (!vadroot) {
+            LOG4CXX_DEBUG(logger, "No VAD root found for " << wevent.task().process_name());
             return;
         }
 
+        // VAD (Virtual Address Descriptor) tree: per-process kernel structure describing the
+        // process's virtual address space. Each node represents one region (start/end address,
+        // protection, file mapping if any, etc.). The tree is ordered by starting address;
+        // VadTreeInOrder() yields regions in ascending address order.
         for (auto entry : vadroot->VadTreeInOrder()) {
+            // Skip regions that are not executable
             if (!entry->Protection().isExecutable()) {
                 continue;
             }
+
+            // Get the file object for the region
             auto file_object = entry->FileObject();
             if (!file_object) {
                 continue;
             }
 
+            // Get the filename for the region
             const std::string filename = file_object->FileName();
+
+            // Check if the filename matches any of the requested DLLs
             std::string matched_dll;
             for (const auto& dll : requested_dlls_) {
                 if (boost::algorithm::iends_with(filename, dll)) {
@@ -252,66 +288,80 @@ private:
                     break;
                 }
             }
-            if (matched_dll.empty() || found_dlls_.count(matched_dll))
-                continue;
 
-            // Found a requested DLL we haven't processed yet
-            std::string module = matched_dll;
-            if (boost::algorithm::iends_with(module, ".dll"))
-                module.resize(module.size() - 4);
-            auto it = requested_symbols_.find(module);
-            if (it == requested_symbols_.end())
+            // Skip if we've already processed this DLL
+            if (matched_dll.empty() || found_dlls_.count(matched_dll)) {
                 continue;
+            }
+
+            // Get the module name from the DLL name
+            std::string module_name = matched_dll;
+            if (boost::algorithm::iends_with(module_name, ".dll")) {
+                module_name.resize(module_name.size() - 4);
+            }
+
+            // Check if the module name matches any of the requested symbols
+            auto it = requested_symbols_.find(module_name);
+            if (it == requested_symbols_.end()) {
+                continue;
+            }
+
+            // Get the symbols for the module
             const std::set<std::string>& patterns = it->second;
-
-            auto lib =
-                pe::PE::make_unique(guest_ptr<void>(wevent.vcpu(), entry->StartingAddress()));
+            LOG4CXX_DEBUG(logger, "Found symbols for " << module_name << ": " << patterns.size());
 
             try {
+                // Load the PE for the module
+                auto lib =
+                    pe::PE::make_unique(guest_ptr<void>(wevent.vcpu(), entry->StartingAddress()));
                 auto& pdb = lib->pdb();
+                LOG4CXX_INFO(logger, "Loaded PE for " << matched_dll);
+
+                // Iterate over the global symbols in the PDB
                 for (const auto& symbol : pdb.global_symbols()) {
-                    if (symbol->function() || symbol->code()) {
-                        bool matched = false;
-                        for (const auto& pattern : patterns) {
-                            if (symbol_matches_pattern(pattern, symbol->name())) {
-                                matched = true;
-                                break;
-                            }
+                    if (!symbol->function() && !symbol->code()) {
+                        continue;
+                    }
+
+                    bool matched = false;
+                    for (const auto& pattern : patterns) {
+                        if (symbol_matches_pattern(pattern, symbol->name())) {
+                            matched = true;
+                            break;
                         }
-                        if (!matched)
-                            continue;
-                        std::cout << "Adding breakpoint for " << symbol->name() << " (" << matched_dll
-                                    << ")\n";
-                        try {
-                            guest_ptr<void> ptr(wevent.vcpu(),
+                    }
+                    if (!matched) {
+                        continue;
+                    }
+
+                    try {
+                        guest_ptr<void> ptr(wevent.vcpu(),
                                             entry->StartingAddress() + symbol->image_offset());
-                            breakpoints_.emplace_back(wevent.domain(), ptr, symbol->name(),
-                                                    process.UniqueProcessId());
-                        } catch (VirtualAddressNotPresentException& ex) {
-                            std::cout << "  Not present (symbol) for " << symbol->name() << "\n";
-                        }
+                        breakpoints_.emplace_back(wevent.domain(), ptr, symbol->name(),
+                                                  process.UniqueProcessId());
+                        LOG4CXX_INFO(logger, "Added breakpoint for " << matched_dll << "!"
+                                                                      << symbol->name());
+                    } catch (VirtualAddressNotPresentException& ex) {
+                        LOG4CXX_DEBUG(logger, "Address not present for " << matched_dll << "!"
+                                                                         << symbol->name());
                     }
                 }
             } catch (VirtualAddressNotPresentException& ex) {
-                std::cout << "  Not present (pdb) for " << filename << "\n";
+                LOG4CXX_DEBUG(logger, "PE not present for " << matched_dll);
                 continue;
             }
 
             found_dlls_.insert(matched_dll);
             if (found_dlls_.size() == requested_dlls_.size()) {
-                if (flush_) {
-                    std::cout.flush();
-                }
                 domain->intercept_system_calls(false);
-                std::cout << "All requested symbols resolved and breakpoints set\n";
                 all_symbols_resolved_ = true;
                 return;
             }
         }
     }
-private:
+
+  private:
     std::mutex mtx_;
-    const bool flush_;
     bool all_symbols_resolved_ = false;
     std::atomic_flag initial_check_ = false;
     std::unordered_map<std::string, std::set<std::string>> requested_symbols_;
@@ -332,7 +382,6 @@ int main(int argc, char** argv) {
       ("domain,D", po::value<std::string>(&domain_name)->required(), "The domain name or ID attach to")
       ("procname,P", po::value<std::string>(&process_name)->required(), "A process name to filter for")
       ("symbol,s", po::value<std::vector<std::string>>(&symbols), "Symbols in the form Module!Symbol to breakpoint. Default: ntdll!Nt*")
-      ("no-flush", "Don't flush the output buffer after each event")
       ("help", "Display program help");
     // clang-format on
 
@@ -362,13 +411,14 @@ int main(int argc, char** argv) {
 
     auto* guest = static_cast<WindowsGuest*>(domain->guest());
     domain->system_call_filter().enabled(true);
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtMapViewOfSection, true);
+    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtMapViewOfSection,
+                                  true);
     domain->intercept_system_calls(true);
+    domain->intercept_cr_writes(3, true);
 
-    // TODO: Put back CR3 monitoring but turn it off after first event.
-
-    CallMonitor monitor(!vm.count("no-flush"), symbols);
+    CallMonitor monitor(symbols);
     domain->poll(monitor);
+
     return 0;
 }
 

@@ -28,8 +28,8 @@
 #include <boost/functional/hash.hpp>
 #include <boost/program_options.hpp>
 
-#include <csignal>
 #include <algorithm>
+#include <csignal>
 #include <iostream>
 #include <mutex>
 #include <set>
@@ -47,9 +47,7 @@ void parse_program_options(int argc, char** argv, po::options_description& desc,
 
 std::unique_ptr<Domain> domain;
 
-void sig_handler(int signum) {
-    domain->interrupt();
-}
+void sig_handler(int signum) { domain->interrupt(); }
 
 static std::string normalize_path(const std::string& path) {
     std::string result = path;
@@ -99,7 +97,7 @@ static const nt::OBJECT_ATTRIBUTES* get_object_attributes(WindowsSystemCall* han
 }
 
 class FileMonitor final : public EventCallback {
-public:
+  public:
     FileMonitor(const std::string& target_path, bool flush, bool json)
         : target_path_normalized_(normalize_path(target_path)), flush_(flush), json_(json) {}
 
@@ -122,7 +120,8 @@ public:
     }
 
     ~FileMonitor() { std::cout.flush(); }
-private:
+
+  private:
     using HandleKey = std::pair<uint64_t, uint64_t>;
 
     void handle_syscall(WindowsEvent& wevent) {
@@ -198,7 +197,8 @@ private:
 
         switch (index) {
         case SystemCallIndex::NtCreateFile: {
-            const nt::OBJECT_ATTRIBUTES* obj_attr = static_cast<const NtCreateFile*>(handler)->ObjectAttributes();
+            const nt::OBJECT_ATTRIBUTES* obj_attr =
+                static_cast<const NtCreateFile*>(handler)->ObjectAttributes();
             if (path_matches(target_path_normalized_, obj_attr, wevent.task().pcr())) {
                 uint64_t handle = static_cast<const NtCreateFile*>(handler)->FileHandle();
                 std::lock_guard lock(handles_mtx_);
@@ -313,18 +313,26 @@ int main(int argc, char** argv) {
 
     auto* guest = static_cast<WindowsGuest*>(domain->guest());
     domain->system_call_filter().enabled(true);
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtCreateFile, true);
+    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtCreateFile,
+                                  true);
     guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtOpenFile, true);
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtDeleteFile, true);
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtQueryAttributesFile, true);
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtQueryFullAttributesFile, true);
+    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtDeleteFile,
+                                  true);
+    guest->set_system_call_filter(domain->system_call_filter(),
+                                  SystemCallIndex::NtQueryAttributesFile, true);
+    guest->set_system_call_filter(domain->system_call_filter(),
+                                  SystemCallIndex::NtQueryFullAttributesFile, true);
     guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtClose, true);
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtDuplicateObject, true);
+    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtDuplicateObject,
+                                  true);
     guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtReadFile, true);
     guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtWriteFile, true);
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtQueryInformationFile, true);
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtSetInformationFile, true);
-    guest->set_system_call_filter(domain->system_call_filter(), SystemCallIndex::NtDeviceIoControlFile, true);
+    guest->set_system_call_filter(domain->system_call_filter(),
+                                  SystemCallIndex::NtQueryInformationFile, true);
+    guest->set_system_call_filter(domain->system_call_filter(),
+                                  SystemCallIndex::NtSetInformationFile, true);
+    guest->set_system_call_filter(domain->system_call_filter(),
+                                  SystemCallIndex::NtDeviceIoControlFile, true);
     domain->intercept_system_calls(true);
 
     FileMonitor monitor(target_path, !vm.count("no-flush"), vm.count("json"));
@@ -333,7 +341,8 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void parse_program_options(int argc, char** argv, po::options_description& desc, po::variables_map& vm) {
+void parse_program_options(int argc, char** argv, po::options_description& desc,
+                           po::variables_map& vm) {
     try {
         po::store(po::parse_command_line(argc, argv, desc), vm);
         if (vm.count("help")) {
