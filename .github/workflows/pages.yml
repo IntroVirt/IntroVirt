@@ -35,9 +35,21 @@ jobs:
 
       - name: Configure and build docs
         run: |
+          mkdir -p build
           cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOXYGEN=ON ..
           ninja doc
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+
+      - name: Build Python docs
+        run: |
+          uv sync --project ./pyintrovirt --extra doc
+          uv run --project ./pyintrovirt sphinx-build -b html pyintrovirt/docs pyintrovirt/docs/_build/html
+          cp -r pyintrovirt/docs/_build/html build/html/python
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3

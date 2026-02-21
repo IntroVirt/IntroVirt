@@ -22,6 +22,7 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = ["pylint", "pycodestyle", "mypy", "ruff"]
+doc = ["sphinx", "furo"]
 
 # Runtime: IntroVirt Python bindings are not on PyPI; install the IntroVirt .deb
 # packages (e.g. libintrovirt1, python3-introvirt) before using this library.
