@@ -73,6 +73,7 @@ jobs:
           wget -q "https://github.com/swig/swig/archive/refs/tags/v${{ env.SWIG_VERSION }}.tar.gz" -O swig.tar.gz
           tar xzf swig.tar.gz
           cd swig-*
+          ./autogen.sh
           ./configure --prefix=/usr/local
           make -j$(nproc)
           sudo make install
