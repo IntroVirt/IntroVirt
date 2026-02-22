@@ -1,5 +1,8 @@
 name: Create Release
 
+env:
+  SWIG_VERSION: '4.2.1'
+
 on:
   push:
     tags:
@@ -22,11 +25,11 @@ jobs:
       # Install build deps
       - name: Install Dependencies
         run: |
-          # Deps
+          # Deps (swig installed from source below for consistent version across Ubuntu)
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
             libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
-            liblog4cxx-dev python3-jinja2 python3 python3-dev swig graphviz \
+            liblog4cxx-dev python3-jinja2 python3 python3-dev libpcre2-dev graphviz \
             doxygen clang-format git wget unzip
 
           # libmspdb
@@ -34,6 +37,17 @@ jobs:
           wget https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
           unzip libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
           sudo apt install ./libmspdb_ubuntu-$(lsb_release -sr)_Release/*.deb
+        shell: bash
+
+      - name: Install SWIG
+        run: |
+          wget -q "https://github.com/swig/swig/archive/refs/tags/v${{ env.SWIG_VERSION }}.tar.gz" -O swig.tar.gz
+          tar xzf swig.tar.gz
+          cd swig-*
+          ./configure --prefix=/usr/local
+          make -j$(nproc)
+          sudo make install
+          swig -version
         shell: bash
 
       # Run the build
