@@ -5,6 +5,12 @@
  * Event, EventType, and Guest for basic VM introspection.
  */
 
+/* Generate API documentation with Doxygen */
+%feature("autodoc", "2");
+
+/* Suppress SWIG 509: overloaded to_string/operator<< for OS, FastCallType shadowed by EventType */
+%warnfilter(509);
+
 %module(docstring="IntroVirt Python bindings for VM introspection", directors="1", threads="1") introvirt
 
 %{
@@ -21,9 +27,32 @@
 #include <introvirt/core/syscall/SystemCallFilter.hh>
 #include <introvirt/core/domain/Vcpu.hh>
 #include <introvirt/windows/WindowsGuest.hh>
+#include <introvirt/core/exception/NoSuchDomainException.hh>
+#include <introvirt/core/exception/DomainBusyException.hh>
+#include <introvirt/core/exception/UnsupportedHypervisorException.hh>
+#include <introvirt/core/exception/GuestDetectionException.hh>
+#include <introvirt/core/exception/InvalidMethodException.hh>
+#include <introvirt/core/exception/InvalidVcpuException.hh>
+#include <introvirt/core/exception/NotImplementedException.hh>
+#include <introvirt/core/exception/CommandFailedException.hh>
+#include <introvirt/core/exception/BadPhysicalAddressException.hh>
+#include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
+#include <introvirt/core/exception/TraceableException.hh>
 
 using namespace introvirt;
 using namespace introvirt::windows;
+
+static PyObject* p_IntroVirtError;
+static PyObject* p_NoSuchDomainException;
+static PyObject* p_DomainBusyException;
+static PyObject* p_UnsupportedHypervisorException;
+static PyObject* p_GuestDetectionException;
+static PyObject* p_InvalidMethodException;
+static PyObject* p_InvalidVcpuException;
+static PyObject* p_NotImplementedException;
+static PyObject* p_CommandFailedException;
+static PyObject* p_BadPhysicalAddressException;
+static PyObject* p_VirtualAddressNotPresentException;
 %}
 
 %include <std_string.i>
@@ -31,6 +60,108 @@ using namespace introvirt::windows;
 %include <std_unique_ptr.i>
 %include <std_set.i>
 %include <stdint.i>
+%include <exception.i>
+
+%init %{
+  p_IntroVirtError = PyErr_NewException("introvirt.IntroVirtError", PyExc_RuntimeError, NULL);
+  Py_INCREF(p_IntroVirtError);
+  PyModule_AddObject(m, "IntroVirtError", p_IntroVirtError);
+
+  p_NoSuchDomainException = PyErr_NewException("introvirt.NoSuchDomainException", p_IntroVirtError, NULL);
+  Py_INCREF(p_NoSuchDomainException);
+  PyModule_AddObject(m, "NoSuchDomainException", p_NoSuchDomainException);
+
+  p_DomainBusyException = PyErr_NewException("introvirt.DomainBusyException", p_IntroVirtError, NULL);
+  Py_INCREF(p_DomainBusyException);
+  PyModule_AddObject(m, "DomainBusyException", p_DomainBusyException);
+
+  p_UnsupportedHypervisorException = PyErr_NewException("introvirt.UnsupportedHypervisorException", p_IntroVirtError, NULL);
+  Py_INCREF(p_UnsupportedHypervisorException);
+  PyModule_AddObject(m, "UnsupportedHypervisorException", p_UnsupportedHypervisorException);
+
+  p_GuestDetectionException = PyErr_NewException("introvirt.GuestDetectionException", p_IntroVirtError, NULL);
+  Py_INCREF(p_GuestDetectionException);
+  PyModule_AddObject(m, "GuestDetectionException", p_GuestDetectionException);
+
+  p_InvalidMethodException = PyErr_NewException("introvirt.InvalidMethodException", p_IntroVirtError, NULL);
+  Py_INCREF(p_InvalidMethodException);
+  PyModule_AddObject(m, "InvalidMethodException", p_InvalidMethodException);
+
+  p_InvalidVcpuException = PyErr_NewException("introvirt.InvalidVcpuException", p_IntroVirtError, NULL);
+  Py_INCREF(p_InvalidVcpuException);
+  PyModule_AddObject(m, "InvalidVcpuException", p_InvalidVcpuException);
+
+  p_NotImplementedException = PyErr_NewException("introvirt.NotImplementedException", p_IntroVirtError, NULL);
+  Py_INCREF(p_NotImplementedException);
+  PyModule_AddObject(m, "NotImplementedException", p_NotImplementedException);
+
+  p_CommandFailedException = PyErr_NewException("introvirt.CommandFailedException", p_IntroVirtError, NULL);
+  Py_INCREF(p_CommandFailedException);
+  PyModule_AddObject(m, "CommandFailedException", p_CommandFailedException);
+
+  p_BadPhysicalAddressException = PyErr_NewException("introvirt.BadPhysicalAddressException", p_IntroVirtError, NULL);
+  Py_INCREF(p_BadPhysicalAddressException);
+  PyModule_AddObject(m, "BadPhysicalAddressException", p_BadPhysicalAddressException);
+
+  p_VirtualAddressNotPresentException = PyErr_NewException("introvirt.VirtualAddressNotPresentException", p_IntroVirtError, NULL);
+  Py_INCREF(p_VirtualAddressNotPresentException);
+  PyModule_AddObject(m, "VirtualAddressNotPresentException", p_VirtualAddressNotPresentException);
+%}
+
+/* Catch C++ exceptions and convert to Python exceptions (most specific first) */
+%exception {
+  try {
+    $action
+  }
+  catch (introvirt::NoSuchDomainException& e) {
+    PyErr_SetString(p_NoSuchDomainException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::DomainBusyException& e) {
+    PyErr_SetString(p_DomainBusyException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::UnsupportedHypervisorException& e) {
+    PyErr_SetString(p_UnsupportedHypervisorException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::GuestDetectionException& e) {
+    PyErr_SetString(p_GuestDetectionException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::InvalidMethodException& e) {
+    PyErr_SetString(p_InvalidMethodException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::InvalidVcpuException& e) {
+    PyErr_SetString(p_InvalidVcpuException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::NotImplementedException& e) {
+    PyErr_SetString(p_NotImplementedException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::CommandFailedException& e) {
+    PyErr_SetString(p_CommandFailedException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::BadPhysicalAddressException& e) {
+    PyErr_SetString(p_BadPhysicalAddressException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::VirtualAddressNotPresentException& e) {
+    PyErr_SetString(p_VirtualAddressNotPresentException, e.what());
+    SWIG_fail;
+  }
+  catch (introvirt::TraceableException& e) {
+    PyErr_SetString(p_IntroVirtError, e.what());
+    SWIG_fail;
+  }
+  SWIG_CATCH_STDEXCEPT
+  catch (...) {
+    SWIG_exception(SWIG_UnknownError, "unknown exception");
+  }
+}
 
 /* Return uint32_t as Python int to avoid SWIG wrapping as uint32_t* (leak + wrong repr) */
 %typemap(out) uint32_t {
@@ -173,6 +304,10 @@ static thread_local bool swig_director_gil_acquired = false;
 %ignore introvirt::Event::mem_access;
 %ignore introvirt::Event::json;
 %ignore introvirt::Event::impl;
+
+/* EventTaskInformation is returned by reference from Event::task(); Python does not own it.
+   Suppress default destructor to avoid delete on abstract base (non-virtual dtor warning). */
+%nodefaultdtor introvirt::EventTaskInformation;
 
 /* Parse headers - order matters for dependencies */
 %include <introvirt/core/event/EventType.hh>

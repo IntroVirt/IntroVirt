@@ -17,4 +17,33 @@ except ImportError as exc:
         "IntroVirt Python bindings are not installed. Install the IntroVirt .deb packages (libintrovirt1, python3-introvirt) before using this library."
     ) from exc
 
-__all__: list[str] = []
+from .vmi import VMIDomain
+
+# Re-export IntroVirt exceptions (they live on _introvirt_py, not introvirt.py)
+_introvirt = getattr(introvirt, "_introvirt_py", introvirt)
+IntroVirtError = _introvirt.IntroVirtError
+NoSuchDomainException = _introvirt.NoSuchDomainException
+DomainBusyException = _introvirt.DomainBusyException
+UnsupportedHypervisorException = _introvirt.UnsupportedHypervisorException
+GuestDetectionException = _introvirt.GuestDetectionException
+InvalidMethodException = _introvirt.InvalidMethodException
+InvalidVcpuException = _introvirt.InvalidVcpuException
+NotImplementedException = _introvirt.NotImplementedException
+CommandFailedException = _introvirt.CommandFailedException
+BadPhysicalAddressException = _introvirt.BadPhysicalAddressException
+VirtualAddressNotPresentException = _introvirt.VirtualAddressNotPresentException
+
+__all__: list[str] = [
+    "VMIDomain",
+    "IntroVirtError",
+    "NoSuchDomainException",
+    "DomainBusyException",
+    "UnsupportedHypervisorException",
+    "GuestDetectionException",
+    "InvalidMethodException",
+    "InvalidVcpuException",
+    "NotImplementedException",
+    "CommandFailedException",
+    "BadPhysicalAddressException",
+    "VirtualAddressNotPresentException",
+]
