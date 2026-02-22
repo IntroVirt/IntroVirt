@@ -6,7 +6,22 @@ build or from the generated .deb packages.
 """
 
 import sys
-from enum import Enum
+
+from .errors import (
+    BadPhysicalAddressException,
+    CommandFailedException,
+    DomainBusyException,
+    GuestDetectionException,
+    IntroVirtError,
+    InvalidMethodException,
+    InvalidVcpuException,
+    NoSuchDomainException,
+    NotImplementedException,
+    UnsupportedHypervisorException,
+    VirtualAddressNotPresentException,
+)
+from .event_type import EventType
+from .vmi import VMI
 
 if sys.platform != "linux":
     raise RuntimeError("pyintrovirt only supports Linux")
@@ -17,22 +32,6 @@ except ImportError as exc:
     raise RuntimeError(
         "IntroVirt Python bindings are not installed. Install the IntroVirt .deb packages (libintrovirt1, python3-introvirt) before using this library."
     ) from exc
-
-from .vmi import VMI
-from .event_type import EventType
-from .errors import (
-    IntroVirtError,
-    NoSuchDomainException,
-    DomainBusyException,
-    UnsupportedHypervisorException,
-    GuestDetectionException,
-    InvalidMethodException,
-    InvalidVcpuException,
-    NotImplementedException,
-    CommandFailedException,
-    BadPhysicalAddressException,
-    VirtualAddressNotPresentException
-)
 
 __all__: list[str] = [
     "VMI",

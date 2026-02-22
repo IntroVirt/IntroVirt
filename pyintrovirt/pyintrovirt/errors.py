@@ -1,5 +1,6 @@
 """Re-export IntroVirt exceptions (they live on _introvirt_py, not introvirt.py)"""
-import introvirt
+
+import introvirt  # type: ignore[import-not-found]  # noqa: F401 # pylint: disable=import-error
 
 _introvirt = getattr(introvirt, "_introvirt_py", introvirt)
 IntroVirtError = _introvirt.IntroVirtError

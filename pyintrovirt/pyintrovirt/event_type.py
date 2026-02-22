@@ -1,11 +1,13 @@
 """Re-export IntroVirt event types as a Python Enum"""
+
 from enum import Enum
 
-import introvirt
+import introvirt  # type: ignore[import-not-found]  # noqa: F401 # pylint: disable=import-error
 
 
 class EventType(Enum):
     """IntroVirt VMI EventType enum."""
+
     EVENT_FAST_SYSCALL = introvirt.EventType_EVENT_FAST_SYSCALL
     EVENT_FAST_SYSCALL_RET = introvirt.EventType_EVENT_FAST_SYSCALL_RET
     EVENT_SW_INT = introvirt.EventType_EVENT_SW_INT

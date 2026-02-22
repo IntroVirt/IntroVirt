@@ -111,11 +111,8 @@ jobs:
       - name: Pylint
         run: uv run --directory pyintrovirt pylint pyintrovirt
 
-      - name: Pycodestyle
-        run: uv run --directory pyintrovirt pycodestyle --max-line-length=160 pyintrovirt
+      - name: Ty
+        run: uv run --directory pyintrovirt ty check pyintrovirt
 
       - name: Ruff
         run: uv run --directory pyintrovirt ruff check pyintrovirt && uv run --directory pyintrovirt ruff format --check pyintrovirt
-
-      - name: Mypy
-        run: uv run --directory pyintrovirt mypy pyintrovirt

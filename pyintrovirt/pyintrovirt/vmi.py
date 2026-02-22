@@ -1,10 +1,11 @@
 """VMI Helpers for the IntroVirt Python Bindings."""
+
 import signal
 import threading
-from typing import Union, Optional, Callable
 from contextlib import ContextDecorator
+from typing import Callable, Optional, Union
 
-import introvirt
+import introvirt  # type: ignore[import-not-found]  # noqa: F401  # pylint: disable=import-error
 
 from .event_type import EventType
 
@@ -37,6 +38,7 @@ class CallbackEventHandler(introvirt.EventCallback):
 
 
 class VMI(ContextDecorator):
+    """The main class used for Virtial Machine Introspection of guest Virtual Machines."""
 
     def __init__(self, target_vm: Optional[Union[int, str]] = None):
         """
