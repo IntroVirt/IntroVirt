@@ -6,6 +6,7 @@ build or from the generated .deb packages.
 """
 
 import sys
+from enum import Enum
 
 if sys.platform != "linux":
     raise RuntimeError("pyintrovirt only supports Linux")
@@ -17,24 +18,25 @@ except ImportError as exc:
         "IntroVirt Python bindings are not installed. Install the IntroVirt .deb packages (libintrovirt1, python3-introvirt) before using this library."
     ) from exc
 
-from .vmi import VMIDomain
-
-# Re-export IntroVirt exceptions (they live on _introvirt_py, not introvirt.py)
-_introvirt = getattr(introvirt, "_introvirt_py", introvirt)
-IntroVirtError = _introvirt.IntroVirtError
-NoSuchDomainException = _introvirt.NoSuchDomainException
-DomainBusyException = _introvirt.DomainBusyException
-UnsupportedHypervisorException = _introvirt.UnsupportedHypervisorException
-GuestDetectionException = _introvirt.GuestDetectionException
-InvalidMethodException = _introvirt.InvalidMethodException
-InvalidVcpuException = _introvirt.InvalidVcpuException
-NotImplementedException = _introvirt.NotImplementedException
-CommandFailedException = _introvirt.CommandFailedException
-BadPhysicalAddressException = _introvirt.BadPhysicalAddressException
-VirtualAddressNotPresentException = _introvirt.VirtualAddressNotPresentException
+from .vmi import VMI
+from .event_type import EventType
+from .errors import (
+    IntroVirtError,
+    NoSuchDomainException,
+    DomainBusyException,
+    UnsupportedHypervisorException,
+    GuestDetectionException,
+    InvalidMethodException,
+    InvalidVcpuException,
+    NotImplementedException,
+    CommandFailedException,
+    BadPhysicalAddressException,
+    VirtualAddressNotPresentException
+)
 
 __all__: list[str] = [
-    "VMIDomain",
+    "VMI",
+    "EventType",
     "IntroVirtError",
     "NoSuchDomainException",
     "DomainBusyException",

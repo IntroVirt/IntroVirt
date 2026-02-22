@@ -110,6 +110,13 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 	)
 	TARGET_LINK_LIBRARIES(introvirt_py PRIVATE introvirt ${Python3_LIBRARIES})
 
+	# Copy stub file to build dir for development (tab completion before install)
+	ADD_CUSTOM_COMMAND(TARGET introvirt_py POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+			${CMAKE_CURRENT_SOURCE_DIR}/swig/introvirt.pyi
+			${CMAKE_CURRENT_BINARY_DIR}/introvirt.pyi
+	)
+
 	# Install Python module
 	EXECUTE_PROCESS(
 		COMMAND ${Python3_EXECUTABLE} -c
@@ -122,6 +129,7 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 		COMPONENT python3-introvirt
 	)
 	INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/introvirt.py DESTINATION ${PYTHON3_SITELIB} COMPONENT python3-introvirt)
+	INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/swig/introvirt.pyi DESTINATION ${PYTHON3_SITELIB} COMPONENT python3-introvirt)
 ENDIF()
 
 IF (DOXYGEN)
