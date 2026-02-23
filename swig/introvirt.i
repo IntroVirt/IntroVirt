@@ -38,7 +38,27 @@
 #include <introvirt/core/exception/BadPhysicalAddressException.hh>
 #include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
 #include <introvirt/core/exception/TraceableException.hh>
+#include <introvirt/core/memory/guest_ptr.hh>
+#include <introvirt/core/breakpoint/Breakpoint.hh>
+#include <introvirt/core/breakpoint/Watchpoint.hh>
+#include <introvirt/core/breakpoint/SingleStep.hh>
 #include <introvirt/windows/event/WindowsEvent.hh>
+#include <introvirt/windows/kernel/nt/types/KPCR.hh>
+#include <introvirt/windows/kernel/nt/syscall/types/OBJECT_ATTRIBUTES.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtCreateFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtOpenFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtClose.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtReadWriteFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtReadFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtWriteFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtDuplicateObject.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtQueryAttributesFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtQueryFullAttributesFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtDeleteFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtQueryInformationFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtSetInformationFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtDeviceIoControlFile.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtMapViewOfSection.hh>
 #include <introvirt/windows/event/WindowsSystemCallEvent.hh>
 #include <introvirt/windows/kernel/nt/syscall/NtSystemCall.hh>
 #include <introvirt/windows/kernel/nt/const/NTSTATUS.hh>
@@ -63,6 +83,7 @@ static PyObject* p_VirtualAddressNotPresentException;
 %include <std_string.i>
 %include <std_vector.i>
 %include <std_unique_ptr.i>
+%include <std_shared_ptr.i>
 %include <std_set.i>
 %include <stdint.i>
 %include <exception.i>
@@ -255,7 +276,6 @@ static thread_local bool swig_director_gil_acquired = false;
 %ignore introvirt::Domain::suspend_event;
 %ignore introvirt::Domain::suspend_event_step;
 %ignore introvirt::Domain::thread_local_domain;
-%ignore introvirt::Domain::vcpu;
 
 /* Ignore Guest methods that use guest_ptr */
 %ignore introvirt::Guest::allocate;
@@ -287,14 +307,12 @@ static thread_local bool swig_director_gil_acquired = false;
 %ignore introvirt::windows::WindowsGuest::kernel;
 %ignore introvirt::windows::WindowsGuest::domain;
 
-/* Vcpu: expose only id() for event.vcpu().id(); ignore registers, domain, intercept_*, inject_*, etc. */
-%ignore introvirt::Vcpu::registers;
+/* Vcpu: expose id(), registers(), intercept_cr_writes(); ignore domain, inject_*, etc. */
 %ignore introvirt::Vcpu::long_mode;
 %ignore introvirt::Vcpu::long_compatibility_mode;
 %ignore introvirt::Vcpu::pause;
 %ignore introvirt::Vcpu::resume;
 %ignore introvirt::Vcpu::intercept_system_calls;
-%ignore introvirt::Vcpu::intercept_cr_writes;
 %ignore introvirt::Vcpu::inject_exception;
 %ignore introvirt::Vcpu::inject_syscall;
 %ignore introvirt::Vcpu::inject_sysenter;
@@ -309,9 +327,8 @@ static thread_local bool swig_director_gil_acquired = false;
 %ignore introvirt::Vcpu::task_state_segment;
 %ignore introvirt::Vcpu::os_data;
 
-/* Ignore Event methods that require complex subclasses (cr, msr, etc.) for minimal API */
-/* We keep type(), vcpu(), domain(), task(), syscall() - task() returns EventTaskInformation */
-%ignore introvirt::Event::cr;
+/* Ignore Event methods that require complex subclasses (msr, etc.) for minimal API */
+/* We keep type(), vcpu(), domain(), task(), syscall(), cr() - task() returns EventTaskInformation */
 %ignore introvirt::Event::msr;
 %ignore introvirt::Event::exception;
 %ignore introvirt::Event::mem_access;
@@ -330,11 +347,79 @@ static thread_local bool swig_director_gil_acquired = false;
 %include <introvirt/core/syscall/SystemCallFilter.hh>
 %include <introvirt/core/domain/Guest.hh>
 %include <introvirt/core/domain/Domain.hh>
+/* Registers: expose only simple uint64_t accessors (rax, rsp, rip, etc.); ignore methods that return/take Flags, Efer, Msr, Segment, Cr0, Cr4 */
+%ignore introvirt::x86::Registers::rflags;
+%ignore introvirt::x86::Registers::efer;
+%ignore introvirt::x86::Registers::msr;
+%ignore introvirt::x86::Registers::cs;
+%ignore introvirt::x86::Registers::ds;
+%ignore introvirt::x86::Registers::es;
+%ignore introvirt::x86::Registers::fs;
+%ignore introvirt::x86::Registers::gs;
+%ignore introvirt::x86::Registers::ss;
+%ignore introvirt::x86::Registers::tr;
+%ignore introvirt::x86::Registers::ldt;
+%ignore introvirt::x86::Registers::cr0;
+%ignore introvirt::x86::Registers::cr4;
+%include <introvirt/core/arch/x86/Registers.hh>
 %include <introvirt/core/domain/Vcpu.hh>
+%include <introvirt/core/event/ControlRegisterEvent.hh>
 %include <introvirt/core/event/Event.hh>
 %include <introvirt/core/event/EventCallback.hh>
 %include <introvirt/core/filter/TaskFilter.hh>
 %include <introvirt/core/domain/Hypervisor.hh>
+
+/* Breakpoint: expose class for create_breakpoint return; ignore callback (std::function) and data (shared_ptr<void>) */
+%ignore introvirt::Breakpoint::callback;
+%ignore introvirt::Breakpoint::data;
+%include <introvirt/core/breakpoint/Breakpoint.hh>
+%shared_ptr(introvirt::Breakpoint);
+
+/* Director for breakpoint callback: Python subclass overrides breakpoint_hit(Event&). create_breakpoint builds guest_ptr internally. */
+%feature("director") introvirt::BreakpointCallback;
+%inline %{
+namespace introvirt {
+struct BreakpointCallback {
+    virtual void breakpoint_hit(Event& e) = 0;
+    virtual ~BreakpointCallback() = default;
+};
+std::shared_ptr<Breakpoint> create_breakpoint(Domain* domain, Vcpu* vcpu, uint64_t address, BreakpointCallback* callback) {
+    if (!domain || !vcpu || !callback) return nullptr;
+    guest_ptr<void> ptr(*vcpu, address);
+    return domain->create_breakpoint(ptr, [callback](Event& e) { callback->breakpoint_hit(e); });
+}
+} /* namespace introvirt */
+%}
+
+/* Watchpoint and SingleStep: expose classes; ignore callback (std::function). Bridge via directors. */
+%ignore introvirt::Watchpoint::callback;
+%include <introvirt/core/breakpoint/Watchpoint.hh>
+%ignore introvirt::SingleStep::callback;
+%include <introvirt/core/breakpoint/SingleStep.hh>
+
+%feature("director") introvirt::WatchpointCallback;
+%feature("director") introvirt::SingleStepCallback;
+%inline %{
+namespace introvirt {
+struct WatchpointCallback {
+    virtual void watchpoint_hit(Event& e) = 0;
+    virtual ~WatchpointCallback() = default;
+};
+struct SingleStepCallback {
+    virtual void single_step_hit(Event& e) = 0;
+    virtual ~SingleStepCallback() = default;
+};
+std::unique_ptr<Watchpoint> create_watchpoint(Domain* domain, Vcpu* vcpu, uint64_t address, uint64_t length, bool read, bool write, bool execute, WatchpointCallback* callback) {
+    if (!domain || !vcpu || !callback) return nullptr;
+    guest_ptr<void> ptr(*vcpu, address);
+    return domain->create_watchpoint(ptr, length, read, write, execute, [callback](Event& e) { callback->watchpoint_hit(e); });
+}
+std::unique_ptr<SingleStep> single_step(Domain* domain, Vcpu* vcpu, SingleStepCallback* callback) {
+    if (!domain || !vcpu || !callback) return nullptr;
+    return domain->single_step(*vcpu, [callback](Event& e) { callback->single_step_hit(e); });
+}
+} /* namespace introvirt */
+%}
 
 /* SystemCallIndex and NTSTATUS before WindowsGuest (set_system_call_filter uses SystemCallIndex). */
 %rename("$ignore") introvirt::windows::to_string;
@@ -357,6 +442,111 @@ static thread_local bool swig_director_gil_acquired = false;
 %include <introvirt/windows/kernel/nt/const/NTSTATUS.hh>
 
 %include <introvirt/windows/WindowsGuest.hh>
+
+/* Windows event hierarchy: WindowsSystemCall -> WindowsSystemCallEvent; KPCR -> WindowsEventTaskInformation -> WindowsEvent */
+%include <introvirt/windows/kernel/WindowsSystemCall.hh>
+%include <introvirt/windows/event/WindowsSystemCallEvent.hh>
+%ignore introvirt::windows::nt::KPCR::CurrentThread;
+%include <introvirt/windows/kernel/nt/types/KPCR.hh>
+%nodefaultdtor introvirt::windows::WindowsEventTaskInformation;
+%include <introvirt/windows/event/WindowsEventTaskInformation.hh>
+%include <introvirt/windows/event/WindowsEvent.hh>
+
+/* OBJECT_ATTRIBUTES: expose FullPath(KPCR), ObjectName, Length, RootDirectory, Attributes, isInheritable; ignore write, json, guest_ptr */
+%ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::write;
+%ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::json;
+%ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::ObjectNamePtr;
+%ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::SecurityQualityOfServicePtr;
+%ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::ptr;
+%ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::make_unique;
+%ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::SecurityDescriptor;
+%ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::SecurityQualityOfService;
+%ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::Attributes;
+%include <introvirt/windows/kernel/nt/syscall/types/OBJECT_ATTRIBUTES.hh>
+
+/* NtSystemCall: expose result() getter; ignore result(NTSTATUS_CODE) setter */
+%ignore introvirt::windows::nt::NtSystemCall::result(NTSTATUS_CODE);
+%include <introvirt/windows/kernel/nt/syscall/NtSystemCall.hh>
+
+/* Nt* handlers: expose only ObjectAttributes(), FileHandle(), result(); ignore Ptr getters and complex return types (FILE_ACCESS_MASK, IO_STATUS_BLOCK, etc.). */
+%ignore introvirt::windows::nt::NtCreateFile::FileHandlePtr;
+%ignore introvirt::windows::nt::NtCreateFile::ObjectAttributesPtr;
+%ignore introvirt::windows::nt::NtCreateFile::IoStatusBlockPtr;
+%ignore introvirt::windows::nt::NtCreateFile::AllocationSizePtr;
+%ignore introvirt::windows::nt::NtCreateFile::EaBufferPtr;
+%ignore introvirt::windows::nt::NtCreateFile::DesiredAccess;
+%ignore introvirt::windows::nt::NtCreateFile::FileAttributes;
+%ignore introvirt::windows::nt::NtCreateFile::ShareAccess;
+%ignore introvirt::windows::nt::NtCreateFile::CreateDisposition;
+%ignore introvirt::windows::nt::NtCreateFile::CreateOptions;
+%ignore introvirt::windows::nt::NtCreateFile::IoStatusBlock;
+%ignore introvirt::windows::nt::NtCreateFile::IoStatusResult;
+%ignore introvirt::windows::nt::NtCreateFile::AllocationSize;
+%ignore introvirt::windows::nt::NtCreateFile::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtCreateFile.hh>
+%ignore introvirt::windows::nt::NtOpenFile::FileHandlePtr;
+%ignore introvirt::windows::nt::NtOpenFile::ObjectAttributesPtr;
+%ignore introvirt::windows::nt::NtOpenFile::IoStatusBlockPtr;
+%ignore introvirt::windows::nt::NtOpenFile::DesiredAccess;
+%ignore introvirt::windows::nt::NtOpenFile::ShareAccess;
+%ignore introvirt::windows::nt::NtOpenFile::OpenOptions;
+%ignore introvirt::windows::nt::NtOpenFile::IoStatusBlock;
+%ignore introvirt::windows::nt::NtOpenFile::IoStatusResult;
+%ignore introvirt::windows::nt::NtOpenFile::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtOpenFile.hh>
+%ignore introvirt::windows::nt::NtClose::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtClose.hh>
+%ignore introvirt::windows::nt::NtReadWriteFile::ApcRoutinePtr;
+%ignore introvirt::windows::nt::NtReadWriteFile::ApcContextPtr;
+%ignore introvirt::windows::nt::NtReadWriteFile::IoStatusBlockPtr;
+%ignore introvirt::windows::nt::NtReadWriteFile::BufferPtr;
+%ignore introvirt::windows::nt::NtReadWriteFile::ByteOffsetPtr;
+%ignore introvirt::windows::nt::NtReadWriteFile::KeyPtr;
+%ignore introvirt::windows::nt::NtReadWriteFile::IoStatusBlock;
+%include <introvirt/windows/kernel/nt/syscall/NtReadWriteFile.hh>
+%ignore introvirt::windows::nt::NtReadFile::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtReadFile.hh>
+%ignore introvirt::windows::nt::NtWriteFile::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtWriteFile.hh>
+%ignore introvirt::windows::nt::NtDuplicateObject::TargetHandlePtr;
+%ignore introvirt::windows::nt::NtDuplicateObject::inject;
+%ignore introvirt::windows::nt::NtDuplicateObject::DesiredAccess;
+%ignore introvirt::windows::nt::NtDuplicateObject::HandleAttributes;
+%ignore introvirt::windows::nt::NtDuplicateObject::Options;
+%include <introvirt/windows/kernel/nt/syscall/NtDuplicateObject.hh>
+%ignore introvirt::windows::nt::NtQueryAttributesFile::ObjectAttributesPtr;
+%ignore introvirt::windows::nt::NtQueryAttributesFile::FileInformation;
+%ignore introvirt::windows::nt::NtQueryAttributesFile::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtQueryAttributesFile.hh>
+%ignore introvirt::windows::nt::NtQueryFullAttributesFile::ObjectAttributesPtr;
+%ignore introvirt::windows::nt::NtQueryFullAttributesFile::FileInformation;
+%ignore introvirt::windows::nt::NtQueryFullAttributesFile::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtQueryFullAttributesFile.hh>
+%ignore introvirt::windows::nt::NtDeleteFile::ObjectAttributesPtr;
+%include <introvirt/windows/kernel/nt/syscall/NtDeleteFile.hh>
+%ignore introvirt::windows::nt::NtQueryInformationFile::FileInformationPtr;
+%ignore introvirt::windows::nt::NtQueryInformationFile::IoStatusBlock;
+%ignore introvirt::windows::nt::NtQueryInformationFile::inject;
+%ignore introvirt::windows::nt::NtQueryInformationFile::FileInformationClass;
+%ignore introvirt::windows::nt::NtQueryInformationFile::FileInformation;
+%include <introvirt/windows/kernel/nt/syscall/NtQueryInformationFile.hh>
+%ignore introvirt::windows::nt::NtSetInformationFile::FileInformationPtr;
+%ignore introvirt::windows::nt::NtSetInformationFile::IoStatusBlock;
+%ignore introvirt::windows::nt::NtSetInformationFile::inject;
+%ignore introvirt::windows::nt::NtSetInformationFile::FileInformationClass;
+%ignore introvirt::windows::nt::NtSetInformationFile::FileInformation;
+%include <introvirt/windows/kernel/nt/syscall/NtSetInformationFile.hh>
+%ignore introvirt::windows::nt::NtDeviceIoControlFile::InputBufferPtr;
+%ignore introvirt::windows::nt::NtDeviceIoControlFile::OutputBufferPtr;
+%ignore introvirt::windows::nt::NtDeviceIoControlFile::IoStatusBlock;
+%ignore introvirt::windows::nt::NtDeviceIoControlFile::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtDeviceIoControlFile.hh>
+%ignore introvirt::windows::nt::NtMapViewOfSection::BaseAddressPtr;
+%ignore introvirt::windows::nt::NtMapViewOfSection::inject;
+%ignore introvirt::windows::nt::NtMapViewOfSection::InheritDisposition;
+%ignore introvirt::windows::nt::NtMapViewOfSection::AllocationType;
+%ignore introvirt::windows::nt::NtMapViewOfSection::Win32Protect;
+%include <introvirt/windows/kernel/nt/syscall/NtMapViewOfSection.hh>
 
 /* Helper: cast Guest* to WindowsGuest* (returns None if not Windows guest) */
 %inline %{
