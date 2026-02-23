@@ -3,7 +3,8 @@
 import signal
 import threading
 from contextlib import ContextDecorator
-from typing import Callable, Optional, Union, NamedTuple
+from typing import Callable, NamedTuple, Optional, Union
+
 import introvirt  # type: ignore[import-not-found]  # noqa: F401  # pylint: disable=import-error
 
 from .event_type import EventType
@@ -11,6 +12,7 @@ from .event_type import EventType
 
 class DomainInformation(NamedTuple):
     """Domain information."""
+
     domain_name: str
     domain_id: int
 
