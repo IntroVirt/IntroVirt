@@ -21,6 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Install build deps
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -33,6 +34,7 @@ jobs:
           unzip -q libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
           sudo apt install -y ./libmspdb_ubuntu-$(lsb_release -sr)_Release/*.deb
 
+      # Configure and build docs
       - name: Configure and build docs
         run: |
           mkdir -p build

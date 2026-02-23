@@ -8,7 +8,7 @@ OS, and monitors system calls (and returns), printing each event as text or
 JSON. Requires the IntroVirt Python bindings (built with -DINTROVIRT_PYTHON_BINDINGS=ON).
 
 Usage:
-  python3 syscallmon.py DOMAIN [--procname NAME] [--no-flush] [--unsupported] [--json]
+  python3 syscallmon.py DOMAIN [--procname NAME] [--syscall NAME ...] [--no-flush] [--unsupported] [--json]
 
 Requires root/sudo and an IntroVirt-patched hypervisor (e.g. KVM).
 
@@ -143,6 +143,14 @@ def main():
         action="store_true",
         help="Output one JSON object per event (Python-built, no C++ JSON)",
     )
+    parser.add_argument(
+        "--syscall",
+        metavar="NAME",
+        action="append",
+        dest="syscalls",
+        default=None,
+        help="Filter to this system call by name (e.g. NtCreateFile). Can be repeated. Windows only; ignored for Linux.",
+    )
     args = parser.parse_args()
 
     try:
@@ -170,7 +178,15 @@ def main():
         if guest is not None and guest.os() == introvirt.OS_Windows:
             win_guest = introvirt.WindowsGuest_from_guest(guest)
             if win_guest is not None:
-                win_guest.default_syscall_filter(_domain.system_call_filter())
+                if args.syscalls:
+                    _domain.system_call_filter().clear()
+                    for name in args.syscalls:
+                        idx = introvirt.system_call_from_string(name)
+                        win_guest.set_system_call_filter(
+                            _domain.system_call_filter(), idx, True
+                        )
+                else:
+                    win_guest.default_syscall_filter(_domain.system_call_filter())
 
     _domain.intercept_system_calls(True)
 

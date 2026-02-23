@@ -38,6 +38,11 @@
 #include <introvirt/core/exception/BadPhysicalAddressException.hh>
 #include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
 #include <introvirt/core/exception/TraceableException.hh>
+#include <introvirt/windows/event/WindowsEvent.hh>
+#include <introvirt/windows/event/WindowsSystemCallEvent.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtSystemCall.hh>
+#include <introvirt/windows/kernel/nt/const/NTSTATUS.hh>
+#include <introvirt/windows/kernel/SystemCallIndex.hh>
 
 using namespace introvirt;
 using namespace introvirt::windows;
@@ -176,6 +181,14 @@ static PyObject* p_VirtualAddressNotPresentException;
   $result = PyLong_FromLong(static_cast<long>($1));
 }
 
+/* Return SystemCallIndex as Python int (like OS) */
+%typemap(out) introvirt::windows::SystemCallIndex {
+  $result = PyLong_FromUnsignedLong(static_cast<unsigned long>($1));
+}
+%typemap(out) SystemCallIndex {
+  $result = PyLong_FromUnsignedLong(static_cast<unsigned long>($1));
+}
+
 /* Accept EventCallback& from Python so director subclasses pass (poll(callback)).
  * argp is the C++ object pointer; SWIG passes the ref as a pointer, so assign argp. */
 %typemap(in) introvirt::EventCallback & (void *argp = 0, int res = 0) {
@@ -255,6 +268,7 @@ static thread_local bool swig_director_gil_acquired = false;
 %ignore introvirt::operator<<(std::ostream&, introvirt::OS);
 %ignore introvirt::to_string(introvirt::FastCallType);
 %ignore introvirt::operator<<(std::ostream&, introvirt::FastCallType);
+/* to_string/operator<< for SystemCallIndex and NTSTATUS are renamed below before their includes to avoid clash with introvirt::to_string (EventType, FastCallType, OS). */
 
 /* SystemCall: expose only name(), supported(), will_return(); no JSON/ostream/data/handle_return */
 %ignore introvirt::SystemCall::write;
@@ -265,14 +279,13 @@ static thread_local bool swig_director_gil_acquired = false;
 /* SystemCallEvent: internal impl only */
 %ignore introvirt::SystemCallEvent::impl;
 
-/* SystemCallFilter::matches(Event&) would require Event; ignore so we can include filter before Domain */
-%ignore introvirt::SystemCallFilter::matches;
+/* SystemCallFilter::matches(Event&) is exposed so Python can check filter against event */
+/* (no longer ignored) */
 
-/* WindowsGuest: expose only category/filter APIs; ignore kernel, syscalls, domain, set_system_call_filter */
+/* WindowsGuest: expose category/filter APIs and set_system_call_filter; ignore kernel, syscalls, domain */
 %ignore introvirt::windows::WindowsGuest::syscalls;
 %ignore introvirt::windows::WindowsGuest::kernel;
 %ignore introvirt::windows::WindowsGuest::domain;
-%ignore introvirt::windows::WindowsGuest::set_system_call_filter;
 
 /* Vcpu: expose only id() for event.vcpu().id(); ignore registers, domain, intercept_*, inject_*, etc. */
 %ignore introvirt::Vcpu::registers;
@@ -322,6 +335,27 @@ static thread_local bool swig_director_gil_acquired = false;
 %include <introvirt/core/event/EventCallback.hh>
 %include <introvirt/core/filter/TaskFilter.hh>
 %include <introvirt/core/domain/Hypervisor.hh>
+
+/* SystemCallIndex and NTSTATUS before WindowsGuest (set_system_call_filter uses SystemCallIndex). */
+%rename("$ignore") introvirt::windows::to_string;
+%rename("$ignore") introvirt::windows::operator<<;
+%include <introvirt/windows/kernel/SystemCallIndex.hh>
+
+/* NTSTATUS: ignore Json and NTSTATUS_CODE-using members; expose value(), NT_SUCCESS(), etc. */
+%ignore introvirt::windows::nt::NTSTATUS::json() const;
+%ignore introvirt::windows::nt::NTSTATUS::operator Json::Value() const;
+%ignore introvirt::windows::nt::NTSTATUS::code() const;
+%ignore introvirt::windows::nt::NTSTATUS::operator NTSTATUS_CODE() const;
+%ignore introvirt::windows::nt::NTSTATUS::operator bool() const;
+%ignore introvirt::windows::nt::NTSTATUS::NT_SUCCESS(NTSTATUS_CODE);
+%ignore introvirt::windows::nt::NTSTATUS::NT_INFORMATION(NTSTATUS_CODE);
+%ignore introvirt::windows::nt::NTSTATUS::NT_WARNING(NTSTATUS_CODE);
+%ignore introvirt::windows::nt::NTSTATUS::NT_ERROR(NTSTATUS_CODE);
+%ignore introvirt::windows::nt::NTSTATUS::NTSTATUS(NTSTATUS_CODE);
+%rename("$ignore") introvirt::windows::nt::to_string;
+%rename("$ignore") introvirt::windows::nt::operator<<;
+%include <introvirt/windows/kernel/nt/const/NTSTATUS.hh>
+
 %include <introvirt/windows/WindowsGuest.hh>
 
 /* Helper: cast Guest* to WindowsGuest* (returns None if not Windows guest) */
@@ -331,6 +365,47 @@ introvirt::windows::WindowsGuest* WindowsGuest_from_guest(introvirt::Guest* g) {
     return dynamic_cast<introvirt::windows::WindowsGuest*>(g);
 }
 }} /* namespace introvirt::windows */
+%}
+
+/* NT status helper: true if raw status code indicates success (no NTSTATUS_CODE enum in Python) */
+%inline %{
+namespace introvirt { namespace windows { namespace nt {
+bool nt_success(uint32_t code) {
+    return NTSTATUS(code).NT_SUCCESS();
+}
+bool nt_error(uint32_t code) {
+    return NTSTATUS(code).NT_ERROR();
+}
+bool nt_warning(uint32_t code) {
+    return NTSTATUS(code).NT_WARNING();
+}
+bool nt_information(uint32_t code) {
+    return NTSTATUS(code).NT_INFORMATION();
+}
+std::string ntstatus_to_string(uint32_t code) {
+    return introvirt::windows::nt::to_string(NTSTATUS(code));
+}
+}}} /* namespace introvirt::windows::nt */
+%}
+
+/* Windows-only: get the NT return value (NTSTATUS) from a Windows syscall *return* event.
+ * Returns (ok, value): ok is true only when the event is a Windows NT syscall return with a
+ * parsed handler; value is the raw uint32_t status. Use nt_success(value), nt_error(value), etc.
+ * For non-Windows or non-return events, returns (false, 0). */
+%inline %{
+void get_windows_syscall_result_value(const introvirt::Event* e, bool& ok, uint32_t& value) {
+    ok = false;
+    value = 0;
+    if (!e) return;
+    auto* wevent = dynamic_cast<const introvirt::windows::WindowsEvent*>(e);
+    if (!wevent) return;
+    auto* handler = wevent->syscall().handler();
+    if (!handler) return;
+    auto* nt_call = dynamic_cast<const introvirt::windows::nt::NtSystemCall*>(handler);
+    if (!nt_call) return;
+    ok = true;
+    value = nt_call->result().value();
+}
 %}
 
 /* Pass DomainInformation::domain_id by value to avoid SWIG wrapping as uint32_t* (leak + wrong repr) */
