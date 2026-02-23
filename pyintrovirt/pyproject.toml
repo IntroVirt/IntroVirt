@@ -17,7 +17,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pylint", "ty", "ruff"]
+dev = ["pylint", "ty", "ruff", "pytest"]
 doc = ["sphinx", "furo"]
 
 [build-system]
@@ -41,3 +41,9 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
 ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "requires_hypervisor: mark test as needing a live hypervisor (deselect with -m 'not requires_hypervisor')",
+]

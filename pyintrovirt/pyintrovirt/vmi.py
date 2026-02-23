@@ -3,11 +3,19 @@
 import signal
 import threading
 from contextlib import ContextDecorator
-from typing import Callable, Optional, Union
-
+from typing import Callable, Optional, Union, NamedTuple
 import introvirt  # type: ignore[import-not-found]  # noqa: F401  # pylint: disable=import-error
 
 from .event_type import EventType
+
+
+class DomainInformation(NamedTuple):
+    """Domain information."""
+    domain_name: str
+    domain_id: int
+
+    def __str__(self):
+        return f"DomainInformation(domain_name={self.domain_name}, domain_id={self.domain_id})"
 
 
 class CallbackEventHandler(introvirt.EventCallback):
@@ -38,17 +46,17 @@ class CallbackEventHandler(introvirt.EventCallback):
 
 
 class VMI(ContextDecorator):
-    """The main class used for Virtial Machine Introspection of guest Virtual Machines."""
+    """The main class used for Virtial Machine Introspection of guest domains."""
 
-    def __init__(self, target_vm: Optional[Union[int, str]] = None):
+    def __init__(self, target_domain: Optional[Union[int, str]] = None):
         """
-        Initialize a VMI object which can be used to attach to running VMs.
+        Initialize a VMI object which can be used to attach to running domains.
 
         Args:
-            target_vm: The target VM (domain) to attach to. Can be an integer domain ID or a string domain name.
-                       The domain ID is the Qemu process PID and the domain name is the domain/VM's name (e.g. "win10").
+            target_domain: The target domain to attach to. Can be an integer domain ID or a string domain name.
+                       The domain ID is the Qemu process PID and the domain name is the domain name (e.g. "win10").
         """
-        self.target = target_vm
+        self.target = target_domain
         self.hypervisor = introvirt.Hypervisor.instance()
         self.event_handler = CallbackEventHandler()
         self.thread = None
@@ -68,7 +76,7 @@ class VMI(ContextDecorator):
     def start_event_poller(self, blocking: bool = False):
         """Start the polling thread."""
         if not self.domain:
-            raise RuntimeError("VMI must be attached to a VM/domain. Attach first.")
+            raise RuntimeError("VMI must be attached to a domain. Attach first.")
         if not blocking:
             self.thread = threading.Thread(target=self._poll_thread)
             self.thread.start()
@@ -83,11 +91,10 @@ class VMI(ContextDecorator):
     def _interrupt_listener(self):
         """Interrupt listener (when blocking is True in the event poller)"""
         signal.pthread_sigmask(signal.SIG_UNBLOCK, [signal.SIGINT])
-        while True:
-            try:
-                signal.sigwait([signal.SIGINT])
-            except (ValueError, OSError):
-                break
+        try:
+            signal.sigwait([signal.SIGINT])
+        except (ValueError, OSError):
+            return
         self.detach()
 
     def _poll_thread(self):
@@ -96,11 +103,11 @@ class VMI(ContextDecorator):
             return  # Nothing to do
         self.domain.poll(self.event_handler)
 
-    def attach(self, target_vm: Union[int, str]) -> None:
-        """Attach to the target VM (domain)."""
+    def attach(self, target_domain: Union[int, str]) -> None:
+        """Attach to the target domain."""
         if self.domain is not None:
-            raise RuntimeError("VMI is already attached to a VM/domain. Detach first.")
-        self.target = target_vm
+            raise RuntimeError("VMI is already attached to a domain. Detach first.")
+        self.target = target_domain
         self.domain = self.hypervisor.attach_domain(self.target)
         if not self.domain.detect_guest():
             raise RuntimeError("Failed to detect guest OS")
@@ -109,7 +116,8 @@ class VMI(ContextDecorator):
         """Detach from the domain. Safe to call multiple times."""
         if self.domain is not None:
             self.domain.interrupt()
-            if self.thread and self.thread.is_alive():
+            # Do not join from the interrupt listener thread (self.thread); that would deadlock.
+            if self.thread and self.thread.is_alive() and threading.current_thread() is not self.thread:
                 self.thread.join()
             self.domain = None
             self.target = None
@@ -127,10 +135,22 @@ class VMI(ContextDecorator):
         """Get the patch version of the hypervisor."""
         return self.hypervisor.hypervisor_patch_version()
 
+    def library_name(self) -> str:
+        """Get the name of the library."""
+        return self.hypervisor.library_name()
+
+    def library_version(self) -> str:
+        """Get the version of the library."""
+        return self.hypervisor.library_version()
+
+    def get_running_domains(self) -> list[DomainInformation]:
+        """Get the running domains."""
+        return [DomainInformation(domain_name=domain.domain_name, domain_id=domain.domain_id) for domain in self.hypervisor.get_running_domains()]
+
     def guest_os(self) -> str:
         """Get the guest OS name. Returns either "Windows", "Linux", or "Unknown"."""
         if not self.domain:
-            raise RuntimeError("VMI must be attached to a VM/domain. Attach first.")
+            raise RuntimeError("VMI must be attached to a domain. Attach first.")
         guest = self.domain.guest()
         match guest.os():
             case introvirt.OS_Windows:
@@ -143,13 +163,13 @@ class VMI(ContextDecorator):
     def intercept_system_calls(self, enabled: bool):
         """Toggle system call interception on/off."""
         if not self.domain:
-            raise RuntimeError("VMI must be attached to a VM/domain. Attach first.")
+            raise RuntimeError("VMI must be attached to a domain. Attach first.")
         self.domain.intercept_system_calls(enabled)
 
     def intercept_cr_writes(self, cr: int, enabled: bool):
         """Intercept CR writes."""
         if not self.domain:
-            raise RuntimeError("VMI must be attached to a VM/domain. Attach first.")
+            raise RuntimeError("VMI must be attached to a domain. Attach first.")
         self.domain.intercept_cr_writes(cr, enabled)
 
     def set_global_callback(self, callback: Callable):

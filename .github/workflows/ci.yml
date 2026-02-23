@@ -16,7 +16,7 @@ on:
 jobs:
   # Validate code formatting
   quality:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Setup
@@ -134,3 +134,51 @@ jobs:
 
       - name: Ruff
         run: uv run --directory pyintrovirt ruff check pyintrovirt && uv run --directory pyintrovirt ruff format --check pyintrovirt
+
+  # Run Python bindings and pyintrovirt tests (no VM required)
+  python-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
+            libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
+            liblog4cxx-dev python3-jinja2 python3 python3-dev libpcre2-dev git wget unzip
+          mkdir libmspdb_pkg && cd libmspdb_pkg
+          wget https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
+          unzip libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
+          sudo apt install ./libmspdb_ubuntu-$(lsb_release -sr)_Release/*.deb
+        shell: bash
+
+      - name: Install SWIG
+        run: |
+          wget -q "https://github.com/swig/swig/archive/refs/tags/v${{ env.SWIG_VERSION }}.tar.gz" -O swig.tar.gz
+          tar xzf swig.tar.gz
+          cd swig-*
+          ./autogen.sh
+          ./configure --prefix=/usr/local
+          make -j$(nproc)
+          sudo make install
+          swig -version
+        shell: bash
+
+      - name: Build IntroVirt with Python bindings
+        run: |
+          mkdir -p build
+          cd build
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DINTROVIRT_PYTHON_BINDINGS=ON ..
+          ninja
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Run pytest (no VM tests)
+        env:
+          PYTHONPATH: ${{ github.workspace }}/build
+        run: |
+          cd pyintrovirt
+          uv sync --extra dev
+          uv run pytest tests/ -v -m "not requires_hypervisor"
