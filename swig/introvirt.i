@@ -346,7 +346,7 @@ static thread_local bool swig_director_gil_acquired = false;
 %include <introvirt/core/event/SystemCallEvent.hh>
 %include <introvirt/core/syscall/SystemCallFilter.hh>
 %include <introvirt/core/domain/Guest.hh>
-%include <introvirt/core/domain/Domain.hh>
+/* TaskFilter and Event (and deps) must be included before Domain so task_filter() return type is wrapped correctly */
 /* Registers: expose only simple uint64_t accessors (rax, rsp, rip, etc.); ignore methods that return/take Flags, Efer, Msr, Segment, Cr0, Cr4 */
 %ignore introvirt::x86::Registers::rflags;
 %ignore introvirt::x86::Registers::efer;
@@ -367,6 +367,7 @@ static thread_local bool swig_director_gil_acquired = false;
 %include <introvirt/core/event/Event.hh>
 %include <introvirt/core/event/EventCallback.hh>
 %include <introvirt/core/filter/TaskFilter.hh>
+%include <introvirt/core/domain/Domain.hh>
 %include <introvirt/core/domain/Hypervisor.hh>
 
 /* Breakpoint: expose class for create_breakpoint return; ignore callback (std::function) and data (shared_ptr<void>) */
