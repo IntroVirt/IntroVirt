@@ -37,6 +37,9 @@
 # Generated version file
 gitversion.h
 
+# Generated SWIG fragment (win_syscall_generator)
+swig/windows_syscalls_generated.i
+
 # Debian package build
 debian/*.debhelper.log
 debian/*.substvars

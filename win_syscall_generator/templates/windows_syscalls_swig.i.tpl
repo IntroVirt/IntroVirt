@@ -46,12 +46,12 @@ ConcreteHandlerResult get_concrete_handler(const WindowsEvent* e) {
   } else {
     switch ($1.index) {
 {% for name in nt_exposed %}
-    case static_cast<int>(SystemCallIndex::{{ name }}):
+    case static_cast<int>(introvirt::windows::SystemCallIndex::{{ name }}):
       $result = SWIG_NewPointerObj($1.ptr, $descriptor(introvirt::windows::nt::{{ name }} *), 0);
       break;
 {% endfor %}
 {% for name in win32k_exposed %}
-    case static_cast<int>(SystemCallIndex::{{ name }}):
+    case static_cast<int>(introvirt::windows::SystemCallIndex::{{ name }}):
       $result = SWIG_NewPointerObj($1.ptr, $descriptor(introvirt::windows::win32k::{{ name }} *), 0);
       break;
 {% endfor %}

@@ -530,7 +530,9 @@ def main():
 
     write_global(ntdata, user32data, categories)
 
-    # SWIG fragment for Python: get_concrete_handler() downcast (only for syscalls %include'd in windows.i)
+    # SWIG fragment for Python: get_concrete_handler() downcast (only for syscalls %include'd in windows.i).
+    # When adding a new Nt* or win32k syscall to windows.i, add its name here (nt_exposed or win32k_exposed)
+    # and re-run the generator so the typemap gets a case for that handler.
     nt_exposed = [
         'NtCreateFile', 'NtOpenFile', 'NtClose', 'NtReadFile', 'NtWriteFile',
         'NtDuplicateObject', 'NtQueryAttributesFile', 'NtQueryFullAttributesFile',
