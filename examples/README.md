@@ -71,7 +71,68 @@ Without `--json`, each event is printed as two lines: a line with Vcpu id, PID, 
 
 ---
 
-## vmcall_interface
+## callmon (Python)
+
+**Source:** `examples/callmon.py`
+
+Python port of **ivcallmon**: sets breakpoints on specified API calls using a `module!symbol` syntax. Uses **export-only** symbol resolution (PE export table only; no PDB). You must provide the module base address for each module via `--module-base MODULE=ADDRESS`. Optional return breakpoints use `read_guest_uint64` to read the return address from RSP.
+
+### Usage
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/callmon.py DOMAIN --procname NAME --module-base ntdll=0x7ff123400000 ntdll!NtCreateFile ntdll!Nt*
+```
+
+| Option | Description |
+|--------|-------------|
+| `DOMAIN` | Domain name or ID (required). |
+| `--procname NAME` | Filter to this process name (required). |
+| `--module-base MODULE=ADDRESS` | Base address of the module (e.g. ntdll=0x7ff123400000). Repeat for each module. |
+| `--no-return` | Do not set return breakpoints. |
+| `SYMBOL ...` | One or more `module!name` or `module!pattern` (e.g. `ntdll!Nt*`). |
+
+---
+
+## filemon (Python)
+
+**Source:** `examples/filemon.py`
+
+Python port of **ivfilemon**: monitors a guest file path. On **NtCreateFile** / **NtOpenFile** that match the path, the handle is tracked; all **NtReadFile**, **NtWriteFile**, **NtQueryInformationFile**, **NtSetInformationFile**, **NtDeviceIoControlFile**, **NtClose**, and **NtDuplicateObject** events for tracked handles are reported until the handle is closed.
+
+### Usage
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/filemon.py DOMAIN --path "C:\Windows\System32\config\SAM" [--no-flush]
+```
+
+| Option | Description |
+|--------|-------------|
+| `DOMAIN` | Domain name or ID (required). |
+| `--path`, `-P` | Guest path to monitor (required). |
+| `--no-flush` | Don't flush stdout after each event. |
+
+---
+
+## vmcall_interface (Python)
+
+**Source:** `examples/vmcall_interface.py`
+
+Python port of the C++ **vmcall_interface** example. Implements the same three services via hypercall: **CSTRING_REVERSE** (0xF000), **WRITE_PROTECT** (0xF001), **PROTECT_PROCESS** (0xF002). Uses `read_guest_cstring` / `write_guest_bytes` for the string reverse, `create_watchpoint` and `Event.mem_access()` / `Vcpu.inject_exception` for write-protect, and **NtTerminateProcess** / **NtOpenProcess** handling with `get_nt_open_process_target_pid` and `block_open_process_client_id` for process protection.
+
+### Usage
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/vmcall_interface.py DOMAIN
+```
+
+Use the same guest executable as the C++ vmcall_interface (see below). The Python tool attaches to the domain, enables **NtTerminateProcess** and **NtOpenProcess** in the system-call filter, and handles **EVENT_HYPERCALL**, **EVENT_FAST_SYSCALL**, **EVENT_FAST_SYSCALL_RET**, and **EVENT_MEM_ACCESS** as in the C++ version.
+
+---
+
+## vmcall_interface (C++)
 
 **Source (host tool):** \ref vmcall_interface.cc — listed in the **Examples** menu.
 

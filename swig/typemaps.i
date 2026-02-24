@@ -45,6 +45,8 @@
 /* Typemaps for unique_ptr - ownership transfers to Python */
 %unique_ptr(introvirt::Domain);
 %unique_ptr(introvirt::Hypervisor);
+%unique_ptr(introvirt::Watchpoint);
+%unique_ptr(introvirt::SingleStep);
 
 %template(DomainInformationVector) std::vector<introvirt::DomainInformation>;
 %template(StringSet) std::set<std::string>;

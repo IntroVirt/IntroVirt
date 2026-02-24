@@ -45,7 +45,7 @@
 %ignore introvirt::Vcpu::pause;
 %ignore introvirt::Vcpu::resume;
 %ignore introvirt::Vcpu::intercept_system_calls;
-%ignore introvirt::Vcpu::inject_exception;
+/* inject_exception exposed for vmcall_interface (inject GP on watchpoint) */
 %ignore introvirt::Vcpu::inject_syscall;
 %ignore introvirt::Vcpu::inject_sysenter;
 %ignore introvirt::Vcpu::clone;
@@ -63,7 +63,7 @@
 /* We keep type(), vcpu(), domain(), task(), syscall(), cr() - task() returns EventTaskInformation */
 %ignore introvirt::Event::msr;
 %ignore introvirt::Event::exception;
-%ignore introvirt::Event::mem_access;
+/* mem_access exposed for vmcall_interface (watchpoint violation) */
 %ignore introvirt::Event::json;
 %ignore introvirt::Event::impl;
 

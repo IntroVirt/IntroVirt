@@ -59,6 +59,8 @@
 #include <introvirt/windows/kernel/nt/syscall/NtSetInformationFile.hh>
 #include <introvirt/windows/kernel/nt/syscall/NtDeviceIoControlFile.hh>
 #include <introvirt/windows/kernel/nt/syscall/NtMapViewOfSection.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtTerminateProcess.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtOpenProcess.hh>
 #include <introvirt/windows/event/WindowsSystemCallEvent.hh>
 #include <introvirt/windows/kernel/nt/syscall/NtSystemCall.hh>
 #include <introvirt/windows/kernel/nt/const/NTSTATUS.hh>
@@ -152,4 +154,5 @@ static PyObject* p_PeException;
 %include "ignores_core.i"
 %include "core.i"
 %include "breakpoints.i"
+%include "guest_memory.i"
 %include "windows.i"

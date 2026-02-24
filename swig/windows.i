@@ -124,6 +124,28 @@
 %ignore introvirt::windows::nt::NtMapViewOfSection::AllocationType;
 %ignore introvirt::windows::nt::NtMapViewOfSection::Win32Protect;
 %include <introvirt/windows/kernel/nt/syscall/NtMapViewOfSection.hh>
+%ignore introvirt::windows::nt::NtTerminateProcess::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtTerminateProcess.hh>
+/* NtOpenProcess: ignore guest_ptr and PROCESS_ACCESS_MASK/CLIENT_ID ptr; expose helpers for vmcall_interface */
+%ignore introvirt::windows::nt::NtOpenProcess::ProcessHandlePtr;
+%ignore introvirt::windows::nt::NtOpenProcess::ObjectAttributesPtr;
+%ignore introvirt::windows::nt::NtOpenProcess::ClientIdPtr;
+%ignore introvirt::windows::nt::NtOpenProcess::DesiredAccess;
+%ignore introvirt::windows::nt::NtOpenProcess::ObjectAttributes;
+%ignore introvirt::windows::nt::NtOpenProcess::ClientId;
+%ignore introvirt::windows::nt::NtOpenProcess::inject;
+%include <introvirt/windows/kernel/nt/syscall/NtOpenProcess.hh>
+%inline %{
+#include <introvirt/core/memory/guest_ptr.hh>
+namespace introvirt { namespace windows { namespace nt {
+uint64_t get_nt_open_process_target_pid(NtOpenProcess* h) {
+    return h && h->ClientId() ? h->ClientId()->UniqueProcess() : 0;
+}
+void block_open_process_client_id(NtOpenProcess* h) {
+    if (h) h->ClientIdPtr(guest_ptr<void>());
+}
+}}}
+%}
 
 /* Helper: cast Guest* to WindowsGuest* (returns None if not Windows guest) */
 %inline %{
