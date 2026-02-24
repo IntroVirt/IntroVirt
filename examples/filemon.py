@@ -55,6 +55,7 @@ def path_matches(user_normalized: str, obj_attr, kpcr) -> bool:
 
 
 def get_object_attributes(handler, index: int):
+    """Return OBJECT_ATTRIBUTES for create/open/query/delete syscalls; handler from get_concrete_handler."""
     if handler is None:
         return None
     if index == introvirt.SystemCallIndex_NtCreateFile:
@@ -71,6 +72,7 @@ def get_object_attributes(handler, index: int):
 
 
 def get_file_handle(handler, index: int) -> int:
+    """Return file handle for read/write/query/set/ioctl or create/open return; handler from get_concrete_handler."""
     if handler is None:
         return 0
     if index == introvirt.SystemCallIndex_NtReadFile:
@@ -83,6 +85,10 @@ def get_file_handle(handler, index: int) -> int:
         return handler.FileHandle() if isinstance(handler, introvirt.NtSetInformationFile) else 0
     if index == introvirt.SystemCallIndex_NtDeviceIoControlFile:
         return handler.FileHandle() if isinstance(handler, introvirt.NtDeviceIoControlFile) else 0
+    if index == introvirt.SystemCallIndex_NtCreateFile:
+        return handler.FileHandle() if isinstance(handler, introvirt.NtCreateFile) else 0
+    if index == introvirt.SystemCallIndex_NtOpenFile:
+        return handler.FileHandle() if isinstance(handler, introvirt.NtOpenFile) else 0
     return 0
 
 
@@ -114,19 +120,8 @@ class FileMonitor(introvirt.EventCallback):
             traceback.print_exc(file=sys.stderr)
 
     def _handle_syscall(self, wevent):
-        handler = wevent.syscall().handler()
+        handler = introvirt.get_concrete_handler(wevent)
         if handler is None or not handler.supported():
-            print("handler is None or not supported", file=sys.stderr)
-            print(f"handler: {handler}", file=sys.stderr)
-            print(f"wevent: {wevent}", file=sys.stderr)
-            print(f"wevent.type(): {wevent.type()}", file=sys.stderr)
-            print(f"wevent.syscall().index(): {wevent.syscall().index()}", file=sys.stderr)
-            print(f"wevent.syscall().handler(): {wevent.syscall().handler()}", file=sys.stderr)
-            print(f"wevent.syscall().name(): {wevent.syscall().name()}", file=sys.stderr)
-            print(f"wevent.syscall().supported(): {wevent.syscall().handler().supported()}", file=sys.stderr)
-            print(f"wevent.syscall().will_return(): {wevent.syscall().handler().will_return()}", file=sys.stderr)
-            print(f"wevent.syscall().hook_return(): {wevent.syscall().handler().hook_return()}", file=sys.stderr)
-            print(f"wevent.syscall().return_address(): {wevent.syscall().handler().return_address()}", file=sys.stderr)
             return
         index = wevent.syscall().index()
         pid = wevent.task().pid()
@@ -153,11 +148,8 @@ class FileMonitor(introvirt.EventCallback):
                 self._emit(wevent)
             return
         if index == introvirt.SystemCallIndex_NtClose:
-            try:
-                h = handler.Handle() if isinstance(handler, introvirt.NtClose) else None
-            except Exception:
-                h = None
-            if h is not None:
+            h = handler.Handle() if isinstance(handler, introvirt.NtClose) else 0
+            if h != 0:
                 with self._lock:
                     key = (pid, h)
                     if key in self._handles:
@@ -181,10 +173,11 @@ class FileMonitor(introvirt.EventCallback):
                     self._emit(wevent)
 
     def _handle_sysret(self, wevent):
-        handler = wevent.syscall().handler()
+        handler = introvirt.get_concrete_handler(wevent)
         if handler is None or not handler.supported():
             return
-        if not handler.result().NT_SUCCESS():
+        ok, value = introvirt.get_windows_syscall_result_value(wevent)
+        if not ok or not introvirt.nt_success(value):
             return
         index = wevent.syscall().index()
         pid = wevent.task().pid()
@@ -206,8 +199,7 @@ class FileMonitor(introvirt.EventCallback):
                 self._emit(wevent)
             return
         if index == introvirt.SystemCallIndex_NtDuplicateObject and isinstance(handler, introvirt.NtDuplicateObject):
-            src = handler.SourceHandle()
-            tgt = handler.TargetHandle()
+            src, tgt = handler.SourceHandle(), handler.TargetHandle()
             with self._lock:
                 if (pid, src) in self._handles:
                     self._handles.add((pid, tgt))
@@ -266,7 +258,10 @@ def main():
         print("Windows guest required", file=sys.stderr)
         return 1
 
-    _domain.system_call_filter().clear()
+    # Match ivfilemon: enable at domain level, set which syscalls to trap at guest level only.
+    # Do not call set_64/set_32 on the domain filter; the guest converts SystemCallIndex to native
+    # indices and updates the filter. Otherwise we trap all syscalls and get unsupported ones.
+    _domain.system_call_filter().enabled(True)
     for idx in (
         introvirt.SystemCallIndex_NtCreateFile,
         introvirt.SystemCallIndex_NtOpenFile,
@@ -281,8 +276,7 @@ def main():
         introvirt.SystemCallIndex_NtQueryFullAttributesFile,
         introvirt.SystemCallIndex_NtDeleteFile,
     ):
-        _domain.system_call_filter().set_64(idx, True)
-    _domain.system_call_filter().enabled(True)
+        win_guest.set_system_call_filter(_domain.system_call_filter(), idx, True)
     _domain.intercept_system_calls(True)
 
     monitor = FileMonitor(args.path, flush=not args.no_flush)

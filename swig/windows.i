@@ -135,6 +135,10 @@
 %ignore introvirt::windows::nt::NtOpenProcess::ClientId;
 %ignore introvirt::windows::nt::NtOpenProcess::inject;
 %include <introvirt/windows/kernel/nt/syscall/NtOpenProcess.hh>
+
+/* Generated: get_concrete_handler(WindowsEvent*) so Python gets concrete handler type (e.g. NtCreateFile). */
+%include "windows_syscalls_generated.i"
+
 %inline %{
 #include <introvirt/core/memory/guest_ptr.hh>
 namespace introvirt { namespace windows { namespace nt {
@@ -184,6 +188,16 @@ std::string ntstatus_to_string(uint32_t code) {
  * Returns (ok, value): ok is true only when the event is a Windows NT syscall return with a
  * parsed handler; value is the raw uint32_t status. Use nt_success(value), nt_error(value), etc.
  * For non-Windows or non-return events, returns (false, 0). */
+%typemap(in, numinputs=0) (bool& ok, uint32_t& value) (bool temp_ok, uint32_t temp_value) {
+  $1 = &temp_ok;
+  $2 = &temp_value;
+}
+%typemap(argout) (bool& ok, uint32_t& value) {
+  PyObject *o1 = PyBool_FromLong(*$1 ? 1 : 0);
+  PyObject *o2 = PyLong_FromUnsignedLong(*$2);
+  $result = SWIG_Python_AppendOutput($result, o1);
+  $result = SWIG_Python_AppendOutput($result, o2);
+}
 %inline %{
 void get_windows_syscall_result_value(const introvirt::Event* e, bool& ok, uint32_t& value) {
     ok = false;

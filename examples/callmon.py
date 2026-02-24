@@ -271,11 +271,13 @@ def main():
     if guest is not None and guest.os() == introvirt.OS_Windows:
         win_guest = introvirt.WindowsGuest_from_guest(guest)
         if win_guest is not None:
-            _domain.system_call_filter().clear()
-            _domain.system_call_filter().set_64(
-                introvirt.SystemCallIndex_NtMapViewOfSection, True
-            )
+            # Match ivcallmon: enable at domain level, set trap at guest level only (no set_64).
             _domain.system_call_filter().enabled(True)
+            win_guest.set_system_call_filter(
+                _domain.system_call_filter(),
+                introvirt.SystemCallIndex_NtMapViewOfSection,
+                True,
+            )
     _domain.intercept_system_calls(True)
     _domain.intercept_cr_writes(3, True)
 

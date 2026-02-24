@@ -113,6 +113,8 @@ sudo PYTHONPATH=. python3 ../examples/filemon.py DOMAIN --path "C:\Windows\Syste
 | `--path`, `-P` | Guest path to monitor (required). |
 | `--no-flush` | Don't flush stdout after each event. |
 
+**System call filtering (Windows):** For Windows guests, enable the filter at the domain level (`domain.system_call_filter().enabled(True)`) and set which syscalls to trap at the guest level via `WindowsGuest.set_system_call_filter(domain.system_call_filter(), SystemCallIndex_XXX, True)`. Do not call `set_64` or `set_32` on the domain filter; the guest converts `SystemCallIndex` to native indices. This matches **ivfilemon**, **ivcallmon**, and **vmcall_interface** (C++).
+
 ---
 
 ## vmcall_interface (Python)

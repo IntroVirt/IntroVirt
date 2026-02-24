@@ -23,6 +23,7 @@
  */
 
 #include <introvirt/introvirt.hh>
+#include <log4cxx/logger.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
@@ -32,7 +33,6 @@
 #include <csignal>
 #include <iostream>
 #include <mutex>
-#include <set>
 #include <string>
 #include <unordered_set>
 
@@ -46,6 +46,7 @@ void parse_program_options(int argc, char** argv, po::options_description& desc,
                            po::variables_map& vm);
 
 std::unique_ptr<Domain> domain;
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("introvirt.tools.ivcallmon"));
 
 void sig_handler(int signum) { domain->interrupt(); }
 
@@ -75,6 +76,8 @@ static bool path_matches(const std::string& user_path_normalized,
         return false;
     }
     std::string guest_normalized = normalize_path(guest_path);
+
+    LOG4CXX_DEBUG(logger, "checking: " << guest_normalized << " == " << user_path_normalized);
     return guest_normalized == user_path_normalized;
 }
 

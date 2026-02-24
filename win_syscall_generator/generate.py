@@ -423,6 +423,21 @@ def write_templates(ntdata, namespace):
     subprocess.run(["clang-format", "-i", tmp_path])
     move_tmp_to_target(tmp_path, path)
 
+def write_swig_fragment(nt_exposed, win32k_exposed):
+    '''
+    Generate swig/windows_syscalls_generated.i for Python concrete handler downcast.
+    Only syscalls in nt_exposed / win32k_exposed get a switch case (must be %include'd in windows.i).
+    '''
+    path = 'swig/windows_syscalls_generated.i'
+    tmp_path = path + '.tmp'
+    with open(tmp_path, 'w') as output:
+        template = ENV.get_template('windows_syscalls_swig.i.tpl')
+        output.write(template.render({
+            'nt_exposed': nt_exposed,
+            'win32k_exposed': win32k_exposed,
+        }))
+    move_tmp_to_target(tmp_path, path)
+
 def write_global(ntdata, user32data, categories):
     # Generate src/windows/supported_syscalls.cc
     path = 'src/windows/supported_syscalls.cc'
@@ -514,6 +529,16 @@ def main():
     write_templates(user32data, 'win32k')
 
     write_global(ntdata, user32data, categories)
+
+    # SWIG fragment for Python: get_concrete_handler() downcast (only for syscalls %include'd in windows.i)
+    nt_exposed = [
+        'NtCreateFile', 'NtOpenFile', 'NtClose', 'NtReadFile', 'NtWriteFile',
+        'NtDuplicateObject', 'NtQueryAttributesFile', 'NtQueryFullAttributesFile',
+        'NtDeleteFile', 'NtQueryInformationFile', 'NtSetInformationFile',
+        'NtDeviceIoControlFile', 'NtMapViewOfSection', 'NtTerminateProcess', 'NtOpenProcess',
+    ]
+    win32k_exposed = []  # add names when win32k syscalls are added to windows.i
+    write_swig_fragment(nt_exposed, win32k_exposed)
 
     # Create the actual files
     for name in ntdata:

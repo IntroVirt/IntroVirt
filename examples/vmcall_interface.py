@@ -253,13 +253,17 @@ def main():
     if guest is None or guest.os() != introvirt.OS_Windows:
         print("Windows guest required", file=sys.stderr)
         return 1
+    win_guest = introvirt.WindowsGuest_from_guest(guest)
+    if win_guest is None:
+        print("Windows guest required", file=sys.stderr)
+        return 1
 
-    _domain.system_call_filter().clear()
-    _domain.system_call_filter().set_64(
-        introvirt.SystemCallIndex_NtTerminateProcess, True
+    # Match vmcall_interface.cc: set trap at guest level only, then enable at domain level (no set_64).
+    win_guest.set_system_call_filter(
+        _domain.system_call_filter(), introvirt.SystemCallIndex_NtTerminateProcess, True
     )
-    _domain.system_call_filter().set_64(
-        introvirt.SystemCallIndex_NtOpenProcess, True
+    win_guest.set_system_call_filter(
+        _domain.system_call_filter(), introvirt.SystemCallIndex_NtOpenProcess, True
     )
     _domain.system_call_filter().enabled(True)
     _domain.intercept_system_calls(True)
