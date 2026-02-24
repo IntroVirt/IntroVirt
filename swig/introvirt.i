@@ -63,6 +63,14 @@
 #include <introvirt/windows/kernel/nt/syscall/NtSystemCall.hh>
 #include <introvirt/windows/kernel/nt/const/NTSTATUS.hh>
 #include <introvirt/windows/kernel/SystemCallIndex.hh>
+#include <introvirt/windows/pe/const/MachineType.hh>
+#include <introvirt/windows/pe/types/DOS_HEADER.hh>
+#include <introvirt/windows/pe/types/IMAGE_SECTION_HEADER.hh>
+#include <introvirt/windows/pe/types/IMAGE_FILE_HEADER.hh>
+#include <introvirt/windows/pe/types/IMAGE_EXPORT_DIRECTORY.hh>
+#include <introvirt/windows/pe/types/IMAGE_OPTIONAL_HEADER.hh>
+#include <introvirt/windows/pe/PE.hh>
+#include <introvirt/windows/pe/exception/PeException.hh>
 
 using namespace introvirt;
 using namespace introvirt::windows;
@@ -78,6 +86,7 @@ static PyObject* p_NotImplementedException;
 static PyObject* p_CommandFailedException;
 static PyObject* p_BadPhysicalAddressException;
 static PyObject* p_VirtualAddressNotPresentException;
+static PyObject* p_PeException;
 %}
 
 %include <std_string.i>
@@ -132,6 +141,10 @@ static PyObject* p_VirtualAddressNotPresentException;
   p_VirtualAddressNotPresentException = PyErr_NewException("introvirt.VirtualAddressNotPresentException", p_IntroVirtError, NULL);
   Py_INCREF(p_VirtualAddressNotPresentException);
   PyModule_AddObject(m, "VirtualAddressNotPresentException", p_VirtualAddressNotPresentException);
+
+  p_PeException = PyErr_NewException("introvirt.PeException", p_IntroVirtError, NULL);
+  Py_INCREF(p_PeException);
+  PyModule_AddObject(m, "PeException", p_PeException);
 %}
 
 %include "typemaps.i"

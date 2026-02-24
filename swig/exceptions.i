@@ -43,6 +43,10 @@
     PyErr_SetString(p_VirtualAddressNotPresentException, e.what());
     SWIG_fail;
   }
+  catch (introvirt::windows::pe::PeException& e) {
+    PyErr_SetString(p_PeException, e.what());
+    SWIG_fail;
+  }
   catch (introvirt::TraceableException& e) {
     PyErr_SetString(p_IntroVirtError, e.what());
     SWIG_fail;

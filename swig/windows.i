@@ -131,6 +131,9 @@ namespace introvirt { namespace windows {
 introvirt::windows::WindowsGuest* WindowsGuest_from_guest(introvirt::Guest* g) {
     return dynamic_cast<introvirt::windows::WindowsGuest*>(g);
 }
+introvirt::windows::WindowsEvent* WindowsEvent_from_event(introvirt::Event* e) {
+    return dynamic_cast<introvirt::windows::WindowsEvent*>(e);
+}
 }} /* namespace introvirt::windows */
 %}
 
@@ -177,3 +180,6 @@ void get_windows_syscall_result_value(const introvirt::Event* e, bool& ok, uint3
 
 /* Pass DomainInformation::domain_id by value to avoid SWIG wrapping as uint32_t* (leak + wrong repr) */
 %naturalvar introvirt::DomainInformation::domain_id;
+
+/* PE (Portable Executable) support */
+%include "pe.i"

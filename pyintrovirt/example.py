@@ -28,7 +28,7 @@ def list_domains(vmi: VMI):
         print(f"  - {domain.domain_name} (ID: {domain.domain_id})")
 
 
-def handle_syscall(event: "Event"):
+def handle_syscall(event: "introvirt.Event"):
     """Handle a system call"""
     vcpu = event.vcpu()
     task = event.task()

@@ -36,15 +36,25 @@ class CallbackEventHandler(introvirt.EventCallback):
         """Set a callback to be called for a specific event type."""
         self.event_callbacks[event_type] = callback
 
-    def process_event(self, event):
+    def process_event(self, event: "introvirt.Event"):
         """Called for each event received."""
         if not self.event_callbacks and not self.global_event_callback:
             return  # no callbacks to call
+
+        os_event = None
+        if event.os_type() == introvirt.OS_Windows:
+            os_event = introvirt.windows.WindowsEvent_from_event(event)
+        elif event.os_type() == introvirt.OS_Linux:
+            # TODO: Implement Linux event handling
+            # os_event = introvirt.linux.LinuxEvent_from_event(event)
+            pass
+
+        send_event = os_event if os_event else event
         if self.global_event_callback:
-            self.global_event_callback(event)
-        callback = self.event_callbacks.get(EventType(event.type()))
+            self.global_event_callback(send_event)
+        callback = self.event_callbacks.get(EventType(send_event.type()))
         if callback:
-            callback(event)
+            callback(send_event)
 
 
 class VMI(ContextDecorator):
