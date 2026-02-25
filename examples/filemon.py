@@ -121,7 +121,7 @@ class FileMonitor(introvirt.EventCallback):
 
     def _handle_syscall(self, wevent):
         handler = introvirt.get_concrete_handler(wevent)
-        if handler is None or not handler.supported():
+        if handler is None:
             return
         index = wevent.syscall().index()
         pid = wevent.task().pid()
@@ -174,7 +174,7 @@ class FileMonitor(introvirt.EventCallback):
 
     def _handle_sysret(self, wevent):
         handler = introvirt.get_concrete_handler(wevent)
-        if handler is None or not handler.supported():
+        if handler is None:
             return
         ok, value = introvirt.get_windows_syscall_result_value(wevent)
         if not ok or not introvirt.nt_success(value):

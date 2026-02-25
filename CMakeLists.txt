@@ -102,6 +102,8 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 		LANGUAGE python
 		SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/swig/introvirt.i
 	)
+	# Re-run SWIG when the generated syscall fragment changes (it is %included from windows.i)
+	SET_PROPERTY(TARGET introvirt_py PROPERTY SWIG_EXTRA_DEPS ${CMAKE_CURRENT_SOURCE_DIR}/swig/windows_syscalls_generated.i)
 
 	TARGET_INCLUDE_DIRECTORIES(introvirt_py PRIVATE
 		${CMAKE_SOURCE_DIR}/include
