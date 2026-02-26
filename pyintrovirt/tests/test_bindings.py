@@ -24,6 +24,13 @@ def test_import():
     assert hasattr(introvirt, "BreakpointCallback")
     assert hasattr(introvirt, "EventType_EVENT_FAST_SYSCALL")
     assert hasattr(introvirt, "OS_Windows")
+    assert hasattr(introvirt, "resolve_symbol_by_name")
+    assert hasattr(introvirt, "pdb_rva_to_guest_address")
+    assert hasattr(introvirt, "read_guest_bytes")
+    assert hasattr(introvirt, "read_guest_uint32")
+    assert hasattr(introvirt, "pe_export_by_name")
+    assert hasattr(introvirt, "pe_export_names")
+    assert hasattr(introvirt, "pe_from_address")
 
 
 def test_ntstatus():
@@ -156,3 +163,48 @@ def test_hypervisor_instance():
         assert hasattr(hv, "get_running_domains")
     except (_introvirt_c.UnsupportedHypervisorException, OSError):
         pytest.skip("No hypervisor available")
+
+
+def test_pdb_rva_to_guest_address():
+    """pdb_rva_to_guest_address is pure arithmetic: base + rva."""
+    assert introvirt.pdb_rva_to_guest_address(0x1000, 0x100) == 0x1100
+    assert introvirt.pdb_rva_to_guest_address(0x400000, 0) == 0x400000
+
+
+def test_resolve_symbol_by_name_none():
+    """resolve_symbol_by_name with None domain/vcpu or empty name returns None."""
+    result = introvirt.resolve_symbol_by_name(None, None, 0, "")
+    assert result is None
+
+
+def test_guest_memory_helpers_callable():
+    """read_guest_uint32 and read_guest_bytes exist and are callable."""
+    assert callable(introvirt.read_guest_uint32)
+    assert callable(introvirt.read_guest_bytes)
+
+
+def test_pe_export_by_name_none():
+    """pe_export_by_name(None, name) returns None."""
+    assert introvirt.pe_export_by_name(None, "SomeExport") is None
+
+
+def test_pe_export_names_none():
+    """pe_export_names(None) does not raise (returns empty vector proxy)."""
+    result = introvirt.pe_export_names(None)
+    assert result is not None
+
+
+def test_pe_base_address_none():
+    """pe_base_address(None) returns 0."""
+    assert introvirt.pe_base_address(None) == 0
+
+
+def test_get_executable_mapped_modules_none():
+    """get_executable_mapped_modules(None) returns empty list."""
+    result = introvirt.get_executable_mapped_modules(None)
+    assert result == []
+
+
+def test_resolve_symbols_via_pdb_callable():
+    """resolve_symbols_via_pdb exists and is callable."""
+    assert callable(introvirt.resolve_symbols_via_pdb)

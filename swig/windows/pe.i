@@ -60,6 +60,7 @@
 /* Factory and helpers: build guest_ptr from Domain+Vcpu+address; base/section/export address as uint64_t.
  * Include full PE headers so inline code sees complete types (wrap.cxx may emit this before PE includes). */
 %inline %{
+#include <Python.h>
 #include <introvirt/windows/pe/types/IMAGE_SECTION_HEADER.hh>
 #include <introvirt/windows/pe/types/IMAGE_EXPORT_DIRECTORY.hh>
 namespace introvirt { namespace windows { namespace pe {
@@ -84,6 +85,46 @@ uint64_t pe_section_virtual_address(const IMAGE_SECTION_HEADER* section) {
 uint64_t pe_export_address_value(const Export* exp) {
     if (!exp) return 0;
     return exp->address.address();
+}
+
+PyObject* pe_export_by_name(const PE* pe, const std::string& name) {
+    if (!pe) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    const IMAGE_EXPORT_DIRECTORY* dir = pe->export_directory();
+    if (!dir) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    const Export* exp = dir->find(name);
+    if (!exp) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    PyObject* t = PyTuple_Pack(2,
+        PyLong_FromUnsignedLongLong(static_cast<unsigned long long>(pe_export_address_value(exp))),
+        PyUnicode_FromString(exp->name.c_str()));
+    if (!t) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    return t;
+}
+
+std::vector<std::string> pe_export_names(const PE* pe) {
+    std::vector<std::string> out;
+    if (!pe)
+        return out;
+    const IMAGE_EXPORT_DIRECTORY* dir = pe->export_directory();
+    if (!dir)
+        return out;
+    const auto& by_name = dir->NameToExportMap();
+    out.reserve(by_name.size());
+    for (const auto& kv : by_name) {
+        out.push_back(kv.first);
+    }
+    return out;
 }
 
 }}} /* namespace introvirt::windows::pe */

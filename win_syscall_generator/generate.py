@@ -468,7 +468,7 @@ def _swig_ignore_return_types(ntdata, user32data):
 
 def write_swig_fragment(ntdata, user32data, nt_exposed, win32k_exposed, project_dir):
     '''
-    Generate swig/windows_syscalls_generated.i for Python concrete handler downcast.
+    Generate swig/windows/windows_syscalls_generated.i for Python concrete handler downcast.
     Emits %ignore (inject, *Ptr, unwrapped return types), %nodefaultctor/dtor, and %include.
     The typemap switch uses only names present in SystemCallIndex enum.
     '''
@@ -481,7 +481,7 @@ def write_swig_fragment(ntdata, user32data, nt_exposed, win32k_exposed, project_
         'IoStatusResult',
         'get_new_process', 'get_new_thread',  # return std::shared_ptr<PROCESS/THREAD>
     )
-    path = 'swig/windows_syscalls_generated.i'
+    path = 'swig/windows/windows_syscalls_generated.i'
     tmp_path = path + '.tmp'
     with open(tmp_path, 'w') as output:
         template = ENV.get_template('windows_syscalls_swig.i.tpl')

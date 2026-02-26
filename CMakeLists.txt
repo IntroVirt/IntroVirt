@@ -103,11 +103,13 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 		SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/swig/introvirt.i
 	)
 	# Re-run SWIG when the generated syscall fragment changes (it is %included from windows.i)
-	SET_PROPERTY(TARGET introvirt_py PROPERTY SWIG_EXTRA_DEPS ${CMAKE_CURRENT_SOURCE_DIR}/swig/windows_syscalls_generated.i)
+	SET_PROPERTY(TARGET introvirt_py PROPERTY SWIG_EXTRA_DEPS ${CMAKE_CURRENT_SOURCE_DIR}/swig/windows/windows_syscalls_generated.i)
 
 	TARGET_INCLUDE_DIRECTORIES(introvirt_py PRIVATE
 		${CMAKE_SOURCE_DIR}/include
 		${CMAKE_SOURCE_DIR}/swig
+		${CMAKE_SOURCE_DIR}/swig/core
+		${CMAKE_SOURCE_DIR}/swig/windows
 		${CMAKE_CURRENT_BINARY_DIR}
 		${Python3_INCLUDE_DIRS}
 	)
@@ -179,7 +181,7 @@ SET_PROPERTY(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${WIN_FUNCCALL_G
 
 FILE(GLOB_RECURSE SYSCALL_GEN_INPUT ${PROJECT_SOURCE_DIR}/win_syscall_generator/*.tpl ${PROJECT_SOURCE_DIR}/win_syscall_generator/*.py ${PROJECT_SOURCE_DIR}/win_syscall_generator/*.json)
 
-SET(GENERATED_SWIG_FRAGMENT "${CMAKE_CURRENT_SOURCE_DIR}/swig/windows_syscalls_generated.i")
+SET(GENERATED_SWIG_FRAGMENT "${CMAKE_CURRENT_SOURCE_DIR}/swig/windows/windows_syscalls_generated.i")
 SET_SOURCE_FILES_PROPERTIES(${GENERATED_SWIG_FRAGMENT} PROPERTIES GENERATED TRUE)
 
 ADD_CUSTOM_COMMAND(

@@ -41,6 +41,7 @@ static bool symbol_matches_pattern(const std::string& pattern, const std::string
 }  // namespace
 
 typedef std::vector<std::pair<uint64_t, std::string>> PdbListImpl;
+typedef std::pair<uint64_t, std::string> PdbSingleImpl;
 
 static inline PdbListImpl* get_executable_mapped_modules_impl(WindowsEvent* wevent) {
     auto* result = new PdbListImpl();
@@ -72,7 +73,7 @@ static inline PdbListImpl* get_executable_mapped_modules_impl(WindowsEvent* weve
 static inline PdbListImpl* resolve_symbols_via_pdb_impl(
     Domain* domain, Vcpu* vcpu, uint64_t base_address, const std::vector<std::string>& patterns) {
     auto* result = new PdbListImpl();
-    if (!domain || !vcpu || patterns.empty())
+    if (!domain || !vcpu)
         return result;
     try {
         guest_ptr<void> ptr(*vcpu, base_address);
@@ -81,15 +82,18 @@ static inline PdbListImpl* resolve_symbols_via_pdb_impl(
         for (const auto& symbol : pdb.global_symbols()) {
             if (!symbol->function() && !symbol->code())
                 continue;
-            bool matched = false;
-            for (const auto& pattern : patterns) {
-                if (symbol_matches_pattern(pattern, symbol->name())) {
-                    matched = true;
-                    break;
+            bool match_all = patterns.empty() || (patterns.size() == 1 && patterns.front() == "*");
+            if (!match_all) {
+                bool matched = false;
+                for (const auto& pattern : patterns) {
+                    if (symbol_matches_pattern(pattern, symbol->name())) {
+                        matched = true;
+                        break;
+                    }
                 }
+                if (!matched)
+                    continue;
             }
-            if (!matched)
-                continue;
             try {
                 uint64_t addr = base_address + symbol->image_offset();
                 result->emplace_back(addr, symbol->name());
@@ -108,6 +112,7 @@ static inline PdbListImpl* resolve_symbols_via_pdb_impl(
 /* Opaque handle type for SWIG - struct so we can have two distinct typemaps */
 struct pdb_module_result { void* p; };
 struct pdb_symbol_result { void* p; };
+struct pdb_symbol_single_result { void* p; };
 
 static inline pdb_module_result get_executable_mapped_modules(WindowsEvent* wevent) {
     pdb_module_result h;
@@ -126,6 +131,33 @@ static inline pdb_symbol_result resolve_symbols_via_pdb(
     Domain* domain, Vcpu* vcpu, uint64_t base_address, const std::vector<std::string>& patterns) {
     pdb_symbol_result h;
     h.p = resolve_symbols_via_pdb_impl(domain, vcpu, base_address, patterns);
+    return h;
+}
+
+static inline pdb_symbol_single_result resolve_symbol_by_name(
+    Domain* domain, Vcpu* vcpu, uint64_t base_address, const std::string& name) {
+    pdb_symbol_single_result h;
+    h.p = nullptr;
+    if (!domain || !vcpu || name.empty())
+        return h;
+    try {
+        guest_ptr<void> ptr(*vcpu, base_address);
+        std::unique_ptr<pe::PE> lib = pe::PE::make_unique(ptr);
+        const mspdb::PDB& pdb = lib->pdb();
+        const mspdb::Symbol* symbol = pdb.name_to_symbol(name);
+        if (!symbol)
+            return h;
+        try {
+            uint64_t addr = base_address + symbol->image_offset();
+            h.p = new PdbSingleImpl(addr, symbol->name());
+        } catch (VirtualAddressNotPresentException&) {
+            /* skip */
+        }
+    } catch (VirtualAddressNotPresentException&) {
+        /* empty */
+    } catch (pe::PeException&) {
+        /* empty */
+    }
     return h;
 }
 
@@ -161,6 +193,23 @@ static inline PyObject* pdb_symbol_list_to_py(pdb_symbol_result h) {
     }
     delete L;
     return result ? result : PyList_New(0);
+}
+
+static inline PyObject* pdb_symbol_single_to_py(pdb_symbol_single_result h) {
+    auto* p = static_cast<PdbSingleImpl*>(h.p);
+    if (!p) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    PyObject* t = PyTuple_Pack(2,
+        PyLong_FromUnsignedLongLong(static_cast<unsigned long long>(p->first)),
+        PyUnicode_FromString(p->second.c_str()));
+    delete p;
+    if (!t) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    return t;
 }
 
 #endif
