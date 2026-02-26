@@ -11,6 +11,8 @@ Usage:
 import argparse
 from pyintrovirt import VMI, EventType
 
+import introvirt
+
 
 def print_version(vmi: VMI):
     """Print the version of the hypervisor"""
@@ -59,8 +61,13 @@ def main():
 
             print(f"Guest: {vmi.guest_os()}")
             vmi.register_callback(EventType.EVENT_FAST_SYSCALL, handle_syscall)
+
+            vmi.filter_system_call(introvirt.SystemCallIndex_NtOpenProcess, True)
+            vmi.filter_system_calls(True)
+
             vmi.intercept_system_calls(True)
             vmi.start_event_poller(blocking=True)
+
     except Exception as exc:
         print(exc)
 

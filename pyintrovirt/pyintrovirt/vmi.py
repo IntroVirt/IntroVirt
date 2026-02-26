@@ -1,6 +1,7 @@
 """VMI Helpers for the IntroVirt Python Bindings."""
 
 import signal
+import traceback
 import threading
 from contextlib import ContextDecorator
 from typing import Callable, NamedTuple, Optional, Union
@@ -37,13 +38,21 @@ class CallbackEventHandler(introvirt.EventCallback):
         self.event_callbacks[event_type] = callback
 
     def process_event(self, event: "introvirt.Event"):
-        """Called for each event received."""
+        """Callback from the introvirt.EventCallback"""
+        try:
+            self._process_event(event)
+        except Exception as exc:
+            print(f"Unhandled exception processing event: {exc}")
+            traceback.print_exc()
+
+    def _process_event(self, event: "introvirt.Event"):
+        """Called internally for each event received."""
         if not self.event_callbacks and not self.global_event_callback:
             return  # no callbacks to call
 
         os_event = None
         if event.os_type() == introvirt.OS_Windows:
-            os_event = introvirt.windows.WindowsEvent_from_event(event)
+            os_event = introvirt.WindowsEvent_from_event(event)
         elif event.os_type() == introvirt.OS_Linux:
             # TODO: Implement Linux event handling
             # os_event = introvirt.linux.LinuxEvent_from_event(event)
@@ -72,7 +81,7 @@ class VMI(ContextDecorator):
         self.hypervisor = introvirt.Hypervisor.instance()
         self.event_handler = CallbackEventHandler()
         self.thread = None
-        self.domain = None
+        self.domain: introvirt.Domain = None
         if self.target:
             self.attach(self.target)
 
@@ -171,6 +180,29 @@ class VMI(ContextDecorator):
                 return "Linux"
             case _:
                 return "Unknown"
+
+    def clear_system_call_filter(self):
+        """Clear the system call filter if set."""
+        if not self.domain:
+            raise RuntimeError("VMI must be attached to a domain. Attach first.")
+        self.domain.system_call_filter().clear()
+
+    def filter_system_call(self, syscall: int, enabled: bool):
+        """Toggle filtering of a specific system call."""
+        if not self.domain:
+            raise RuntimeError("VMI must be attached to a domain. Attach first.")
+        guest = self.domain.guest()
+        if guest.os() == introvirt.OS_Windows:
+            win_guest = introvirt.WindowsGuest_from_guest(guest)
+            win_guest.set_system_call_filter(self.domain.system_call_filter(), syscall, enabled)
+        else:
+            raise NotImplementedError("Only implemented for Windows guests right now.")
+
+    def filter_system_calls(self, enabled: bool):
+        """Toggle system call filtering on/off."""
+        if not self.domain:
+            raise RuntimeError("VMI must be attached to a domain. Attach first.")
+        self.domain.system_call_filter().enabled(enabled)
 
     def intercept_system_calls(self, enabled: bool):
         """Toggle system call interception on/off."""
