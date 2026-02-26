@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 """IntroVirt Python example: API call monitor (ivcallmon clone).
 
-Sets breakpoints on specified module!symbol patterns. Supports export-only
-resolution when a module base is provided via --module-base. Optional return
-breakpoints use read_guest_uint64 to read the return address from RSP.
+Sets breakpoints on specified module!symbol patterns. Walks the process VAD tree
+to find modules and uses PDB for symbol resolution (same as C++ ivcallmon).
+Optional return breakpoints use read_guest_uint64 to read the return address from RSP.
 
 Usage:
-  python3 callmon.py DOMAIN --procname NAME --module-base MODULE=ADDRESS SYMBOL [SYMBOL ...]
+  python3 callmon.py DOMAIN --procname NAME [SYMBOL ...]
 
 Example:
-  python3 callmon.py myvm --procname notepad.exe --module-base ntdll=0x7ff123400000 ntdll!NtCreateFile ntdll!Nt*
+  python3 callmon.py myvm --procname notepad.exe 'ntdll!NtCreateFile' 'ntdll!Nt*'
+
+Default symbol set is ntdll!Nt* if none provided.
 
 Requires root and IntroVirt-patched hypervisor.
 """
 import argparse
-import fnmatch
 import signal
 import sys
 import threading
@@ -34,45 +35,6 @@ def _interrupt_listener():
         d = _domain
         if d is not None:
             d.interrupt()
-
-
-def wildcard_match(pattern: str, s: str) -> bool:
-    """Match pattern (with * and ?) against s, case-insensitive."""
-    pattern, s = pattern.lower(), s.lower()
-    # Simple non-recursive * match
-    if "*" not in pattern and "?" not in pattern:
-        return pattern == s
-    return fnmatch.fnmatch(s, pattern)
-
-
-def resolve_export_symbols(domain, vcpu, module_base: int, module_name: str, patterns: list):
-    """Resolve export names matching patterns at the given PE base. Returns list of (address, name)."""
-    try:
-        pe = introvirt.pe_from_address(domain, vcpu, module_base)
-    except Exception:
-        return []
-    if pe is None:
-        return []
-    try:
-        exp_dir = pe.export_directory()
-        if exp_dir is None:
-            return []
-        results = []
-        name_map = exp_dir.NameToExportMap()
-        if name_map is None:
-            return []
-        for name, exp in name_map.items():
-            for pat in patterns:
-                if wildcard_match(pat, name):
-                    addr_val = introvirt.pe_export_address_value(exp)
-                    if addr_val != 0:
-                        results.append((module_base + addr_val, name))
-                    break
-        return results
-    finally:
-        if pe is not None:
-            # PE is returned as raw pointer; SWIG/newobject will delete when Python drops it
-            pass
 
 
 class BreakpointHandler(introvirt.BreakpointCallback):
@@ -101,7 +63,7 @@ class BreakpointHandler(introvirt.BreakpointCallback):
                     ret_handler = ReturnBreakpointHandler(
                         self._domain, self._name, task.pid(), task.tid(), rsp + 8
                     )
-                    self._return_breakpoint = introvirt.create_breakpoint(
+                    self._return_breakpoint = introvirt.create_breakpoint_holder(
                         self._domain, vcpu, ret_addr, ret_handler
                     )
             except Exception as e:
@@ -128,21 +90,28 @@ class ReturnBreakpointHandler(introvirt.BreakpointCallback):
         sys.stdout.flush()
 
 
+def _filename_ends_with_dll(filename: str, dll: str) -> bool:
+    """Case-insensitive check if filename ends with dll (e.g. ntdll.dll)."""
+    fn, d = filename.lower().replace("/", "\\"), dll.lower()
+    if not d.endswith(".dll"):
+        d = d + ".dll"
+    return fn.endswith(d)
+
+
 class CallMonitor(introvirt.EventCallback):
-    def __init__(self, domain, procname: str, module_bases: dict, symbols: list, return_bp: bool):
+    def __init__(self, domain, procname: str, requested_symbols: dict, requested_dlls: set,
+                 return_bp: bool):
         super().__init__()
         self._domain = domain
         self._procname = procname
-        self._module_bases = module_bases  # module_name -> base_address
-        self._symbols = symbols  # list of "module!pattern"
+        self._requested_symbols = requested_symbols  # module_name -> list of patterns
+        self._requested_dlls = requested_dlls       # e.g. {"ntdll.dll"}
         self._return_bp = return_bp
-        self._breakpoints = []
-        self._installed = False
+        self._breakpoints = []  # list of (handler, bp) to keep handler alive for C++ callback
+        self._found_dlls = set()
+        self._all_symbols_resolved = False
+        self._initial_check_done = False
         self._lock = threading.Lock()
-        self._symbols_by_module = {}
-
-    def set_symbols_by_module(self, symbols_by_module: dict):
-        self._symbols_by_module = symbols_by_module
 
     def process_event(self, event):
         try:
@@ -150,6 +119,13 @@ class CallMonitor(introvirt.EventCallback):
                 self._handle_syscall(event)
             elif event.type() == introvirt.EventType_EVENT_FAST_SYSCALL_RET:
                 self._handle_sysret(event)
+            elif event.type() == introvirt.EventType_EVENT_CR_WRITE:
+                if event.cr().index() == 3:
+                    if not self._initial_check_done:
+                        self._initial_check_done = True
+                        self._domain.intercept_cr_writes(3, False)
+                        print("Initial CR3 write event, turning off CR3 monitoring")
+                        self._set_breakpoints(event)
         except Exception as e:
             print(f"process_event error: {e}", file=sys.stderr)
             import traceback
@@ -159,9 +135,10 @@ class CallMonitor(introvirt.EventCallback):
         wevent = introvirt.WindowsEvent_from_event(event)
         if wevent is not None and wevent.syscall().index() == introvirt.SystemCallIndex_NtMapViewOfSection:
             wevent.syscall().hook_return(True)
-        if not self._installed:
-            self._installed = True
-            self._install_breakpoints(event)
+        if not self._initial_check_done:
+            self._initial_check_done = True
+            print("Initial syscall event, setting breakpoints")
+            self._set_breakpoints(event)
 
     def _handle_sysret(self, event):
         wevent = introvirt.WindowsEvent_from_event(event)
@@ -169,45 +146,70 @@ class CallMonitor(introvirt.EventCallback):
             return
         if wevent.syscall().index() == introvirt.SystemCallIndex_NtMapViewOfSection:
             handler = wevent.syscall().handler()
-            if handler is not None and handler.result().NT_SUCCESS():
-                if not self._installed:
-                    self._installed = True
-                    self._install_breakpoints(event)
+            ok, result = introvirt.get_windows_syscall_result_value(event)
+            if handler is not None and ok and introvirt.nt_success(result):
+                print("NtMapViewOfSection succeeded, setting breakpoints")
+                self._set_breakpoints(event)
+        if self._all_symbols_resolved:
+            self._domain.intercept_system_calls(False)
 
-    def _install_breakpoints(self, event):
-        task = event.task()
-        vcpu = event.vcpu()
-        pid = task.pid()
-        for module_name, patterns in self._symbols_by_module.items():
-            base = self._module_bases.get(module_name)
-            if base is None:
-                continue
-            addrs = resolve_export_symbols(self._domain, vcpu, base, module_name, patterns)
-            for addr, name in addrs:
-                handler = BreakpointHandler(
-                    self._domain, f"{module_name}!{name}", pid, self._return_bp
-                )
-                bp = introvirt.create_breakpoint(self._domain, vcpu, addr, handler)
-                if bp is not None:
-                    with self._lock:
-                        self._breakpoints.append(bp)
+    def _set_breakpoints(self, event):
+        with self._lock:
+            if self._all_symbols_resolved:
+                return
+            wevent = introvirt.WindowsEvent_from_event(event)
+            if wevent is None:
+                return
+            task = event.task()
+            vcpu = event.vcpu()
+            pid = task.pid()
+            modules = introvirt.get_executable_mapped_modules(event)
+            for base, filename in modules:
+                filename_lower = filename.lower().replace("/", "\\")
+                matched_dll = None
+                for dll in self._requested_dlls:
+                    if _filename_ends_with_dll(filename, dll):
+                        matched_dll = dll
+                        break
+                if matched_dll is None or matched_dll in self._found_dlls:
+                    continue
+                module_name = matched_dll[:-4] if matched_dll.lower().endswith(".dll") else matched_dll
+                patterns = self._requested_symbols.get(module_name)
+                if not patterns:
+                    continue
+                try:
+                    print(f"Resolving symbols for {filename} with patterns {patterns}")
+                    symbol_list = introvirt.resolve_symbols_via_pdb(
+                        self._domain, vcpu, base, patterns
+                    )
+                    print(f"Resolved symbols: {symbol_list}")
+                except Exception:
+                    import traceback
+                    traceback.print_exc(file=sys.stderr)
+                    continue
+
+                for addr, name in symbol_list:
+                    print(f"Creating breakpoint for {module_name}!{name} at {addr}")
+                    handler = BreakpointHandler(
+                        self._domain, f"{module_name}!{name}", pid, self._return_bp
+                    )
+                    bp = introvirt.create_breakpoint_holder(self._domain, vcpu, addr, handler)
+                    if bp is not None:
+                        self._breakpoints.append((handler, bp))
+                self._found_dlls.add(matched_dll)
+                if len(self._found_dlls) >= len(self._requested_dlls):
+                    self._all_symbols_resolved = True
+                    self._domain.intercept_system_calls(False)
+                    return
 
 
 def main():
     global _domain
     parser = argparse.ArgumentParser(
-        description="Monitor API calls via breakpoints (ivcallmon clone). Export-only resolution."
+        description="Monitor API calls via breakpoints (ivcallmon clone). VAD + PDB symbol resolution."
     )
     parser.add_argument("domain", metavar="DOMAIN", help="Domain name or ID")
     parser.add_argument("--procname", metavar="NAME", required=True, help="Process name filter")
-    parser.add_argument(
-        "--module-base",
-        metavar="MODULE=ADDRESS",
-        action="append",
-        dest="module_bases",
-        default=[],
-        help="Module base address (e.g. ntdll=0x7ff123400000). Can be repeated.",
-    )
     parser.add_argument(
         "--no-return",
         action="store_true",
@@ -215,42 +217,25 @@ def main():
     )
     parser.add_argument(
         "symbols",
-        nargs="+",
+        nargs="*",
         metavar="SYMBOL",
-        help="Symbols as module!name or module!pattern (e.g. ntdll!NtCreateFile, ntdll!Nt*)",
+        help="Symbols as module!name or module!pattern (default: ntdll!Nt*)",
     )
     args = parser.parse_args()
 
-    module_bases = {}
-    for s in args.module_bases:
-        if "=" not in s:
-            print("Invalid --module-base (expected MODULE=ADDRESS)", file=sys.stderr)
-            return 1
-        name, addr_str = s.split("=", 1)
-        name = name.strip().lower()
-        if name.endswith(".dll"):
-            name = name[:-4]
-        try:
-            module_bases[name] = int(addr_str, 0)
-        except ValueError:
-            print(f"Invalid address: {addr_str}", file=sys.stderr)
-            return 1
-
-    symbols_by_module = {}
-    for sym in args.symbols:
-        sym = sym.strip().lower()
+    symbols = [s.strip().lower() for s in args.symbols] if args.symbols else ["ntdll!nt*"]
+    requested_symbols = {}
+    requested_dlls = set()
+    for sym in symbols:
         if "!" not in sym:
             print(f"Invalid symbol (expected module!name): {sym}", file=sys.stderr)
             return 1
         mod, pat = sym.split("!", 1)
         if mod.endswith(".dll"):
             mod = mod[:-4]
-        symbols_by_module.setdefault(mod, []).append(pat)
-
-    for mod in symbols_by_module:
-        if mod not in module_bases:
-            print(f"No --module-base for module '{mod}'", file=sys.stderr)
-            return 1
+        requested_symbols.setdefault(mod, []).append(pat)
+        dll = mod + ".dll"
+        requested_dlls.add(dll)
 
     try:
         hypervisor = introvirt.Hypervisor.instance()
@@ -265,26 +250,27 @@ def main():
     if not _domain.detect_guest():
         print("Failed to detect guest OS", file=sys.stderr)
         return 1
+    guest = _domain.guest()
+    if guest is None or guest.os() != introvirt.OS_Windows:
+        print("callmon only supports Windows guests", file=sys.stderr)
+        return 1
 
     _domain.task_filter().add_name(args.procname)
-    guest = _domain.guest()
-    if guest is not None and guest.os() == introvirt.OS_Windows:
-        win_guest = introvirt.WindowsGuest_from_guest(guest)
-        if win_guest is not None:
-            # Match ivcallmon: enable at domain level, set trap at guest level only (no set_64).
-            _domain.system_call_filter().enabled(True)
-            win_guest.set_system_call_filter(
-                _domain.system_call_filter(),
-                introvirt.SystemCallIndex_NtMapViewOfSection,
-                True,
-            )
+    win_guest = introvirt.WindowsGuest_from_guest(guest)
+    if win_guest is not None:
+        _domain.system_call_filter().enabled(True)
+        win_guest.set_system_call_filter(
+            _domain.system_call_filter(),
+            introvirt.SystemCallIndex_NtMapViewOfSection,
+            True,
+        )
     _domain.intercept_system_calls(True)
     _domain.intercept_cr_writes(3, True)
 
     monitor = CallMonitor(
-        _domain, args.procname, module_bases, args.symbols, return_bp=not args.no_return
+        _domain, args.procname, requested_symbols, requested_dlls,
+        return_bp=not args.no_return,
     )
-    monitor.set_symbols_by_module(symbols_by_module)
 
     signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
     listener = threading.Thread(target=_interrupt_listener, daemon=True)

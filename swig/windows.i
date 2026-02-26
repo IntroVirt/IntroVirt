@@ -128,3 +128,6 @@ void get_windows_syscall_result_value(const introvirt::Event* e, bool& ok, uint3
 
 /* PE (Portable Executable) support */
 %include "pe.i"
+
+/* PDB helpers (VAD walk, get_executable_mapped_modules, resolve_symbols_via_pdb) */
+%include "pdb_helpers.i"

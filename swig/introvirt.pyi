@@ -364,6 +364,12 @@ def get_concrete_handler(wevent: "WindowsEvent") -> Optional["WindowsSystemCall"
 def system_call_from_string(name: str) -> int: ...
 
 
+def get_executable_mapped_modules(event: Optional["Event"]) -> list[tuple[int, str]]: ...
+def resolve_symbols_via_pdb(
+    domain: Domain, vcpu: Vcpu, base_address: int, patterns: list[str]
+) -> list[tuple[int, str]]: ...
+
+
 class Breakpoint: ...
 
 
@@ -379,6 +385,16 @@ def write_guest_bytes(domain: Domain, vcpu: Vcpu, vaddr: int, data: bytes) -> No
 def create_breakpoint(
     domain: Domain, vcpu: Vcpu, address: int, callback: BreakpointCallback
 ) -> Optional[Breakpoint]: ...
+
+
+class BreakpointHolder:
+    """Holds a breakpoint; when destroyed, frees the underlying shared_ptr (use to avoid exit leak)."""
+    def get(self) -> Breakpoint: ...
+
+
+def create_breakpoint_holder(
+    domain: Domain, vcpu: Vcpu, address: int, callback: BreakpointCallback
+) -> Optional[BreakpointHolder]: ...
 
 
 class Watchpoint: ...
