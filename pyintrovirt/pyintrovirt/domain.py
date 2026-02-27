@@ -53,6 +53,15 @@ class Domain(ContextDecorator):
         """Access the guest OS type enum."""
         return self._os
 
+    @property
+    def syscall_categories(self) -> tuple[str]:
+        """Get a list of system call categories."""
+        if self.os == introvirt.OS.Windows:
+            win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
+            return win_guest.syscall_categories()
+        else:
+            raise NotImplementedError("Only implemented for Windows guests right now.")
+
     def detach(self) -> None:
         """Detach from the domain. Safe to call multiple times."""
         if self._domain is None:
@@ -68,11 +77,27 @@ class Domain(ContextDecorator):
         """Clear the system call filter if set."""
         self._domain.system_call_filter().clear()
 
+    def default_system_call_filter(self):
+        """Set the system call filter to the default set of supported system calls for the OS."""
+        if self.os == introvirt.OS.Windows:
+            win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
+            win_guest.default_syscall_filter(self._domain.system_call_filter())
+        else:
+            raise NotImplementedError("Only implemented for Windows guests right now.")
+
     def filter_system_call(self, syscall: introvirt.SystemCallIndex, enabled: bool):
         """Toggle filtering of a specific system call."""
         if self.os == introvirt.OS.Windows:
-            win_guest = introvirt.WindowsGuest_from_guest(self._guest)
+            win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
             win_guest.set_system_call_filter(self._domain.system_call_filter(), syscall.value, enabled)
+        else:
+            raise NotImplementedError("Only implemented for Windows guests right now.")
+
+    def filter_system_call_category(self, category: str):
+        """Filter by a system call category."""
+        if self.os == introvirt.OS.Windows:
+            win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
+            win_guest.enable_category(category, self._domain.system_call_filter())
         else:
             raise NotImplementedError("Only implemented for Windows guests right now.")
 

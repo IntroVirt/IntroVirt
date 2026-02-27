@@ -8,6 +8,7 @@ import os
 import sys
 
 from .vmi import VMI
+from .event import Event
 
 if sys.platform != "linux":
     raise RuntimeError("pyintrovirt only supports Linux")
@@ -42,6 +43,7 @@ from introvirt import (
 __all__: list[str] = [
     "VMI",
     "OS",
+    "Event",
     "EventType",
     "IntroVirtError",
     "NoSuchDomainException",

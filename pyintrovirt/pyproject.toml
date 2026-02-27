@@ -16,6 +16,9 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 
+[project.scripts]
+pyintrovirt = "pyintrovirt.shell:main"
+
 [project.optional-dependencies]
 dev = ["pylint", "ty", "ruff", "pytest"]
 doc = ["sphinx", "furo"]

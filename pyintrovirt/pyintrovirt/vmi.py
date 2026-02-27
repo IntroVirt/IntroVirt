@@ -164,7 +164,13 @@ class VMI(ContextDecorator):
         return self._domain.os
 
     @_require_attachment
+    def syscall_categories(self) -> tuple[str]:
+        """Get a list of system call categories."""
+        return self._domain.syscall_categories
+
+    @_require_attachment
     def filter_system_calls(self, syscalls: list[Union[introvirt.SystemCallIndex, int, str]]):
+        """Filter system calls to the list provided."""
         norm_syscalls: list[introvirt.SystemCallIndex] = _normalize_syscalls(syscalls)
         self._filtering_syscalls.update(norm_syscalls)
         for syscall in self._filtering_syscalls:
@@ -173,7 +179,14 @@ class VMI(ContextDecorator):
         self._domain.filter_system_calls(should_filter)
 
     @_require_attachment
+    def filter_system_call_category(self, category: str):
+        """Filter by a system call category."""
+        self._domain.filter_system_call_category(category)
+        self._domain.filter_system_calls(True)
+
+    @_require_attachment
     def unfilter_system_calls(self, syscalls: list[Union[introvirt.SystemCallIndex, str, int]]):
+        """Remove the provided system calls from the filter."""
         norm_syscalls: list[introvirt.SystemCallIndex] = _normalize_syscalls(syscalls)
         self._filtering_syscalls.difference_update(norm_syscalls)
         for syscall in set(norm_syscalls):
@@ -187,6 +200,12 @@ class VMI(ContextDecorator):
         self._filtering_syscalls.clear()
         self._domain.clear_system_call_filter()
         self._domain.filter_system_calls(False)
+
+    @_require_attachment
+    def default_system_call_filter(self):
+        """Set the system call filter to the default set of supported system calls for the OS."""
+        self._domain.default_system_call_filter()
+        self._domain.filter_system_calls(True)
 
     @_require_attachment
     def intercept_system_calls(self, enabled: bool):
