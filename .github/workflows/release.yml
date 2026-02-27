@@ -1,5 +1,8 @@
 name: Create Release
 
+env:
+  SWIG_VERSION: '4.2.1'
+
 on:
   push:
     tags:
@@ -22,11 +25,11 @@ jobs:
       # Install build deps
       - name: Install Dependencies
         run: |
-          # Deps
+          # Deps (swig installed from source below for consistent version across Ubuntu)
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
             libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
-            liblog4cxx-dev python3-jinja2 python3 graphviz \
+            liblog4cxx-dev python3-jinja2 python3 python3-dev libpcre2-dev graphviz \
             doxygen clang-format git wget unzip
 
           # libmspdb
@@ -36,11 +39,24 @@ jobs:
           sudo apt install ./libmspdb_ubuntu-$(lsb_release -sr)_Release/*.deb
         shell: bash
 
+      # Install SWIG (from source for consistent version across Ubuntu)
+      - name: Install SWIG
+        run: |
+          wget -q "https://github.com/swig/swig/archive/refs/tags/v${{ env.SWIG_VERSION }}.tar.gz" -O swig.tar.gz
+          tar xzf swig.tar.gz
+          cd swig-*
+          ./autogen.sh
+          ./configure --prefix=/usr/local
+          make -j$(nproc)
+          sudo make install
+          swig -version
+        shell: bash
+
       # Run the build
       - name: ${{ matrix.os }} Build Release
         run: |
           cd build
-          cmake -GNinja -DCMAKE_BUILD_TYPE=Release ..
+          cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DINTROVIRT_PYTHON_BINDINGS=ON -DDOXYGEN=ON ..
           ninja package
         shell: bash
 
@@ -51,8 +67,26 @@ jobs:
           name: introvirt_${{ matrix.os }}_Release
           path: build/*.deb
 
+  # Build the pyintrovirt wheel and sdist
+  build-pyintrovirt:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Build pyintrovirt wheel
+        run: uv build --directory pyintrovirt
+
+      - name: Archive pyintrovirt dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyintrovirt_dist
+          path: pyintrovirt/dist/*
+
   release:
-    needs: build
+    needs: [build, build-pyintrovirt]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +98,13 @@ jobs:
           path: all-debs
           pattern: introvirt_*_Release
 
-      # Create and upload the debs to a new release
+      # Download pyintrovirt wheel and sdist
+      - name: Download pyintrovirt artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pyintrovirt_dist
+
+      # Create and upload the debs and pyintrovirt to a new release
       - name: Upload Release Asset
         id: upload_release-asset
         env:
@@ -78,8 +118,10 @@ jobs:
           done
 
           echo "Uploading release assets"
+          shopt -s nullglob
           gh release create ${{ github.ref_name }} \
             --title "Release ${{ github.ref_name }}" \
             --draft \
-            *.zip
+            *.zip \
+            ../pyintrovirt_dist/*.whl ../pyintrovirt_dist/*.tar.gz
         shell: bash

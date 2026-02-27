@@ -9,4 +9,4 @@ export DEB_LDFLAGS_MAINT_APPEND = -rdynamic
 override_dh_strip:
 
 override_dh_auto_configure:
-	dh_auto_configure -- -DDOXYGEN=1
+	dh_auto_configure -- -DDOXYGEN=ON -DINTROVIRT_PYTHON_BINDINGS=ON

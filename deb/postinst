@@ -12,17 +12,21 @@ fi
 # TODO: Can we populate this array automatically?
 #
 declare -a arr=(
+    "/usr/bin/ivcallmon"
     "/usr/bin/ivcr3mon"
     "/usr/bin/ivexec"
+    "/usr/bin/ivfilemon"
     "/usr/bin/ivguestinfo"
+    "/usr/bin/ivmemwatch"
     "/usr/bin/ivprocinfo"
+    "/usr/bin/ivprocmemdump"
     "/usr/bin/ivreadfile"
-    "/usr/bin/ivsessions"
     "/usr/bin/ivservicetable"
+    "/usr/bin/ivsessions"
     "/usr/bin/ivsyscallmon"
     "/usr/bin/ivversion"
     "/usr/bin/ivwritefile"
-    )
+)
 for i in "${arr[@]}"
 do
    # Put it in the introvirt group
