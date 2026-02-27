@@ -14,6 +14,9 @@
 %ignore introvirt::windows::nt::NTSTATUS::NT_WARNING(NTSTATUS_CODE);
 %ignore introvirt::windows::nt::NTSTATUS::NT_ERROR(NTSTATUS_CODE);
 %ignore introvirt::windows::nt::NTSTATUS::NTSTATUS(NTSTATUS_CODE);
+%ignore introvirt::windows::nt::NTSTATUS::operator=(const NTSTATUS&);
+%ignore introvirt::windows::nt::NTSTATUS::operator=(NTSTATUS&&);
+%ignore introvirt::windows::nt::NTSTATUS::operator uint32_t() const;
 %rename("$ignore") introvirt::windows::nt::to_string;
 %rename("$ignore") introvirt::windows::nt::operator<<;
 %include <introvirt/windows/kernel/nt/const/NTSTATUS.hh>
@@ -30,6 +33,8 @@
 %include <introvirt/windows/event/WindowsEvent.hh>
 
 /* OBJECT_ATTRIBUTES: expose FullPath(KPCR), ObjectName, Length, RootDirectory, Attributes, isInheritable; ignore write, json, guest_ptr */
+%ignore introvirt::inject::GuestAllocation<introvirt::windows::nt::OBJECT_ATTRIBUTES>;
+%warnfilter(317);
 %ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::write;
 %ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::json;
 %ignore introvirt::windows::nt::OBJECT_ATTRIBUTES::ObjectNamePtr;
@@ -44,6 +49,9 @@
 /* NtSystemCall: expose result() getter; ignore result(NTSTATUS_CODE) setter */
 %ignore introvirt::windows::nt::NtSystemCall::result(NTSTATUS_CODE);
 %include <introvirt/windows/kernel/nt/syscall/NtSystemCall.hh>
+
+/* Win32k base so NtUserGetMessage/NtUserPostMessage base class is known. */
+%include <introvirt/windows/kernel/win32k/syscall/Win32kSystemCall.hh>
 
 /* Generated: get_concrete_handler(WindowsEvent*) so Python gets concrete handler type (e.g. NtCreateFile). */
 %include "windows_syscalls_generated.i"

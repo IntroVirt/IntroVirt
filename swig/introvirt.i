@@ -8,8 +8,12 @@
 /* Generate API documentation with Doxygen */
 %feature("autodoc", "2");
 
-/* Suppress SWIG 509: overloaded to_string/operator<< for OS, FastCallType shadowed by EventType */
-%warnfilter(509);
+/* Suppress SWIG 509: overloaded to_string/operator<< for OS, FastCallType shadowed by EventType.
+ * 317: specialization of non-template GuestAllocation (OBJECT_ATTRIBUTES.hh).
+ * 401: base class undefined when derived is parsed before base in generated syscall list.
+ * 503: operator<< / conversion operators that cannot be wrapped as Python identifiers. */
+%warnfilter(509, 317, 401, 503);
+#pragma SWIG nowarn=317,401,503,509
 
 %module(docstring="IntroVirt Python bindings for VM introspection", directors="1", threads="1") introvirt
 
@@ -156,3 +160,47 @@ static PyObject* p_PeException;
 %include "core/breakpoints.i"
 %include "core/guest_memory.i"
 %include "windows/windows.i"
+
+%pythoncode %{
+from enum import Enum
+
+# Re-export exception classes from the C module into the wrapper so introvirt.IntroVirtError etc. work like introvirt.SystemCallIndex_*.
+IntroVirtError = _introvirt_py.IntroVirtError
+NoSuchDomainException = _introvirt_py.NoSuchDomainException
+DomainBusyException = _introvirt_py.DomainBusyException
+UnsupportedHypervisorException = _introvirt_py.UnsupportedHypervisorException
+GuestDetectionException = _introvirt_py.GuestDetectionException
+InvalidMethodException = _introvirt_py.InvalidMethodException
+InvalidVcpuException = _introvirt_py.InvalidVcpuException
+NotImplementedException = _introvirt_py.NotImplementedException
+CommandFailedException = _introvirt_py.CommandFailedException
+BadPhysicalAddressException = _introvirt_py.BadPhysicalAddressException
+VirtualAddressNotPresentException = _introvirt_py.VirtualAddressNotPresentException
+PeException = _introvirt_py.PeException
+
+def create_enum_from_swig(prefix):
+    """Dynamically creates a Python Enum from SWIG-wrapped integer constants."""
+    # Read constants from the C extension module (they are always defined there)
+    tmpD = {k: getattr(_introvirt_py, k) for k in dir(_introvirt_py) if k.startswith(prefix + '_')}
+    if not tmpD:
+        return
+    # Build enum: suffix -> integer value (coerce in case SWIG returns a proxy)
+    enum_members = {k[len(prefix) + 1:]: int(v) for k, v in tmpD.items()}
+    globals()[prefix] = Enum(prefix, enum_members)
+    # Remove the original constants from this modules globals to avoid duplication
+    for k in tmpD:
+        if k in globals():
+            del globals()[k]
+
+# Call the helper function for the enums we want to re-export
+create_enum_from_swig('SystemCallIndex')
+create_enum_from_swig('EventType')
+create_enum_from_swig('FastCallType')
+create_enum_from_swig('OS')
+create_enum_from_swig('Exception')
+create_enum_from_swig('MachineType')
+create_enum_from_swig('ExportType')
+
+# Clean up the helper function from the modules public interface
+del create_enum_from_swig
+%}

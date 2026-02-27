@@ -20,10 +20,19 @@ def test_import():
     assert hasattr(introvirt, "system_call_from_string")
     assert hasattr(introvirt, "get_windows_syscall_result_value")
     assert hasattr(introvirt, "WindowsGuest_from_guest")
+    assert hasattr(introvirt, "IntroVirtError")
     assert hasattr(_introvirt_c, "IntroVirtError")
     assert hasattr(introvirt, "BreakpointCallback")
-    assert hasattr(introvirt, "EventType_EVENT_FAST_SYSCALL")
-    assert hasattr(introvirt, "OS_Windows")
+    # Enums created by create_enum_from_swig (use Enum and a member)
+    assert hasattr(introvirt, "EventType")
+    assert hasattr(introvirt.EventType, "EVENT_FAST_SYSCALL")
+    assert hasattr(introvirt, "OS")
+    assert hasattr(introvirt.OS, "Windows")
+    assert hasattr(introvirt, "SystemCallIndex")
+    assert hasattr(introvirt.SystemCallIndex, "NtAcceptConnectPort")
+    assert hasattr(introvirt, "Exception")
+    assert hasattr(introvirt.Exception, "GP_FAULT")
+    assert hasattr(introvirt.Exception, "INT3")
     assert hasattr(introvirt, "resolve_symbol_by_name")
     assert hasattr(introvirt, "pdb_rva_to_guest_address")
     assert hasattr(introvirt, "read_guest_bytes")
@@ -66,7 +75,7 @@ def test_system_call_from_string():
     """system_call_from_string returns an int for known names."""
     idx = introvirt.system_call_from_string("NtCreateFile")
     assert isinstance(idx, int)
-    assert idx == introvirt.SystemCallIndex_NtCreateFile
+    assert idx == introvirt.SystemCallIndex.NtCreateFile.value
 
 
 def test_system_call_filter():
@@ -78,7 +87,7 @@ def test_system_call_filter():
     f.mask(1)
     assert f.mask() == 1
     f.set_32(0, True)
-    f.set_64(introvirt.SystemCallIndex_NtCreateFile, True)
+    f.set_64(introvirt.SystemCallIndex.NtCreateFile.value, True)
     f.enabled(True)
     assert f.enabled() is True
 
@@ -110,6 +119,13 @@ def test_exceptions():
     assert issubclass(_introvirt_c.NoSuchDomainException, _introvirt_c.IntroVirtError)
     assert issubclass(_introvirt_c.DomainBusyException, _introvirt_c.IntroVirtError)
     assert issubclass(_introvirt_c.InvalidMethodException, _introvirt_c.IntroVirtError)
+
+
+def test_exceptions_reexported_on_wrapper():
+    """introvirt re-exports exception classes from _introvirt_py (same objects)."""
+    assert introvirt.IntroVirtError is _introvirt_c.IntroVirtError
+    assert introvirt.NoSuchDomainException is _introvirt_c.NoSuchDomainException
+    assert issubclass(introvirt.NoSuchDomainException, introvirt.IntroVirtError)
 
 
 def test_breakpoint_callback_director():
@@ -146,12 +162,72 @@ def test_single_step_callback_director():
 
 
 def test_constants_are_integers():
-    """EventType and OS constants are integers."""
-    assert isinstance(introvirt.EventType_EVENT_FAST_SYSCALL, int)
-    assert isinstance(introvirt.EventType_EVENT_FAST_SYSCALL_RET, int)
-    assert isinstance(introvirt.OS_Windows, int)
-    assert isinstance(introvirt.OS_Linux, int)
-    assert isinstance(introvirt.SystemCallIndex_NtCreateFile, int)
+    """EventType, OS, and SystemCallIndex enum members have integer values."""
+    assert isinstance(introvirt.EventType.EVENT_FAST_SYSCALL.value, int)
+    assert isinstance(introvirt.EventType.EVENT_FAST_SYSCALL_RET.value, int)
+    assert isinstance(introvirt.OS.Windows.value, int)
+    assert isinstance(introvirt.OS.Linux.value, int)
+    assert isinstance(introvirt.SystemCallIndex.NtCreateFile.value, int)
+    assert isinstance(introvirt.Exception.GP_FAULT.value, int)
+    assert isinstance(introvirt.Exception.INT3.value, int)
+
+
+def test_enum_values():
+    """Enum values are correct."""
+    assert introvirt.EventType.EVENT_FAST_SYSCALL.value == 0
+    assert introvirt.EventType.EVENT_FAST_SYSCALL_RET.value == 1
+    assert introvirt.EventType.EVENT_UNKNOWN.value == -1
+    assert introvirt.OS.Unknown.value == 0
+    assert introvirt.OS.Windows.value == 1
+    assert introvirt.OS.Linux.value == 2
+    assert introvirt.SystemCallIndex.NtAcceptConnectPort.value == 0
+    assert introvirt.Exception.GP_FAULT.value == 13
+    assert introvirt.Exception.INT3.value == 3
+
+
+def test_enums_created():
+    """create_enum_from_swig produced proper Python Enums with expected members."""
+    from enum import Enum as EnumType
+
+    for name in ("SystemCallIndex", "EventType", "OS", "Exception"):
+        enum_class = getattr(introvirt, name)
+        assert isinstance(enum_class, type)
+        assert issubclass(enum_class, EnumType), f"{name} is not an Enum"
+        assert len(enum_class) > 0, f"{name} has no members"
+    # Spot-check a few members and values
+    assert introvirt.SystemCallIndex.NtCreateFile.name == "NtCreateFile"
+    assert introvirt.EventType.EVENT_FAST_SYSCALL.name == "EVENT_FAST_SYSCALL"
+    assert introvirt.OS.Windows.name == "Windows"
+    assert introvirt.OS.Linux.name == "Linux"
+    assert introvirt.SystemCallIndex.NtAcceptConnectPort.name == "NtAcceptConnectPort"
+    assert introvirt.Exception.GP_FAULT.name == "GP_FAULT"
+    assert introvirt.Exception.INT3.name == "INT3"
+
+
+def test_stub_contains_enums_and_classes():
+    """Generated introvirt.pyi should expose key enums and classes for type checkers.
+
+    This is a smoke test that the generator sees the same public API that the tests
+    exercise at runtime. It does not read the stub file directly, but instead relies
+    on the introspected module view used by the generator.
+    """
+    # Enums
+    assert hasattr(introvirt, "EventType")
+    assert hasattr(introvirt, "SystemCallIndex")
+    assert hasattr(introvirt, "OS")
+    assert hasattr(introvirt, "Exception")
+
+    # Representative classes
+    for name in (
+        "Domain",
+        "Guest",
+        "Vcpu",
+        "Event",
+        "WindowsGuest",
+        "NtCreateFile",
+        "NtOpenProcess",
+    ):
+        assert hasattr(introvirt, name), f"{name} missing from introvirt module"
 
 
 @pytest.mark.requires_hypervisor

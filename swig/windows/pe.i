@@ -15,7 +15,11 @@
 /* MachineType enum (before headers that use it) */
 %include <introvirt/windows/pe/const/MachineType.hh>
 
-/* PE exception - include after TraceableException is known */
+/* PE exception - include after TraceableException is known.
+ * Ignore operator= and operator<< so SWIG does not warn (362, 503). */
+%ignore introvirt::TraceableException::operator=(TraceableException&&);
+%ignore operator<<(std::ostream&, const introvirt::TraceableException&);
+%include <introvirt/core/exception/TraceableException.hh>
 %include <introvirt/windows/pe/exception/PeException.hh>
 
 /* DOS_HEADER: abstract interface has no methods in public header */

@@ -116,11 +116,13 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 	TARGET_LINK_LIBRARIES(introvirt_py PRIVATE introvirt ${Python3_LIBRARIES})
 	ADD_DEPENDENCIES(introvirt_py generate_syscalls)
 
-	# Copy stub file to build dir for development (tab completion before install)
+	# Generate type stub file from the built introvirt module
 	ADD_CUSTOM_COMMAND(TARGET introvirt_py POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy
-			${CMAKE_CURRENT_SOURCE_DIR}/swig/introvirt.pyi
-			${CMAKE_CURRENT_BINARY_DIR}/introvirt.pyi
+		BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/introvirt.pyi
+		COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/swig/generate_introvirt_pyi.py
+			--module-dir ${CMAKE_CURRENT_BINARY_DIR}
+			--output ${CMAKE_CURRENT_BINARY_DIR}/introvirt.pyi
 	)
 
 	# Install Python module
@@ -135,7 +137,7 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 		COMPONENT python3-introvirt
 	)
 	INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/introvirt.py DESTINATION ${PYTHON3_SITELIB} COMPONENT python3-introvirt)
-	INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/swig/introvirt.pyi DESTINATION ${PYTHON3_SITELIB} COMPONENT python3-introvirt)
+	INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/introvirt.pyi DESTINATION ${PYTHON3_SITELIB} COMPONENT python3-introvirt)
 ENDIF()
 
 IF (DOXYGEN)
@@ -165,16 +167,19 @@ ENDIF(DOXYGEN)
 
 FILE(GLOB_RECURSE WIN_FUNCCALL_GEN_INPUT ${PROJECT_SOURCE_DIR}/win_func_call_generator/*.tpl ${PROJECT_SOURCE_DIR}/win_func_call_generator/*.py ${PROJECT_SOURCE_DIR}/win_func_call_generator/*.json)
 
+SET(GENERATE_FUNCCALLS_STAMP "${CMAKE_BINARY_DIR}/generate_funccalls.stamp")
 ADD_CUSTOM_COMMAND(
-	OUTPUT ${GENERATED_WINLIB_HEADERS} ${GENERATED_WINLIB_SOURCES}
+	OUTPUT ${GENERATE_FUNCCALLS_STAMP}
+	BYPRODUCTS ${GENERATED_WINLIB_HEADERS} ${GENERATED_WINLIB_SOURCES}
 	COMMAND ${PYTHON_EXECUTABLE} win_func_call_generator/generate.py "${PROJECT_SOURCE_DIR}/include/introvirt/windows/libraries/" "${PROJECT_SOURCE_DIR}/src/windows/libraries/"
+	COMMAND ${CMAKE_COMMAND} -E touch ${GENERATE_FUNCCALLS_STAMP}
 	DEPENDS ${WIN_FUNCCALL_GEN_INPUT}
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 	COMMENT "Generating Windows library call handlers..." VERBATIM
 )
 
 ADD_CUSTOM_TARGET(
-	generate_funccalls ALL DEPENDS ${GENERATED_WINLIB_HEADERS} ${GENERATED_WINLIB_SOURCES}
+	generate_funccalls ALL DEPENDS ${GENERATE_FUNCCALLS_STAMP}
 )
 
 SET_PROPERTY(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${WIN_FUNCCALL_GEN_INPUT}")
