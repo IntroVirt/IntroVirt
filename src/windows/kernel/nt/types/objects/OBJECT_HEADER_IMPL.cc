@@ -208,8 +208,15 @@ OBJECT_HEADER_IMPL<PtrType>::OBJECT_HEADER_IMPL(const NtKernelImpl<PtrType>& ker
             TypeIndex_ = DecodedTypeIndex;
         }
 
-        // Normalize it
-        type_ = kernel.types().normalize(TypeIndex_);
+        // Type index 2 is always the "Type" object (OBJECT_TYPE meta-type). Special-case it here
+        // so we never depend on the type table for it: the type table is built by parsing
+        // OBJECT_TYPEs, which creates OBJECT_HEADERs for type index 2, so normalizing would
+        // create a bootstrap/recursion dependency (especially on Windows 11 init order).
+        if (TypeIndex_ == 2) {
+            type_ = ObjectType::Type;
+        } else {
+            type_ = kernel.types().normalize(TypeIndex_);
+        }
     } else {
         // XP
         const uint8_t NameInfoOffset = offsets_->NameInfoOffset.get<uint8_t>(buffer_);
