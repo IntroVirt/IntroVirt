@@ -10,9 +10,14 @@ Usage:
   python3 example.py --version
   python3 example.py --domain win10 --syscall NtCreateUserProcess
 """
+import json
 import argparse
 import traceback
 from pyintrovirt import VMI, EventType, Event
+
+JSON_INDENT = None
+JSON_SORT_KEYS = True
+PRINT_JSON = False
 
 
 def print_version(vmi: VMI):
@@ -31,10 +36,18 @@ def list_domains(vmi: VMI):
         print(f"  - {domain.domain_name} (ID: {domain.domain_id})")
 
 
+def print_event_json(event: Event):
+    """Print the event as JSON"""
+    print(json.dumps(event.to_dict(), indent=JSON_INDENT, sort_keys=JSON_SORT_KEYS))
+
+
 def handle_syscall(event: Event):
     """Handle a system call"""
     if not event.will_return():
-        print(event)
+        if PRINT_JSON:
+            print_event_json(event)
+        else:
+            print(event)
         return
     event.hook_return(True)
 
@@ -48,8 +61,15 @@ def main():
     parser.add_argument("-v", "--version", action="store_true", help="Show the version of the hypervisor")
     parser.add_argument("-s", "--syscall", action="append", help="Filter for the specified system call", dest="syscalls")
     parser.add_argument("-c", "--category", action="append", help="Filter by system call category", dest="categories")
+    parser.add_argument("--json", action="store_true", help="Print the events as JSON")
+    parser.add_argument("--json-indent", type=int, help="Indent level for JSON output")
     parser.add_argument("--unsupported", action="store_true", help="Show unsupported system calls (no filter at all. Only works if no other filters are provided)")
     args = parser.parse_args()
+
+    global JSON_INDENT
+    global PRINT_JSON
+    PRINT_JSON = args.json
+    JSON_INDENT = args.json_indent
 
     if not args.domain and not args.list and not args.version:
         parser.error("Either --target, --list, or --version must be specified")

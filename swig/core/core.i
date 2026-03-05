@@ -26,6 +26,15 @@ void set_register_rax(Registers* r, uint64_t val) { if (r) r->rax(val); }
     uint64_t physical_address_value() const { return $self->physical_address().address(); }
 }
 %include <introvirt/core/event/Event.hh>
+/* Event::to_dict() returns a Python dict (no JSON string round-trip). */
+%typemap(out) PyObject* {
+    $result = $1;
+}
+%extend introvirt::Event {
+    PyObject* to_dict() const {
+        return introvirt_swig_event_to_dict($self);
+    }
+}
 %include <introvirt/core/event/EventCallback.hh>
 %include <introvirt/core/filter/TaskFilter.hh>
 %include <introvirt/core/domain/Domain.hh>

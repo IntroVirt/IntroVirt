@@ -38,6 +38,10 @@ class Event:
         """Is it a system call event."""
         return self._syscall is not None
 
+    def to_dict(self) -> dict:
+        """Convert the event to a dictionary."""
+        return self._iv_event.to_dict()
+
     @property
     def supported(self) -> Union[None, bool]:
         """Checks supported. Only valid for system calls with a handler."""

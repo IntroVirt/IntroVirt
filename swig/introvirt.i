@@ -77,10 +77,99 @@
 #include <introvirt/windows/pe/types/IMAGE_OPTIONAL_HEADER.hh>
 #include <introvirt/windows/pe/PE.hh>
 #include <introvirt/windows/pe/exception/PeException.hh>
+#include <introvirt/util/json/json.hh>
 
 using namespace introvirt;
 using namespace introvirt::windows;
 
+/* Convert Json::Value to a Python object (new reference). Used by Event::to_dict(). */
+static PyObject* introvirt_swig_json_value_to_py(const Json::Value& v) {
+    switch (v.type()) {
+    case Json::nullValue:
+        Py_RETURN_NONE;
+    case Json::booleanValue:
+        return PyBool_FromLong(v.asBool() ? 1 : 0);
+#if defined(JSON_HAS_INT64)
+    case Json::intValue:
+        if (v.isInt64())
+            return PyLong_FromLongLong(v.asInt64());
+        if (v.isUInt64())
+            return PyLong_FromUnsignedLongLong(v.asUInt64());
+        return PyLong_FromLong(v.asInt());
+    case Json::uintValue:
+        if (v.isUInt64())
+            return PyLong_FromUnsignedLongLong(v.asUInt64());
+        return PyLong_FromUnsignedLong(v.asUInt());
+#else
+    case Json::intValue:
+        return PyLong_FromLong(v.asInt());
+    case Json::uintValue:
+        return PyLong_FromUnsignedLong(v.asUInt());
+#endif
+    case Json::realValue:
+        return PyFloat_FromDouble(v.asDouble());
+    case Json::stringValue: {
+        const Json::String& s = v.asString();
+        return PyUnicode_FromStringAndSize(s.data(), static_cast<Py_ssize_t>(s.size()));
+    }
+    case Json::arrayValue: {
+        const Json::ArrayIndex n = v.size();
+        PyObject* list = PyList_New(static_cast<Py_ssize_t>(n));
+        if (!list)
+            return nullptr;
+        for (Json::ArrayIndex i = 0; i < n; ++i) {
+            PyObject* item = introvirt_swig_json_value_to_py(v[i]);
+            if (!item) {
+                Py_DECREF(list);
+                return nullptr;
+            }
+            PyList_SET_ITEM(list, static_cast<Py_ssize_t>(i), item);
+        }
+        return list;
+    }
+    case Json::objectValue: {
+        PyObject* dict = PyDict_New();
+        if (!dict)
+            return nullptr;
+        for (const auto& key : v.getMemberNames()) {
+            PyObject* pykey = PyUnicode_FromStringAndSize(key.data(), static_cast<Py_ssize_t>(key.size()));
+            if (!pykey) {
+                Py_DECREF(dict);
+                return nullptr;
+            }
+            PyObject* pyval = introvirt_swig_json_value_to_py(v[key]);
+            if (!pyval) {
+                Py_DECREF(pykey);
+                Py_DECREF(dict);
+                return nullptr;
+            }
+            if (PyDict_SetItem(dict, pykey, pyval) != 0) {
+                Py_DECREF(pykey);
+                Py_DECREF(pyval);
+                Py_DECREF(dict);
+                return nullptr;
+            }
+            Py_DECREF(pykey);
+            Py_DECREF(pyval);
+        }
+        return dict;
+    }
+    default:
+        Py_RETURN_NONE;
+    }
+}
+
+/* Wrapper that ensures the GIL is held for the whole conversion. to_dict() can be
+ * called from Python code inside process_event(), which runs on a C++ worker thread;
+ * without this, PyDict_New() etc. can segfault. */
+static PyObject* introvirt_swig_event_to_dict(const introvirt::Event* event) {
+    if (!event)
+        return nullptr;
+    PyGILState_STATE state = PyGILState_Ensure();
+    PyObject* result = introvirt_swig_json_value_to_py(event->json());
+    PyGILState_Release(state);
+    return result;
+}
 static PyObject* p_IntroVirtError;
 static PyObject* p_NoSuchDomainException;
 static PyObject* p_DomainBusyException;
