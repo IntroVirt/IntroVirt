@@ -17,27 +17,41 @@ concurrency:
 
 jobs:
   build-docs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
+      # Install build deps
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev \
             libboost-dev libboost-program-options-dev libboost-stacktrace-dev \
-            liblog4cxx-dev python3-jinja2 python3 graphviz \
+            liblog4cxx-dev python3-jinja2 python3 python3-dev swig graphviz \
             doxygen clang-format git wget unzip
           mkdir libmspdb_pkg && cd libmspdb_pkg
           wget -q https://github.com/IntroVirt/libmspdb/releases/latest/download/libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
           unzip -q libmspdb_ubuntu-$(lsb_release -sr)_Release.zip
           sudo apt install -y ./libmspdb_ubuntu-$(lsb_release -sr)_Release/*.deb
 
+      # Configure and build docs
       - name: Configure and build docs
         run: |
+          mkdir -p build
           cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOXYGEN=ON ..
           ninja doc
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+
+      - name: Build Python docs
+        run: |
+          uv sync --project ./pyintrovirt --extra doc
+          uv run --project ./pyintrovirt sphinx-build -b html pyintrovirt/docs pyintrovirt/docs/_build/html
+          cp -r pyintrovirt/docs/_build/html build/html/python
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3

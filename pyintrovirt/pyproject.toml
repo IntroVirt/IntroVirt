@@ -1,0 +1,52 @@
+[project]
+name = "pyintrovirt"
+version = "0.1.0"
+description = "Python library and tools for IntroVirt VM introspection (requires IntroVirt .deb packages: libintrovirt1, python3-introvirt)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+]
+
+[project.scripts]
+pyintrovirt = "pyintrovirt.shell:main"
+
+[project.optional-dependencies]
+dev = ["pylint", "ty", "ruff", "pytest"]
+doc = ["sphinx", "furo"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pyintrovirt"]
+only-include-packages = ["pyintrovirt"]
+
+[tool.hatch.build.targets.sdist]
+include = ["pyintrovirt"]
+
+[tool.pylint.format]
+max-line-length = 160
+
+[tool.ruff]
+line-length = 160
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "requires_hypervisor: mark test as needing a live hypervisor (deselect with -m 'not requires_hypervisor')",
+]

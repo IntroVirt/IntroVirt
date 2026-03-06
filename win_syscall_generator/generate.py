@@ -22,6 +22,7 @@ import argparse
 import filecmp
 import json
 import os
+import re
 import sys
 import logging
 import subprocess
@@ -372,7 +373,7 @@ def process_calls(ntdata, typemap, categories, default_parent_name):
         syscall = ntdata[name]
         if 'arguments' in syscall:
             process_args(syscall, typemap)
-        
+
         if not syscall.get('helper_base', False):
             if 'category' in syscall:
                 category = categories[syscall['category']]
@@ -421,6 +422,79 @@ def write_templates(ntdata, namespace):
         template = ENV.get_template('fwd.hh.tpl')
         output.write(template.render({'namespace': namespace, 'data': ntdata}))
     subprocess.run(["clang-format", "-i", tmp_path])
+    move_tmp_to_target(tmp_path, path)
+
+def _parse_system_call_index_enum(include_dir):
+    """Return a set of enum value names from SystemCallIndex.hh (so typemap switch only uses valid names)."""
+    path = os.path.join(include_dir, 'introvirt', 'windows', 'kernel', 'SystemCallIndex.hh')
+    if not os.path.isfile(path):
+        return set()
+    with open(path) as f:
+        content = f.read()
+    # Match "    Identifier," or "    Identifier " inside enum class SystemCallIndex.
+    start = content.find('enum class SystemCallIndex')
+    if start == -1:
+        return set()
+    start = content.find('{', start) + 1
+    end = content.find('}', start)
+    block = content[start:end]
+    names = set(re.findall(r'^\s*([A-Za-z0-9_]+)\s*[,{]', block, re.MULTILINE))
+    return names
+
+
+# Primitives and types we do wrap (e.g. guest_ptr) - do not add to ignore set.
+_SWIG_WRAPPED_TYPES = frozenset({
+    'bool', 'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t', 'int32_t', 'int64_t',
+    'size_t', 'HANDLE', 'VOID', 'void', 'char', 'int', 'long', 'unsigned int',
+})
+
+# Only ignore getters/setters for types that actually break the build (not wrapped or wrong
+# namespace in generated code). Do NOT add types that are wrapped in windows.i (e.g. OBJECT_ATTRIBUTES)
+# or that filemon/other examples need. Add new entries only when the build fails on that type.
+_SWIG_IGNORE_RETURN_TYPES_MINIMAL = frozenset({
+    'TOKEN_PRIVILEGES',      # not wrapped
+    'WindowMessage',         # win32k enum, namespace issues in wrap
+    'OBJECT_WAIT_TYPE', 'SHUTDOWN_ACTION', 'FS_INFORMATION',  # enum/class scope in wrap
+    'IO_STATUS_RESULT',     # from overrides, not in JSON
+    'FILE_ATTRIBUTES',       # no default ctor (uint32_t only)
+    'WindowsTime',           # default ctor private
+})
+
+
+def _swig_ignore_return_types(ntdata, user32data):
+    """Set of types for which we ignore getter/setter (minimal set to avoid build errors)."""
+    return _SWIG_IGNORE_RETURN_TYPES_MINIMAL
+
+
+def write_swig_fragment(ntdata, user32data, nt_exposed, win32k_exposed, project_dir):
+    '''
+    Generate swig/windows/windows_syscalls_generated.i for Python concrete handler downcast.
+    Emits %ignore (inject, *Ptr, unwrapped return types), %nodefaultctor/dtor, and %include.
+    The typemap switch uses only names present in SystemCallIndex enum.
+    '''
+    include_dir = os.path.join(project_dir, 'include')
+    enum_names = _parse_system_call_index_enum(include_dir)
+    nt_switch = [n for n in nt_exposed if n in enum_names]
+    win32k_switch = [n for n in win32k_exposed if n in enum_names]
+    # Method names to ignore on all syscall classes (return/arg unwrapped types from overrides).
+    swig_ignore_method_names = (
+        'IoStatusResult',
+        'get_new_process', 'get_new_thread',  # return std::shared_ptr<PROCESS/THREAD>
+    )
+    path = 'swig/windows/windows_syscalls_generated.i'
+    tmp_path = path + '.tmp'
+    with open(tmp_path, 'w') as output:
+        template = ENV.get_template('windows_syscalls_swig.i.tpl')
+        output.write(template.render({
+            'ntdata': ntdata,
+            'user32data': user32data,
+            'nt_exposed': nt_exposed,
+            'win32k_exposed': win32k_exposed,
+            'nt_switch': nt_switch,
+            'win32k_switch': win32k_switch,
+            'swig_ignore_return_types': _swig_ignore_return_types(ntdata, user32data),
+            'swig_ignore_method_names': swig_ignore_method_names,
+        }))
     move_tmp_to_target(tmp_path, path)
 
 def write_global(ntdata, user32data, categories):
@@ -514,6 +588,10 @@ def main():
     write_templates(user32data, 'win32k')
 
     write_global(ntdata, user32data, categories)
+
+    nt_exposed = [name for name in ntdata]
+    win32k_exposed = [name for name in user32data]
+    write_swig_fragment(ntdata, user32data, nt_exposed, win32k_exposed, tld)
 
     # Create the actual files
     for name in ntdata:

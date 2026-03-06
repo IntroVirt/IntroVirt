@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""@example ivsyscallmon.py
+
+IntroVirt Python example: A simple example system call monitoring tool.
+
+Demonstrates the minimal Python API: attach to a domain, list running domains, print the version of the hypervisor,
+and filter/monitor system calls.
+
+Usage:
+  sudo python3 ivsyscallmon.py --list
+  sudo python3 ivsyscallmon.py --version
+  sudo python3 ivsyscallmon.py --domain win10 --syscall NtCreateUserProcess
+  sudo python3 ivsyscallmon.py -d win10 -c file -f explorer -f notepad --json
+"""
+import sys
+import json
+import argparse
+import traceback
+from pyintrovirt import VMI, EventType, Event
+
+PRETTY_JSON = False
+PRINT_JSON = False
+
+
+def print_version(vmi: VMI):
+    """Print the version of the hypervisor"""
+    print(f"Hypervisor: {vmi.hypervisor_name()}")
+    print(f"Version: {vmi.hypervisor_version()}")
+    print(f"Patch: {vmi.hypervisor_patch_version()}")
+    print(f"Library: {vmi.library_name()} {vmi.library_version()}")
+
+
+def list_domains(vmi: VMI):
+    """List all running domains"""
+    domains = vmi.get_running_domains()
+    print("Running domains:")
+    for domain in domains:
+        print(f"  - {domain.domain_name} (ID: {domain.domain_id})")
+
+
+def print_event_json(event: Event):
+    """Print the event as JSON"""
+    sys.stdout.write(json.dumps(event.to_dict(), indent=PRETTY_JSON) + "\n")
+
+
+def handle_syscall(vmi: VMI, event: Event):
+    """Handle a system call"""
+    if not event.will_return():
+        if PRINT_JSON:
+            print_event_json(event)
+        else:
+            sys.stdout.write(str(event) + "\n")
+        return
+    event.hook_return(True)
+
+
+def main():
+    """Entry Point."""
+    parser = argparse.ArgumentParser("ivsyscallmon", description="A simple system call monitor example.")
+    parser.add_argument("-d", "--domain", help="Attach to the target domain by name or PID")
+    parser.add_argument("-l", "--list", action="store_true", help="List all running domains")
+    parser.add_argument("-lc", "--list-categories", action="store_true", help="List system call categories available for the domain.")
+    parser.add_argument("-v", "--version", action="store_true", help="Show the version of the hypervisor")
+    parser.add_argument("-s", "--syscall", action="append", help="Filter for the specified system call (can be specified multiple times)", dest="syscalls")
+    parser.add_argument("-c", "--category", action="append", help="Filter by system call category (can be specified multiple times)", dest="categories")
+    parser.add_argument("-f", "--filter-process", type=str, action="append", help="Filter for a process by name (case-incensitive prefix) (can be specified multiple times)", dest="filter_processes")
+    parser.add_argument("-fp", "--filter-pid", type=int, action="append", help="Filter for a process by PID (can be specified multiple times)", dest="filter_pids")
+    parser.add_argument("-ft", "--filter-tid", type=int, action="append", help="Filter for a process by TID (can be specified multuple times)", dest="filter_tids")
+    parser.add_argument("--json", action="store_true", help="Print the events as JSON")
+    parser.add_argument("--pretty-json", action="store_true", help="Pretty-print JSON output (Warning: LOUD)")
+    parser.add_argument("--unsupported", action="store_true", help="Show unsupported system calls (no filter at all. Only works if no other filters are provided)")
+    args = parser.parse_args()
+
+    global PRETTY_JSON
+    global PRINT_JSON
+    PRINT_JSON = args.json
+    PRETTY_JSON = args.pretty_json or None
+
+    if not args.domain and not args.list and not args.version:
+        parser.error("Either -d/--domain, -l/--list, or -v/--version must be specified")
+
+    if args.unsupported and (args.syscalls or args.categories):
+        parser.error("--unsupported won't do anything if other filters (--category, --syscall) are supplied.")
+
+    try:
+        with VMI(args.domain) as vmi:
+            # Just print the version info and exit (like ivversion)
+            if args.version:
+                print_version(vmi)
+                return
+
+            # List available domains
+            elif args.list:
+                list_domains(vmi)
+                return
+
+            # Get the system call categories and print the list if requested
+            print(f"Guest: {vmi.guest_os().name}")
+            syscall_cats = vmi.syscall_categories()
+            if args.list_categories:
+                print("System call categories:")
+                for cat in syscall_cats:
+                    print(f"\t{cat}")
+                return
+
+            # Setup the category filters
+            if args.categories:
+                for cat in args.categories:
+                    if cat not in syscall_cats:
+                        parser.error(f"{cat} is not a valid system call category. View the list with --list-categories (domain required)")
+                    else:
+                        vmi.filter_system_call_category(cat)
+
+            # Set our specific set of system calls to filter, otherwise set the default set
+            # unless --unsupported is set, then don't filter anything.
+            if args.syscalls:
+                vmi.filter_system_calls(args.syscalls)
+            elif not args.unsupported:
+                vmi.default_system_call_filter()
+
+            # Setup the process filters
+            if args.filter_processes:
+                for name in args.filter_processes:
+                    vmi.filter_task(name=name)
+            if args.filter_pids:
+                for pid in args.filter_pids:
+                    vmi.filter_task(pid=pid)
+            if args.filter_tids:
+                for tid in args.filter_tids:
+                    vmi.filter_task(tid=tid)
+
+            # Register our system call callbacks
+            vmi.register_callback(EventType.EVENT_FAST_SYSCALL, handle_syscall)
+            vmi.register_callback(EventType.EVENT_FAST_SYSCALL_RET, handle_syscall)
+            vmi.intercept_system_calls(True)
+            vmi.poll(blocking=True)  # Handles cntrl+c for you
+
+    except Exception as exc:
+        traceback.print_exc()
+
+
+if __name__ == "__main__":
+    main()

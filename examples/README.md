@@ -1,12 +1,140 @@
 # Example documentation {#examples_doc}
 
-This page describes the example programs included with IntroVirt. The main instructional example is **vmcall_interface**, which shows how to implement a custom hypercall interface between a Windows guest and an IntroVirt tool.
+This page describes the example programs included with IntroVirt. The main instructional example is **vmcall_interface**, which shows how to implement a custom hypercall interface between a Windows guest and an IntroVirt tool. A Python example, **list_domains**, demonstrates the IntroVirt Python bindings.
 
 Example **source files** (marked with `@example` in code) are listed in the **Examples** menu in the navigation; each entry links to the full source. Use this page for walkthroughs, build, and usage; use the Examples list for the actual code.
 
 ---
 
-## vmcall_interface
+## list_domains (Python)
+
+**Source:** \ref list_domains.py — listed in the **Examples** menu.
+
+The list_domains example is a minimal Python script that uses the IntroVirt Python bindings to list running VM domains. It obtains a hypervisor instance via `Hypervisor.instance()`, queries `get_running_domains()`, and prints each domain's name and ID.
+
+### Requirements
+
+- IntroVirt built with Python bindings (`-DINTROVIRT_PYTHON_BINDINGS=ON`)
+- Root/sudo to access the hypervisor
+- An IntroVirt-patched hypervisor (e.g. KVM) with kvm-introvirt installed
+
+### Building
+
+Ensure IntroVirt is built with Python bindings enabled (see the main README). The Python module `_introvirt_py.so` and `introvirt.py` will be in `build/` or installed to the Python site-packages.
+
+### Usage
+
+From the build directory (module built but not installed):
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/list_domains.py
+```
+
+If the Python bindings are installed (e.g. via the deb package), run from anywhere:
+
+```bash
+sudo python3 /path/to/IntroVirt/examples/list_domains.py
+```
+
+With no running VMs, the script prints "No running domains found." With one or more VMs running, it prints the hypervisor name/version and a list of domain names and IDs.
+
+---
+
+## syscallmon (Python)
+
+**Source:** \ref syscallmon.py — listed in the **Examples** menu.
+
+The syscallmon example is a Python port of the C++ **ivsyscallmon** tool. It attaches to a domain, detects the guest OS, and monitors system calls (and optionally their returns), printing each event as text or as one JSON object per line. For Windows guests, it uses the IntroVirt Windows guest support to enable the default system-call filter when not using `--unsupported`.
+
+### Requirements
+
+- Same as list_domains (Python bindings, root/sudo, IntroVirt-patched hypervisor)
+- A running VM (e.g. Windows) to attach to
+
+### Usage
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/syscallmon.py DOMAIN [--procname NAME] [--no-flush] [--unsupported] [--json]
+```
+
+| Option | Description |
+|--------|-------------|
+| `DOMAIN` | Domain name or ID to attach to (required). |
+| `--procname NAME` | Filter events to this process name (prefix match). |
+| `--no-flush` | Don't flush stdout after each event. |
+| `--unsupported` | Also show system calls that don't have handlers. |
+| `--json` | Output one JSON object per event (built in Python with `json.dumps()`, no C++ JSON). |
+
+Without `--json`, each event is printed as two lines: a line with Vcpu id, PID, TID, and process name, then the system call name. With `--json`, each event is a single line containing a JSON object with fields such as `event`, `vcpu_id`, `pid`, `tid`, `process_name`, `syscall_name`, `raw_index`, and optionally `handler_supported` and `handler_will_return`.
+
+---
+
+## callmon (Python)
+
+**Source:** `examples/callmon.py`
+
+Python port of **ivcallmon**: sets breakpoints on specified API calls using a `module!symbol` syntax. Uses **export-only** symbol resolution (PE export table only; no PDB). You must provide the module base address for each module via `--module-base MODULE=ADDRESS`. Optional return breakpoints use `read_guest_uint64` to read the return address from RSP.
+
+### Usage
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/callmon.py DOMAIN --procname NAME --module-base ntdll=0x7ff123400000 ntdll!NtCreateFile ntdll!Nt*
+```
+
+| Option | Description |
+|--------|-------------|
+| `DOMAIN` | Domain name or ID (required). |
+| `--procname NAME` | Filter to this process name (required). |
+| `--module-base MODULE=ADDRESS` | Base address of the module (e.g. ntdll=0x7ff123400000). Repeat for each module. |
+| `--no-return` | Do not set return breakpoints. |
+| `SYMBOL ...` | One or more `module!name` or `module!pattern` (e.g. `ntdll!Nt*`). |
+
+---
+
+## filemon (Python)
+
+**Source:** `examples/filemon.py`
+
+Python port of **ivfilemon**: monitors a guest file path. On **NtCreateFile** / **NtOpenFile** that match the path, the handle is tracked; all **NtReadFile**, **NtWriteFile**, **NtQueryInformationFile**, **NtSetInformationFile**, **NtDeviceIoControlFile**, **NtClose**, and **NtDuplicateObject** events for tracked handles are reported until the handle is closed.
+
+### Usage
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/filemon.py DOMAIN --path "C:\Windows\System32\config\SAM" [--no-flush]
+```
+
+| Option | Description |
+|--------|-------------|
+| `DOMAIN` | Domain name or ID (required). |
+| `--path`, `-P` | Guest path to monitor (required). |
+| `--no-flush` | Don't flush stdout after each event. |
+
+**System call filtering (Windows):** For Windows guests, enable the filter at the domain level (`domain.system_call_filter().enabled(True)`) and set which syscalls to trap at the guest level via `WindowsGuest.set_system_call_filter(domain.system_call_filter(), SystemCallIndex_XXX, True)`. Do not call `set_64` or `set_32` on the domain filter; the guest converts `SystemCallIndex` to native indices. This matches **ivfilemon**, **ivcallmon**, and **vmcall_interface** (C++).
+
+---
+
+## vmcall_interface (Python)
+
+**Source:** `examples/vmcall_interface.py`
+
+Python port of the C++ **vmcall_interface** example. Implements the same three services via hypercall: **CSTRING_REVERSE** (0xF000), **WRITE_PROTECT** (0xF001), **PROTECT_PROCESS** (0xF002). Uses `read_guest_cstring` / `write_guest_bytes` for the string reverse, `create_watchpoint` and `Event.mem_access()` / `Vcpu.inject_exception` for write-protect, and **NtTerminateProcess** / **NtOpenProcess** handling with `get_nt_open_process_target_pid` and `block_open_process_client_id` for process protection.
+
+### Usage
+
+```bash
+cd build
+sudo PYTHONPATH=. python3 ../examples/vmcall_interface.py DOMAIN
+```
+
+Use the same guest executable as the C++ vmcall_interface (see below). The Python tool attaches to the domain, enables **NtTerminateProcess** and **NtOpenProcess** in the system-call filter, and handles **EVENT_HYPERCALL**, **EVENT_FAST_SYSCALL**, **EVENT_FAST_SYSCALL_RET**, and **EVENT_MEM_ACCESS** as in the C++ version.
+
+---
+
+## vmcall_interface (C++)
 
 **Source (host tool):** \ref vmcall_interface.cc — listed in the **Examples** menu.
 
