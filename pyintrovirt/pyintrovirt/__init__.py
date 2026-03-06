@@ -27,6 +27,7 @@ from introvirt import (
     OS,
     EventType,
     IntroVirtError,
+    SystemCallIndex,
     NoSuchDomainException,
     DomainBusyException,
     UnsupportedHypervisorException,
@@ -37,7 +38,10 @@ from introvirt import (
     CommandFailedException,
     BadPhysicalAddressException,
     VirtualAddressNotPresentException,
-    PeException
+    PeException,
+    WindowsSystemCall,
+    nt_success,
+    nt_error
 )
 
 __all__: list[str] = [
@@ -46,6 +50,7 @@ __all__: list[str] = [
     "Event",
     "EventType",
     "IntroVirtError",
+    "SystemCallIndex",
     "NoSuchDomainException",
     "DomainBusyException",
     "UnsupportedHypervisorException",
@@ -57,4 +62,7 @@ __all__: list[str] = [
     "BadPhysicalAddressException",
     "VirtualAddressNotPresentException",
     "PeException",
+    "WindowsSystemCall",
+    "nt_success",
+    "nt_error"
 ]

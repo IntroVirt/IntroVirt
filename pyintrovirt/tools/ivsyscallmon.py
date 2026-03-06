@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""@example example.py
+"""@example ivsyscallmon.py
 
 IntroVirt Python example: A simple example system call monitoring tool.
 
-Demonstrates the minimal Python API: attach to a domain, list running domains, and print the version of the hypervisor.
+Demonstrates the minimal Python API: attach to a domain, list running domains, print the version of the hypervisor,
+and filter/monitor system calls.
 
 Usage:
-  python3 example.py --list
-  python3 example.py --version
-  python3 example.py --domain win10 --syscall NtCreateUserProcess
+  sudo python3 ivsyscallmon.py --list
+  sudo python3 ivsyscallmon.py --version
+  sudo python3 ivsyscallmon.py --domain win10 --syscall NtCreateUserProcess
+  sudo python3 ivsyscallmon.py -d win10 -c file -f explorer -f notepad --json
 """
+import sys
 import json
 import argparse
 import traceback
@@ -37,7 +40,7 @@ def list_domains(vmi: VMI):
 
 def print_event_json(event: Event):
     """Print the event as JSON"""
-    print(json.dumps(event.to_dict(), indent=PRETTY_JSON))
+    sys.stdout.write(json.dumps(event.to_dict(), indent=PRETTY_JSON) + "\n")
 
 
 def handle_syscall(vmi: VMI, event: Event):
@@ -46,14 +49,14 @@ def handle_syscall(vmi: VMI, event: Event):
         if PRINT_JSON:
             print_event_json(event)
         else:
-            print(event)
+            sys.stdout.write(str(event) + "\n")
         return
     event.hook_return(True)
 
 
 def main():
     """Entry Point."""
-    parser = argparse.ArgumentParser("ivexample", description="A simple example.")
+    parser = argparse.ArgumentParser("ivsyscallmon", description="A simple system call monitor example.")
     parser.add_argument("-d", "--domain", help="Attach to the target domain by name or PID")
     parser.add_argument("-l", "--list", action="store_true", help="List all running domains")
     parser.add_argument("-lc", "--list-categories", action="store_true", help="List system call categories available for the domain.")
@@ -71,10 +74,10 @@ def main():
     global PRETTY_JSON
     global PRINT_JSON
     PRINT_JSON = args.json
-    PRETTY_JSON = args.pretty_json
+    PRETTY_JSON = args.pretty_json or None
 
     if not args.domain and not args.list and not args.version:
-        parser.error("Either --target, --list, or --version must be specified")
+        parser.error("Either -d/--domain, -l/--list, or -v/--version must be specified")
 
     if args.unsupported and (args.syscalls or args.categories):
         parser.error("--unsupported won't do anything if other filters (--category, --syscall) are supplied.")

@@ -60,6 +60,11 @@ class Event:
         return self._task.tid()
 
     @property
+    def kpcr(self) -> introvirt.KPCR:
+        """Get the KPCR from the task."""
+        return self._task.pcr()
+
+    @property
     def vcpu(self) -> introvirt.Vcpu:
         """Get access to the VCPU object."""
         return self._vcpu
@@ -75,6 +80,12 @@ class Event:
         if not self.is_syscall():
             return None
         return self._syscall.name()
+
+    @property
+    def syscall_index(self) -> Union[None, introvirt.SystemCallIndex]:
+        if not self.is_syscall():
+            return None
+        return introvirt.SystemCallIndex(self._syscall.index())
 
     def event_type(self) -> introvirt.EventType:
         """Wrap in an introvirt.EventType object."""
@@ -122,6 +133,14 @@ class Event:
         if value is not None and isinstance(self._iv_event, introvirt.WindowsEvent):
             return introvirt.ntstatus_to_string(value)
         return None
+
+    def get_syscall_handler(self) -> Union[None, introvirt.WindowsSystemCall]:
+        """Get the lowest level OS-specific system call handler for the system call if there is one."""
+        if not self.is_syscall():
+            return None  # Not a system call
+        if not isinstance(self._iv_event, introvirt.WindowsEvent):
+            return None  # Not supported
+        return introvirt.get_concrete_handler(self._iv_event)
 
 
 class CallbackEventHandler(introvirt.EventCallback):
