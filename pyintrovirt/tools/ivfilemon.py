@@ -6,7 +6,7 @@ IntroVirt Python example: A simple example file monitoring tool.
 Demonstrates monitoring file access by process/action and file handle tracking.
 
 Usage:
-  sudo python3 ivfilemon.py
+  sudo python3 ivfilemon.py -d win10 -f "C:\\users\\user\\desktop\\test.txt"
 """
 import sys
 import json
