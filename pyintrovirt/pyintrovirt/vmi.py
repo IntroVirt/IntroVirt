@@ -54,7 +54,6 @@ def _normalize_syscalls(syscalls: list[Union[introvirt.SystemCallIndex, str, int
     norm_syscalls = []
     for syscall in syscalls:
         norm_syscalls.append(_normalize_syscall(syscall))
-
     return norm_syscalls
 
 
@@ -80,7 +79,7 @@ class VMI(ContextDecorator):
         #: The list of system calls currently being filtered
         self._filtering_syscalls: set[introvirt.SystemCallIndex] = set()
 
-        self._event_handler = CallbackEventHandler()
+        self._event_handler = CallbackEventHandler(self)
         self._hypervisor = introvirt.Hypervisor.instance()
         if domain_id:
             self.attach(domain_id)
@@ -206,6 +205,33 @@ class VMI(ContextDecorator):
         """Set the system call filter to the default set of supported system calls for the OS."""
         self._domain.default_system_call_filter()
         self._domain.filter_system_calls(True)
+
+    @_require_attachment
+    def filter_task(self, name: Optional[str] = None, pid: Optional[int] = None, tid: Optional[int] = None):
+        """Filter processes by name (case-incensitive prefix), pid, or tid."""
+        # The result of this call is effectively (name OR pid OR tid).
+        # There is no relationship between the arguments.
+        if name:
+            self._domain.filter_task_name(name.strip().lower())
+        if pid:
+            self._domain.filter_task_pid(pid)
+        if tid:
+            self._domain.filter_task_tid(tid)
+
+    @_require_attachment
+    def unfilter_task(self, name: Optional[str] = None, pid: Optional[int] = None, tid: Optional[int] = None):
+        """Remove a process name, pid, or tid from the task filter."""
+        if name:
+            self._domain.unfilter_task_name(name.strip().lower())
+        if pid:
+            self._domain.unfilter_task_pid(pid)
+        if tid:
+            self._domain.unfilter_task_tid(tid)
+
+    @_require_attachment
+    def clear_task_filter(self):
+        """Clear the process filter."""
+        self._domain.clear_task_filter()
 
     @_require_attachment
     def intercept_system_calls(self, enabled: bool):

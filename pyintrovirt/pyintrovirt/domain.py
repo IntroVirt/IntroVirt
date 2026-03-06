@@ -77,6 +77,10 @@ class Domain(ContextDecorator):
         """Clear the system call filter if set."""
         self._domain.system_call_filter().clear()
 
+    def clear_task_filter(self):
+        """Clear the process filter if set."""
+        self._domain.task_filter().clear()
+
     def default_system_call_filter(self):
         """Set the system call filter to the default set of supported system calls for the OS."""
         if self.os == introvirt.OS.Windows:
@@ -104,6 +108,30 @@ class Domain(ContextDecorator):
     def filter_system_calls(self, enabled: bool):
         """Toggle system call filtering on/off. Required for the filter to take effect."""
         self._domain.system_call_filter().enabled(enabled)
+
+    def filter_task_name(self, name: str):
+        """Filter by task name. Name is a case-insensitive process name prefix."""
+        self._domain.task_filter().add_name(name)
+
+    def filter_task_pid(self, pid: int):
+        """Filter by task PID."""
+        self._domain.task_filter().add_pid(pid)
+
+    def filter_task_tid(self, tid: int):
+        """Filter by task TID."""
+        self._domain.task_filter().add_tid(tid)
+
+    def unfilter_task_name(self, name: str):
+        """Remove a name from the task filter."""
+        self._domain.task_filter().remove_name(name)
+
+    def unfilter_task_pid(self, pid: int):
+        """Remove a PID from the task filter."""
+        self._domain.task_filter().remove_pid(pid)
+
+    def unfilter_task_tid(self, tid: int):
+        """Remove a TID from the task filter."""
+        self._domain.task_filter().remove_tid(tid)
 
     def intercept_system_calls(self, enabled: bool):
         """Toggle system call interception on/off. Required to received system call events at all."""

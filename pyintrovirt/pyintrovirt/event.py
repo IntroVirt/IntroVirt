@@ -7,7 +7,7 @@ import introvirt
 
 class EventCallback(Protocol):
     """The event callback function signature."""
-    def __call__(self, event: "Event") -> None: ...
+    def __call__(self, vmi: "pyintrovirt.VMI", event: "Event") -> None: ...
 
 
 class Event:
@@ -127,10 +127,11 @@ class Event:
 class CallbackEventHandler(introvirt.EventCallback):
     """Event callback handler."""
 
-    def __init__(self):
+    def __init__(self, vmi: "pyintrovirt.VMI"):
         super().__init__()  # required so SWIG director wrapper is created for poll()
         self.event_callbacks = {}
         self.global_event_callback = None
+        self.vmi = vmi
 
     def set_global_event_callback(self, callback: EventCallback):
         """Set a callback to be called with every event type."""
@@ -167,9 +168,9 @@ class CallbackEventHandler(introvirt.EventCallback):
 
         # Send it to the global callback if it's set
         if self.global_event_callback:
-            self.global_event_callback(send_event)
+            self.global_event_callback(self.vmi, send_event)
 
         # Find any specific event handling callback to send it to next.
         callback = self.event_callbacks.get(introvirt.EventType(send_event.event_type()))
         if callback:
-            callback(send_event)
+            callback(self.vmi, send_event)

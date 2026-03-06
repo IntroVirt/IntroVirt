@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """@example example.py
 
-IntroVirt Python example: A simple example.
+IntroVirt Python example: A simple example system call monitoring tool.
 
 Demonstrates the minimal Python API: attach to a domain, list running domains, and print the version of the hypervisor.
 
@@ -15,8 +15,7 @@ import argparse
 import traceback
 from pyintrovirt import VMI, EventType, Event
 
-JSON_INDENT = None
-JSON_SORT_KEYS = True
+PRETTY_JSON = False
 PRINT_JSON = False
 
 
@@ -38,10 +37,10 @@ def list_domains(vmi: VMI):
 
 def print_event_json(event: Event):
     """Print the event as JSON"""
-    print(json.dumps(event.to_dict(), indent=JSON_INDENT, sort_keys=JSON_SORT_KEYS))
+    print(json.dumps(event.to_dict(), indent=PRETTY_JSON))
 
 
-def handle_syscall(event: Event):
+def handle_syscall(vmi: VMI, event: Event):
     """Handle a system call"""
     if not event.will_return():
         if PRINT_JSON:
@@ -57,19 +56,22 @@ def main():
     parser = argparse.ArgumentParser("ivexample", description="A simple example.")
     parser.add_argument("-d", "--domain", help="Attach to the target domain by name or PID")
     parser.add_argument("-l", "--list", action="store_true", help="List all running domains")
-    parser.add_argument("--list-categories", action="store_true", help="List system call categories available for the domain.")
+    parser.add_argument("-lc", "--list-categories", action="store_true", help="List system call categories available for the domain.")
     parser.add_argument("-v", "--version", action="store_true", help="Show the version of the hypervisor")
-    parser.add_argument("-s", "--syscall", action="append", help="Filter for the specified system call", dest="syscalls")
-    parser.add_argument("-c", "--category", action="append", help="Filter by system call category", dest="categories")
+    parser.add_argument("-s", "--syscall", action="append", help="Filter for the specified system call (can be specified multiple times)", dest="syscalls")
+    parser.add_argument("-c", "--category", action="append", help="Filter by system call category (can be specified multiple times)", dest="categories")
+    parser.add_argument("-f", "--filter-process", type=str, action="append", help="Filter for a process by name (case-incensitive prefix) (can be specified multiple times)", dest="filter_processes")
+    parser.add_argument("-fp", "--filter-pid", type=int, action="append", help="Filter for a process by PID (can be specified multiple times)", dest="filter_pids")
+    parser.add_argument("-ft", "--filter-tid", type=int, action="append", help="Filter for a process by TID (can be specified multuple times)", dest="filter_tids")
     parser.add_argument("--json", action="store_true", help="Print the events as JSON")
-    parser.add_argument("--json-indent", type=int, help="Indent level for JSON output")
+    parser.add_argument("--pretty-json", action="store_true", help="Pretty-print JSON output (Warning: LOUD)")
     parser.add_argument("--unsupported", action="store_true", help="Show unsupported system calls (no filter at all. Only works if no other filters are provided)")
     args = parser.parse_args()
 
-    global JSON_INDENT
+    global PRETTY_JSON
     global PRINT_JSON
     PRINT_JSON = args.json
-    JSON_INDENT = args.json_indent
+    PRETTY_JSON = args.pretty_json
 
     if not args.domain and not args.list and not args.version:
         parser.error("Either --target, --list, or --version must be specified")
@@ -112,6 +114,17 @@ def main():
                 vmi.filter_system_calls(args.syscalls)
             elif not args.unsupported:
                 vmi.default_system_call_filter()
+
+            # Setup the process filters
+            if args.filter_processes:
+                for name in args.filter_processes:
+                    vmi.filter_task(name=name)
+            if args.filter_pids:
+                for pid in args.filter_pids:
+                    vmi.filter_task(pid=pid)
+            if args.filter_tids:
+                for tid in args.filter_tids:
+                    vmi.filter_task(tid=tid)
 
             # Register our system call callbacks
             vmi.register_callback(EventType.EVENT_FAST_SYSCALL, handle_syscall)
