@@ -26,6 +26,7 @@ ENDIF()
 add_definitions(-DBOOST_STACKTRACE_USE_BACKTRACE=1)
 
 FIND_PACKAGE(Boost REQUIRED)
+FIND_PACKAGE(log4cxx CONFIG REQUIRED)
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -141,7 +142,16 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 ENDIF()
 
 IF (DOXYGEN)
-	FIND_PACKAGE(Doxygen REQUIRED)
+	FIND_PACKAGE(Doxygen QUIET COMPONENTS dot)
+
+	# So we can log something actually useful about what to install (it's non-obvious that you get "dot" from the "graphviz" package)
+	if (Doxygen_FOUND)
+		message(STATUS "Found Doxygen: ${Doxygen_VERSION}")
+	else()
+		# Print a custom error message and stop the configuration
+		message(FATAL_ERROR "Could not find Doxygen or required component: dot. On debian systems, try: 'sudo apt install doxygen graphviz' and then re-run cmake")
+	endif()
+
 
 	# add a target to generate API documentation with Doxygen
 	CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
