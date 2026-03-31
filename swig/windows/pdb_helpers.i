@@ -29,25 +29,6 @@ struct pdb_symbol_single_result { void* p; };
     if (!$result) SWIG_fail;
 }
 
-/* Accept Python list of str for patterns (const std::vector<std::string>&) */
-%typemap(in) const std::vector<std::string>& (std::vector<std::string> temp) {
-  if (!PyList_Check($input)) {
-    SWIG_exception_fail(SWIG_TypeError, "list of strings expected for patterns");
-  }
-  temp.clear();
-  for (Py_ssize_t i = 0; i < PyList_GET_SIZE($input); i++) {
-    PyObject* o = PyList_GET_ITEM($input, i);
-    if (!PyUnicode_Check(o)) {
-      SWIG_exception_fail(SWIG_TypeError, "patterns list must contain strings");
-    }
-    Py_ssize_t size;
-    const char* s = PyUnicode_AsUTF8AndSize(o, &size);
-    if (!s) SWIG_fail;
-    temp.push_back(std::string(s, size));
-  }
-  $1 = &temp;
-}
-
 pdb_module_result get_executable_mapped_modules(introvirt::Event* event);
 pdb_symbol_result resolve_symbols_via_pdb(
     introvirt::Domain* domain, introvirt::Vcpu* vcpu, uint64_t base_address, const std::vector<std::string>& patterns);

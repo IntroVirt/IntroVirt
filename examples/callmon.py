@@ -115,11 +115,11 @@ class CallMonitor(introvirt.EventCallback):
 
     def process_event(self, event):
         try:
-            if event.type() == introvirt.EventType_EVENT_FAST_SYSCALL:
+            if event.type() == introvirt.EventType.EVENT_FAST_SYSCALL.value:
                 self._handle_syscall(event)
-            elif event.type() == introvirt.EventType_EVENT_FAST_SYSCALL_RET:
+            elif event.type() == introvirt.EventType.EVENT_FAST_SYSCALL_RET.value:
                 self._handle_sysret(event)
-            elif event.type() == introvirt.EventType_EVENT_CR_WRITE:
+            elif event.type() == introvirt.EventType.EVENT_CR_WRITE.value:
                 if event.cr().index() == 3:
                     if not self._initial_check_done:
                         self._initial_check_done = True
@@ -133,7 +133,7 @@ class CallMonitor(introvirt.EventCallback):
 
     def _handle_syscall(self, event):
         wevent = introvirt.WindowsEvent_from_event(event)
-        if wevent is not None and wevent.syscall().index() == introvirt.SystemCallIndex_NtMapViewOfSection:
+        if wevent is not None and wevent.syscall().index() == introvirt.SystemCallIndex.NtMapViewOfSection.value:
             wevent.syscall().hook_return(True)
         if not self._initial_check_done:
             self._initial_check_done = True
@@ -144,7 +144,7 @@ class CallMonitor(introvirt.EventCallback):
         wevent = introvirt.WindowsEvent_from_event(event)
         if wevent is None:
             return
-        if wevent.syscall().index() == introvirt.SystemCallIndex_NtMapViewOfSection:
+        if wevent.syscall().index() == introvirt.SystemCallIndex.NtMapViewOfSection.value:
             handler = wevent.syscall().handler()
             ok, result = introvirt.get_windows_syscall_result_value(event)
             if handler is not None and ok and introvirt.nt_success(result):
@@ -251,7 +251,8 @@ def main():
         print("Failed to detect guest OS", file=sys.stderr)
         return 1
     guest = _domain.guest()
-    if guest is None or guest.os() != introvirt.OS_Windows:
+    print(f"Guest OS: {guest.os()}")
+    if guest is None or guest.os() != introvirt.OS.Windows.value:
         print("callmon only supports Windows guests", file=sys.stderr)
         return 1
 
@@ -261,7 +262,7 @@ def main():
         _domain.system_call_filter().enabled(True)
         win_guest.set_system_call_filter(
             _domain.system_call_filter(),
-            introvirt.SystemCallIndex_NtMapViewOfSection,
+            introvirt.SystemCallIndex.NtMapViewOfSection.value,
             True,
         )
     _domain.intercept_system_calls(True)

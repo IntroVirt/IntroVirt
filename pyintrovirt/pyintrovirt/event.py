@@ -2,10 +2,11 @@
 import traceback
 from typing import Protocol, Union
 
-import introvirt
+import introvirt  # pylint: disable=import-error
 
 
 class EventCallback(Protocol):
+    # pylint: disable=too-few-public-methods
     """The event callback function signature."""
     def __call__(self, vmi: "pyintrovirt.VMI", event: "Event") -> None: ...
 
@@ -31,8 +32,7 @@ class Event:
 
         if self.has_result():
             return f"Vcpu {self.vcpu.id()}: [{self.pid}:{self.tid}] {self.process_name}\n\t{self.syscall_name} - {self.get_result_str()}{supp}\n"
-        else:
-            return f"Vcpu {self.vcpu.id()}: [{self.pid}:{self.tid}] {self.process_name}\n\t{self.syscall_name}{supp}\n"
+        return f"Vcpu {self.vcpu.id()}: [{self.pid}:{self.tid}] {self.process_name}\n\t{self.syscall_name}{supp}\n"
 
     def is_syscall(self) -> bool:
         """Is it a system call event."""
@@ -83,6 +83,7 @@ class Event:
 
     @property
     def syscall_index(self) -> Union[None, introvirt.SystemCallIndex]:
+        """Get the system call index if it's a system call."""
         if not self.is_syscall():
             return None
         return introvirt.SystemCallIndex(self._syscall.index())
@@ -110,6 +111,7 @@ class Event:
         self._syscall.hook_return(enabled)
 
     def has_result(self) -> bool:
+        """Return True if this event includes a syscall result."""
         return self.is_syscall() and self.event_type() == introvirt.EventType.EVENT_FAST_SYSCALL_RET and isinstance(self._iv_event, introvirt.WindowsEvent)
 
     def get_result(self) -> Union[None, int]:
@@ -164,8 +166,7 @@ class CallbackEventHandler(introvirt.EventCallback):
         """Callback from the introvirt.EventCallback"""
         try:
             self._process_event(event)
-        except Exception as exc:
-            # TODO: Logging
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             print(f"Unhandled exception processing event: {exc}")
             traceback.print_exc()
 

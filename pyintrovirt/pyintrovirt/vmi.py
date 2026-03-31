@@ -58,6 +58,7 @@ def _normalize_syscalls(syscalls: list[Union[introvirt.SystemCallIndex, str, int
 
 
 class VMI(ContextDecorator):
+    # pylint: disable=too-many-public-methods
     """The main class used for Virtial Machine Introspection of guest domains."""
 
     def __init__(self, domain_id: Optional[Union[int, str]] = None):
@@ -174,7 +175,7 @@ class VMI(ContextDecorator):
         self._filtering_syscalls.update(norm_syscalls)
         for syscall in self._filtering_syscalls:
             self._domain.filter_system_call(syscall, True)
-        should_filter = (len(self._filtering_syscalls) > 0)
+        should_filter = len(self._filtering_syscalls) > 0
         self._domain.filter_system_calls(should_filter)
 
     @_require_attachment
@@ -190,7 +191,7 @@ class VMI(ContextDecorator):
         self._filtering_syscalls.difference_update(norm_syscalls)
         for syscall in set(norm_syscalls):
             self._domain.filter_system_call(syscall, False)
-        should_filter = (len(self._filtering_syscalls) > 0)
+        should_filter = len(self._filtering_syscalls) > 0
         self._domain.filter_system_calls(should_filter)
 
     @_require_attachment

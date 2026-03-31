@@ -11,13 +11,11 @@ Usage:
 import sys
 import json
 import argparse
+import functools
 import traceback
-from pyintrovirt import VMI, EventType, Event, OS, SystemCallIndex, WindowsSystemCall, nt_success
+from pyintrovirt import VMI, EventType, Event, OS, SystemCallIndex, WindowsSystemCall
 
-PRETTY_JSON = False
-PRINT_JSON = False
-MONITOR_FILE_PATHS = None
-HANDLE_TRACKER = set()
+HANDLE_TRACKER: set[tuple[int, int]] = set()
 
 
 def normalize_path(path: str) -> str:
@@ -36,7 +34,7 @@ def path_matches(user_normalized: str, obj_attr, kpcr) -> bool:
         guest_path = obj_attr.FullPath(kpcr)
         if not guest_path:
             guest_path = obj_attr.ObjectName()
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return False
     return normalize_path(guest_path) == user_normalized
 
@@ -59,20 +57,15 @@ def get_file_handle(handler) -> int:
     return handler.FileHandle()
 
 
-def print_event_json(event: Event):
-    """Print the event as JSON"""
-    sys.stdout.write(json.dumps(event.to_dict(), indent=PRETTY_JSON) + "\n")
-
-
-def emit(event: Event):
+def emit(event: Event, *, print_json: bool, pretty_json: bool):
     """Log the event."""
-    if PRINT_JSON:
-        print_event_json(event)
+    if print_json:
+        sys.stdout.write(json.dumps(event.to_dict(), indent=2 if pretty_json else None) + "\n")
     else:
         sys.stdout.write(str(event) + "\n")
 
 
-def handle_sysret(vmi: VMI, event: Event):
+def handle_sysret(_vmi: VMI, event: Event, *, monitor_file_paths: list[str], print_json: bool, pretty_json: bool):
     """Handle system call return."""
     handler: WindowsSystemCall = event.get_syscall_handler()
     handle: int = get_file_handle(handler)
@@ -81,21 +74,21 @@ def handle_sysret(vmi: VMI, event: Event):
 
     key = (event.pid, handle)
     if key in HANDLE_TRACKER:
-        emit(event)
+        emit(event, print_json=print_json, pretty_json=pretty_json)
         return
 
     obj_attr = get_object_attributes(handler)
     if not obj_attr:
         return  # Nothing to do
 
-    for path in MONITOR_FILE_PATHS:
+    for path in monitor_file_paths:
         if path_matches(path, obj_attr, event.kpcr):
             HANDLE_TRACKER.add(key)
-            emit(event)
+            emit(event, print_json=print_json, pretty_json=pretty_json)
             return
 
 
-def handle_syscall(vmi: VMI, event: Event):
+def handle_syscall(_vmi: VMI, event: Event, *, print_json: bool, pretty_json: bool):
     """Handle a system call."""
     if event.will_return():
         event.hook_return(True)
@@ -106,26 +99,32 @@ def handle_syscall(vmi: VMI, event: Event):
         case SystemCallIndex.NtClose:
             key = (event.pid, get_file_handle(handler))
             HANDLE_TRACKER.discard(key)
-            emit(event)
+            emit(event, print_json=print_json, pretty_json=pretty_json)
 
 
 def main():
     """Entry Point."""
     parser = argparse.ArgumentParser("ivfilemon", description="Monitor and track file access.")
     parser.add_argument("-d", "--domain", help="Attach to the target domain by name or PID", required=True)
-    parser.add_argument("-f", "--file-path", type=str, action="append", help="Monitor accesses to this file (full-path and case insensitive) (can be specified multiple times)", dest="file_paths", required=True)
+    parser.add_argument(
+        "-f",
+        "--file-path",
+        type=str,
+        action="append",
+        help="Monitor accesses to this file (full-path and case insensitive) (can be specified multiple times)",
+        dest="file_paths",
+        required=True,
+    )
     parser.add_argument("--json", action="store_true", help="Print the events as JSON")
     parser.add_argument("--pretty-json", action="store_true", help="Pretty-print JSON output (Warning: LOUD)")
     args = parser.parse_args()
 
-    global PRETTY_JSON
-    global PRINT_JSON
-    global MONITOR_FILE_PATHS
-    PRINT_JSON = args.json
-    PRETTY_JSON = args.pretty_json or None
-    MONITOR_FILE_PATHS = []
+    print_json = bool(args.json)
+    pretty_json = bool(args.pretty_json)
+
+    monitor_file_paths: list[str] = []
     for path in args.file_paths:
-        MONITOR_FILE_PATHS.append(normalize_path(path))
+        monitor_file_paths.append(normalize_path(path))
     rc = 1
 
     try:
@@ -137,11 +136,18 @@ def main():
             print(f"Guest: {vmi.guest_os().name}")
 
             vmi.filter_system_call_category("file")
-            vmi.register_callback(EventType.EVENT_FAST_SYSCALL, handle_syscall)
-            vmi.register_callback(EventType.EVENT_FAST_SYSCALL_RET, handle_sysret)
+            syscall_handler = functools.partial(handle_syscall, print_json=print_json, pretty_json=pretty_json)
+            sysret_handler = functools.partial(
+                handle_sysret,
+                monitor_file_paths=monitor_file_paths,
+                print_json=print_json,
+                pretty_json=pretty_json,
+            )
+            vmi.register_callback(EventType.EVENT_FAST_SYSCALL, syscall_handler)
+            vmi.register_callback(EventType.EVENT_FAST_SYSCALL_RET, sysret_handler)
             vmi.intercept_system_calls(True)
             vmi.poll(blocking=True)  # Handles cntrl+c for you
-    except Exception as exc:
+    except Exception:  # pylint: disable=broad-exception-caught
         traceback.print_exc()
         return rc
 
@@ -150,4 +156,4 @@ def main():
 
 
 if __name__ == "__main__":
-    rc = main()
+    raise SystemExit(main())

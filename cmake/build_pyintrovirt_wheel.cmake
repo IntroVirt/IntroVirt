@@ -47,7 +47,9 @@ foreach(ext IN LISTS introvirt_ext)
 endforeach()
 
 execute_process(
-  COMMAND "${UV_EXECUTABLE}" build --directory "${STAGE_DIR}" --out-dir "${DIST_DIR}"
+  COMMAND "${CMAKE_COMMAND}" -E env
+    HATCH_BUILD_HOOKS_ENABLE=1
+    "${UV_EXECUTABLE}" build --directory "${STAGE_DIR}" --out-dir "${DIST_DIR}"
   RESULT_VARIABLE uv_rc
 )
 if(NOT uv_rc EQUAL 0)

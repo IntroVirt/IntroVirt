@@ -15,12 +15,9 @@ Usage:
 import sys
 import json
 import argparse
+import functools
 import traceback
 from pyintrovirt import VMI, EventType, Event
-
-PRETTY_JSON = False
-PRINT_JSON = False
-
 
 def print_version(vmi: VMI):
     """Print the version of the hypervisor"""
@@ -38,16 +35,11 @@ def list_domains(vmi: VMI):
         print(f"  - {domain.domain_name} (ID: {domain.domain_id})")
 
 
-def print_event_json(event: Event):
-    """Print the event as JSON"""
-    sys.stdout.write(json.dumps(event.to_dict(), indent=PRETTY_JSON) + "\n")
-
-
-def handle_syscall(vmi: VMI, event: Event):
+def handle_syscall(_vmi: VMI, event: Event, *, print_json: bool, pretty_json: bool):
     """Handle a system call"""
     if not event.will_return():
-        if PRINT_JSON:
-            print_event_json(event)
+        if print_json:
+            sys.stdout.write(json.dumps(event.to_dict(), indent=2 if pretty_json else None) + "\n")
         else:
             sys.stdout.write(str(event) + "\n")
         return
@@ -56,25 +48,69 @@ def handle_syscall(vmi: VMI, event: Event):
 
 def main():
     """Entry Point."""
+    # pylint: disable=too-many-branches,too-many-statements
     parser = argparse.ArgumentParser("ivsyscallmon", description="A simple system call monitor example.")
     parser.add_argument("-d", "--domain", help="Attach to the target domain by name or PID")
     parser.add_argument("-l", "--list", action="store_true", help="List all running domains")
-    parser.add_argument("-lc", "--list-categories", action="store_true", help="List system call categories available for the domain.")
+    parser.add_argument(
+        "-lc",
+        "--list-categories",
+        action="store_true",
+        help="List system call categories available for the domain.",
+    )
     parser.add_argument("-v", "--version", action="store_true", help="Show the version of the hypervisor")
-    parser.add_argument("-s", "--syscall", action="append", help="Filter for the specified system call (can be specified multiple times)", dest="syscalls")
-    parser.add_argument("-c", "--category", action="append", help="Filter by system call category (can be specified multiple times)", dest="categories")
-    parser.add_argument("-f", "--filter-process", type=str, action="append", help="Filter for a process by name (case-incensitive prefix) (can be specified multiple times)", dest="filter_processes")
-    parser.add_argument("-fp", "--filter-pid", type=int, action="append", help="Filter for a process by PID (can be specified multiple times)", dest="filter_pids")
-    parser.add_argument("-ft", "--filter-tid", type=int, action="append", help="Filter for a process by TID (can be specified multuple times)", dest="filter_tids")
+    parser.add_argument(
+        "-s",
+        "--syscall",
+        action="append",
+        help="Filter for the specified system call (can be specified multiple times)",
+        dest="syscalls",
+    )
+    parser.add_argument(
+        "-c",
+        "--category",
+        action="append",
+        help="Filter by system call category (can be specified multiple times)",
+        dest="categories",
+    )
+    parser.add_argument(
+        "-f",
+        "--filter-process",
+        type=str,
+        action="append",
+        help="Filter for a process by name (case-incensitive prefix) (can be specified multiple times)",
+        dest="filter_processes",
+    )
+    parser.add_argument(
+        "-fp",
+        "--filter-pid",
+        type=int,
+        action="append",
+        help="Filter for a process by PID (can be specified multiple times)",
+        dest="filter_pids",
+    )
+    parser.add_argument(
+        "-ft",
+        "--filter-tid",
+        type=int,
+        action="append",
+        help="Filter for a process by TID (can be specified multuple times)",
+        dest="filter_tids",
+    )
     parser.add_argument("--json", action="store_true", help="Print the events as JSON")
     parser.add_argument("--pretty-json", action="store_true", help="Pretty-print JSON output (Warning: LOUD)")
-    parser.add_argument("--unsupported", action="store_true", help="Show unsupported system calls (no filter at all. Only works if no other filters are provided)")
+    parser.add_argument(
+        "--unsupported",
+        action="store_true",
+        help=(
+            "Show unsupported system calls (no filter at all. "
+            "Only works if no other filters are provided)"
+        ),
+    )
     args = parser.parse_args()
 
-    global PRETTY_JSON
-    global PRINT_JSON
-    PRINT_JSON = args.json
-    PRETTY_JSON = args.pretty_json or None
+    print_json = bool(args.json)
+    pretty_json = bool(args.pretty_json)
 
     if not args.domain and not args.list and not args.version:
         parser.error("Either -d/--domain, -l/--list, or -v/--version must be specified")
@@ -90,7 +126,7 @@ def main():
                 return
 
             # List available domains
-            elif args.list:
+            if args.list:
                 list_domains(vmi)
                 return
 
@@ -130,12 +166,13 @@ def main():
                     vmi.filter_task(tid=tid)
 
             # Register our system call callbacks
-            vmi.register_callback(EventType.EVENT_FAST_SYSCALL, handle_syscall)
-            vmi.register_callback(EventType.EVENT_FAST_SYSCALL_RET, handle_syscall)
+            handler = functools.partial(handle_syscall, print_json=print_json, pretty_json=pretty_json)
+            vmi.register_callback(EventType.EVENT_FAST_SYSCALL, handler)
+            vmi.register_callback(EventType.EVENT_FAST_SYSCALL_RET, handler)
             vmi.intercept_system_calls(True)
             vmi.poll(blocking=True)  # Handles cntrl+c for you
 
-    except Exception as exc:
+    except Exception:  # pylint: disable=broad-exception-caught
         traceback.print_exc()
 
 

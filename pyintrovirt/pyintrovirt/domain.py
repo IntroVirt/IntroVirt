@@ -2,7 +2,7 @@
 from contextlib import ContextDecorator
 from typing import Union, NamedTuple
 
-import introvirt
+import introvirt  # pylint: disable=import-error
 
 
 class DomainInformation(NamedTuple):
@@ -59,8 +59,7 @@ class Domain(ContextDecorator):
         if self.os == introvirt.OS.Windows:
             win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
             return win_guest.syscall_categories()
-        else:
-            raise NotImplementedError("Only implemented for Windows guests right now.")
+        raise NotImplementedError("Only implemented for Windows guests right now.")
 
     def detach(self) -> None:
         """Detach from the domain. Safe to call multiple times."""

@@ -49,6 +49,7 @@
 %unique_ptr(introvirt::SingleStep);
 
 %template(DomainInformationVector) std::vector<introvirt::DomainInformation>;
+%template(StringVector) std::vector<std::string>;
 %template(StringSet) std::set<std::string>;
 
 %feature("director") EventCallback;
