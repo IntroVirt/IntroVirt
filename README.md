@@ -66,7 +66,7 @@ IntroVirt is used to introspect a running virtual machine. The current release o
 
 First, build and install [libmspdb](https://github.com/IntroVirt/libmspdb) and [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
 
-Then, build from source and install debs (python3-dev and swig are needed for optional Python bindings):
+Then, build from source and install debs (python3-dev and swig are needed for optional Python bindings / wheel build):
 
 ```shell
 sudo apt-get install -y \
@@ -80,6 +80,8 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOXYGEN=ON -DINTROVIRT_PYTHON_BINDIN
 ninja -j$(nproc) package
 sudo apt install ./*.deb
 ```
+
+If you enabled Python bindings, the build also produces a self-contained wheel under `build/python/dist/` that provides the `introvirt` Python module (install it into a virtual environment with `pip install build/python/dist/*.whl`).
 
 Confirm everything is installed with: `sudo ivversion`
 

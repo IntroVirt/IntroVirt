@@ -1,7 +1,7 @@
 [project]
 name = "pyintrovirt"
 version = "0.1.0"
-description = "Python library and tools for IntroVirt VM introspection (requires IntroVirt .deb packages: libintrovirt1, python3-introvirt)"
+description = "Python library and tools for IntroVirt VM introspection (requires IntroVirt runtime library and the generated IntroVirt Python wheel providing `introvirt`)"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
@@ -17,8 +17,8 @@ classifiers = [
 ]
 
 [project.scripts]
-ivsyscallmon = "tools.ivsyscallmon:main"
-ivfilemon = "tools.ivfilemon:main"
+ivsyscallmon_py = "pyintrovirt.tools.ivsyscallmon:main"
+ivfilemon_py = "pyintrovirt.tools.ivfilemon:main"
 
 [project.optional-dependencies]
 dev = ["pylint", "ty", "ruff", "pytest"]
@@ -28,12 +28,31 @@ doc = ["sphinx", "furo"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
+
 [tool.hatch.build.targets.wheel]
-packages = ["pyintrovirt", "tools"]
-only-include-packages = ["pyintrovirt", "tools"]
+packages = ["pyintrovirt"]
+only-include-packages = ["pyintrovirt"]
+ignore-vcs = true
+artifacts = [
+    "introvirt.py",
+    "introvirt.pyi",
+    "_introvirt_py*.so",
+]
 
 [tool.hatch.build.targets.sdist]
-include = ["pyintrovirt", "tools"]
+ignore-vcs = true
+include = [
+    "pyintrovirt",
+    "pyproject.toml",
+    "README.md",
+    "hatch_build.py",
+    # Bundled SWIG artifacts so `uv build` (wheel-from-sdist) includes them
+    "introvirt.py",
+    "introvirt.pyi",
+    "_introvirt_py*.so",
+]
 
 [tool.pylint.format]
 max-line-length = 160

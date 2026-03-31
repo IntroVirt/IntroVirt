@@ -177,7 +177,7 @@ jobs:
 
       - name: Run pytest (no VM tests)
         env:
-          PYTHONPATH: ${{ github.workspace }}/build
+          PYTHONPATH: ${{ github.workspace }}/build/python
         run: |
           cd pyintrovirt
           uv sync --extra dev

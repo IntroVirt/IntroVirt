@@ -20,7 +20,7 @@ The list_domains example is a minimal Python script that uses the IntroVirt Pyth
 
 ### Building
 
-Ensure IntroVirt is built with Python bindings enabled (see the main README). The Python module `_introvirt_py.so` and `introvirt.py` will be in `build/` or installed to the Python site-packages.
+Ensure IntroVirt is built with Python bindings enabled (see the main README). The Python module `_introvirt_py*.so`, `introvirt.py`, and `introvirt.pyi` will be in `build/python/`.
 
 ### Usage
 
@@ -28,10 +28,10 @@ From the build directory (module built but not installed):
 
 ```bash
 cd build
-sudo PYTHONPATH=. python3 ../examples/list_domains.py
+sudo PYTHONPATH=./python python3 ../examples/list_domains.py
 ```
 
-If the Python bindings are installed (e.g. via the deb package), run from anywhere:
+If you installed the IntroVirt Python bindings via the generated wheel, run from anywhere:
 
 ```bash
 sudo python3 /path/to/IntroVirt/examples/list_domains.py
@@ -56,7 +56,7 @@ The syscallmon example is a Python port of the C++ **ivsyscallmon** tool. It att
 
 ```bash
 cd build
-sudo PYTHONPATH=. python3 ../examples/syscallmon.py DOMAIN [--procname NAME] [--no-flush] [--unsupported] [--json]
+sudo PYTHONPATH=./python python3 ../examples/syscallmon.py DOMAIN [--procname NAME] [--no-flush] [--unsupported] [--json]
 ```
 
 | Option | Description |
@@ -81,7 +81,7 @@ Python port of **ivcallmon**: sets breakpoints on specified API calls using a `m
 
 ```bash
 cd build
-sudo PYTHONPATH=. python3 ../examples/callmon.py DOMAIN --procname NAME --module-base ntdll=0x7ff123400000 ntdll!NtCreateFile ntdll!Nt*
+sudo PYTHONPATH=./python python3 ../examples/callmon.py DOMAIN --procname NAME --module-base ntdll=0x7ff123400000 ntdll!NtCreateFile ntdll!Nt*
 ```
 
 | Option | Description |
@@ -104,7 +104,7 @@ Python port of **ivfilemon**: monitors a guest file path. On **NtCreateFile** / 
 
 ```bash
 cd build
-sudo PYTHONPATH=. python3 ../examples/filemon.py DOMAIN --path "C:\Windows\System32\config\SAM" [--no-flush]
+sudo PYTHONPATH=./python python3 ../examples/filemon.py DOMAIN --path "C:\Windows\System32\config\SAM" [--no-flush]
 ```
 
 | Option | Description |
@@ -127,7 +127,7 @@ Python port of the C++ **vmcall_interface** example. Implements the same three s
 
 ```bash
 cd build
-sudo PYTHONPATH=. python3 ../examples/vmcall_interface.py DOMAIN
+sudo PYTHONPATH=./python python3 ../examples/vmcall_interface.py DOMAIN
 ```
 
 Use the same guest executable as the C++ vmcall_interface (see below). The Python tool attaches to the domain, enables **NtTerminateProcess** and **NtOpenProcess** in the system-call filter, and handles **EVENT_HYPERCALL**, **EVENT_FAST_SYSCALL**, **EVENT_FAST_SYSCALL_RET**, and **EVENT_MEM_ACCESS** as in the C++ version.

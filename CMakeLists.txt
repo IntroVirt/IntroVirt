@@ -91,6 +91,13 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 	FIND_PACKAGE(Python3 REQUIRED COMPONENTS Interpreter Development)
 	INCLUDE(UseSWIG)
 
+	# Keep all Python binding build outputs under build/python/
+	SET(INTROVIRT_PYTHON_OUTDIR "${CMAKE_BINARY_DIR}/python")
+	FILE(MAKE_DIRECTORY "${INTROVIRT_PYTHON_OUTDIR}")
+	# Where SWIG writes introvirt.py
+	SET(CMAKE_SWIG_OUTDIR "${INTROVIRT_PYTHON_OUTDIR}")
+	FIND_PROGRAM(UV_EXECUTABLE uv)
+
 	SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/swig/introvirt.i
 		PROPERTIES
 		CPLUSPLUS ON
@@ -117,28 +124,53 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 	TARGET_LINK_LIBRARIES(introvirt_py PRIVATE introvirt ${Python3_LIBRARIES})
 	ADD_DEPENDENCIES(introvirt_py generate_syscalls)
 
-	# Generate type stub file from the built introvirt module
-	ADD_CUSTOM_COMMAND(TARGET introvirt_py POST_BUILD
-		BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/introvirt.pyi
-		COMMAND ${Python3_EXECUTABLE}
-			${CMAKE_CURRENT_SOURCE_DIR}/swig/generate_introvirt_pyi.py
-			--module-dir ${CMAKE_CURRENT_BINARY_DIR}
-			--output ${CMAKE_CURRENT_BINARY_DIR}/introvirt.pyi
+	# Ensure the compiled extension (_introvirt_py*.so) lands alongside introvirt.py
+	SET_TARGET_PROPERTIES(introvirt_py PROPERTIES
+		LIBRARY_OUTPUT_DIRECTORY "${INTROVIRT_PYTHON_OUTDIR}"
+		RUNTIME_OUTPUT_DIRECTORY "${INTROVIRT_PYTHON_OUTDIR}"
 	)
 
-	# Install Python module
-	EXECUTE_PROCESS(
-		COMMAND ${Python3_EXECUTABLE} -c
-			"import sysconfig; print(sysconfig.get_path('purelib'))"
-		OUTPUT_VARIABLE PYTHON3_SITELIB
-		OUTPUT_STRIP_TRAILING_WHITESPACE
+	# Generate type stub file from the built introvirt module
+	ADD_CUSTOM_COMMAND(TARGET introvirt_py POST_BUILD
+		BYPRODUCTS ${INTROVIRT_PYTHON_OUTDIR}/introvirt.pyi
+		COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/swig/generate_introvirt_pyi.py
+			--module-dir ${INTROVIRT_PYTHON_OUTDIR}
+			--output ${INTROVIRT_PYTHON_OUTDIR}/introvirt.pyi
 	)
-	INSTALL(TARGETS introvirt_py
-		LIBRARY DESTINATION ${PYTHON3_SITELIB}
-		COMPONENT python3-introvirt
-	)
-	INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/introvirt.py DESTINATION ${PYTHON3_SITELIB} COMPONENT python3-introvirt)
-	INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/introvirt.pyi DESTINATION ${PYTHON3_SITELIB} COMPONENT python3-introvirt)
+
+	# Build the pyintrovirt wheel as part of the packaging step (only if bindings are enabled)
+	if(UV_EXECUTABLE)
+		set(PYINTROVIRT_WHEEL_STAMP "${CMAKE_BINARY_DIR}/python/pyintrovirt_wheel.stamp")
+
+		# Have CPack run the wheel build right before packaging.
+		# This makes `ninja package` produce both .debs and the wheel.
+		configure_file(
+			"${CMAKE_CURRENT_SOURCE_DIR}/cmake/cpack_prebuild_pyintrovirt.cmake.in"
+			"${CMAKE_BINARY_DIR}/python/cpack_prebuild_pyintrovirt.cmake"
+			@ONLY
+		)
+		list(APPEND CPACK_PRE_BUILD_SCRIPTS "${CMAKE_BINARY_DIR}/python/cpack_prebuild_pyintrovirt.cmake")
+
+		add_custom_command(
+			OUTPUT "${PYINTROVIRT_WHEEL_STAMP}"
+			COMMAND "${CMAKE_COMMAND}"
+				-DSOURCE_DIR:PATH=${CMAKE_SOURCE_DIR}
+				-DBINARY_DIR:PATH=${CMAKE_BINARY_DIR}
+				-DPYTHON_OUTDIR:PATH=${INTROVIRT_PYTHON_OUTDIR}
+				-DUV_EXECUTABLE:FILEPATH=${UV_EXECUTABLE}
+				-P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_pyintrovirt_wheel.cmake"
+			COMMAND "${CMAKE_COMMAND}" -E touch "${PYINTROVIRT_WHEEL_STAMP}"
+			DEPENDS introvirt_py
+				"${CMAKE_CURRENT_SOURCE_DIR}/pyintrovirt/pyproject.toml"
+				"${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_pyintrovirt_wheel.cmake"
+			COMMENT "Building pyintrovirt wheel"
+			VERBATIM
+		)
+		add_custom_target(pyintrovirt_wheel DEPENDS "${PYINTROVIRT_WHEEL_STAMP}")
+	else()
+		message(WARNING "uv not found; pyintrovirt wheel will not be built by the packaging step")
+	endif()
 ENDIF()
 
 IF (DOXYGEN)
@@ -280,3 +312,8 @@ SET(CPACK_DEBIAN_LIBINTROVIRT-DOC_PACKAGE_BREAKS "liblintrovirt-doc (<< 0.50), l
 SET(CPACK_DEBIAN_LIBINTROVIRT-DOC_PACKAGE_CONFLICTS "liblintrovirt-doc (<< 0.50), libwintrovirt-doc (<< 0.50)")
 
 INCLUDE(CPack)
+
+# Ensure `ninja package` also builds the wheel when Python bindings are enabled.
+if(INTROVIRT_PYTHON_BINDINGS AND TARGET pyintrovirt_wheel AND TARGET package)
+	add_dependencies(package pyintrovirt_wheel)
+endif()

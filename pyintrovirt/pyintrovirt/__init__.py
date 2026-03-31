@@ -1,8 +1,7 @@
 """pyintrovirt: Python library for IntroVirt VM introspection.
 
-Requires IntroVirt .deb packages to be installed (libintrovirt1, python3-introvirt).
-The IntroVirt Python bindings are not on PyPI; install them from the IntroVirt
-build or from the generated .deb packages.
+Requires IntroVirt to be installed (e.g. `libintrovirt1`).
+The `introvirt` Python bindings are provided via the generated wheel rather than a system-wide package.
 """
 import os
 import sys
@@ -20,7 +19,7 @@ try:
     import introvirt  # type: ignore[import-not-found]  # noqa: F401
 except ImportError as exc:
     raise RuntimeError(
-        "IntroVirt Python bindings are not installed. Install the IntroVirt .deb packages (libintrovirt1, python3-introvirt) before using this library."
+        "IntroVirt Python bindings are not installed. Install the generated IntroVirt Python wheel (which provides the `introvirt` module) before using this library."
     ) from exc
 
 from introvirt import (
