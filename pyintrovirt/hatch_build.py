@@ -35,6 +35,15 @@ class CustomBuildHook(BuildHookInterface):
                 f"{missing_str}\n"
             )
 
+        # Ensure these files are included even though they're top-level (not in the
+        # pyintrovirt package) and even when building wheels from an sdist.
+        # `force_include` bypasses package-only selection.
+        force_include = build_data.setdefault("force_include", {})
+        force_include[required[0]] = "introvirt.py"
+        force_include[required[1]] = "introvirt.pyi"
+        for so_path in so_files:
+            force_include[so_path] = os.path.basename(so_path)
+
         # This wheel is not pure-Python (it bundles a .so). Ensure the wheel tag and
         # metadata reflect that when built by hatchling.
         if self.target_name == "wheel":
