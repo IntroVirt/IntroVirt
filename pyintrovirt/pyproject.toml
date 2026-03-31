@@ -17,7 +17,8 @@ classifiers = [
 ]
 
 [project.scripts]
-pyintrovirt = "pyintrovirt.shell:main"
+ivsyscallmon = "tools.ivsyscallmon:main"
+ivfilemon = "tools.ivfilemon:main"
 
 [project.optional-dependencies]
 dev = ["pylint", "ty", "ruff", "pytest"]
@@ -28,11 +29,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["pyintrovirt"]
-only-include-packages = ["pyintrovirt"]
+packages = ["pyintrovirt", "tools"]
+only-include-packages = ["pyintrovirt", "tools"]
 
 [tool.hatch.build.targets.sdist]
-include = ["pyintrovirt"]
+include = ["pyintrovirt", "tools"]
 
 [tool.pylint.format]
 max-line-length = 160
