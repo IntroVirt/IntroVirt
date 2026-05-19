@@ -200,8 +200,11 @@ def main():
     for path in args.file_paths:
         monitor_file_paths.append(normalize_path(path))
     ignore_processes: set[str] = set()
-    for process in args.ignore_processes:
-        ignore_processes.add(process.strip().lower())
+
+    if args.ignore_processes:
+        for process in args.ignore_processes:
+            ignore_processes.add(process.strip().lower())
+
     rc = 1
 
     try:
