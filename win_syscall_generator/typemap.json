@@ -430,6 +430,7 @@
         }
     },
     "PS_CREATE_INFO": {
+        "inject_via_ptr": true,
         "includes": [
             "<introvirt/windows/kernel/nt/syscall/types/PS_CREATE_INFO.hh>"
         ],
@@ -470,6 +471,7 @@
         }
     },
     "RTL_USER_PROCESS_PARAMETERS": {
+        "inject_via_ptr": true,
         "includes": [
             "<introvirt/windows/kernel/nt/types/RTL_USER_PROCESS_PARAMETERS.hh>"
         ],

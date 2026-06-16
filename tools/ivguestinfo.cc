@@ -24,6 +24,9 @@
 
 #include <introvirt/introvirt.hh>
 
+#include <introvirt/linux/LinuxGuest.hh>
+#include <introvirt/linux/kernel/LinuxKernel.hh>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
 
@@ -123,6 +126,15 @@ int main(int argc, char** argv) {
     auto* guest = domain->guest();
     if (guest->os() == OS::Windows) {
         print_guest_information(static_cast<WindowsGuest&>(*guest), vm);
+    } else if (guest->os() == OS::Linux) {
+        const auto& kernel = static_cast<linux_guest::LinuxGuest*>(guest)->kernel();
+        std::cout << "Detected Linux\n";
+        std::cout << "  Release: " << kernel.release() << '\n';
+        std::cout << "  Banner: " << kernel.banner() << '\n';
+        std::cout << std::hex;
+        std::cout << "  Kernel base: 0x" << kernel.base_address() << '\n';
+        std::cout << "  KASLR slide: 0x" << kernel.kaslr_slide() << '\n';
+        std::cout << std::dec;
     }
 
     // Resume it
