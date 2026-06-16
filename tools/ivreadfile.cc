@@ -24,6 +24,7 @@
  */
 
 #include <introvirt/introvirt.hh>
+#include <introvirt/linux/inject/syscall.hh>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
@@ -144,6 +145,28 @@ class ReadFileTool final : public EventCallback {
         */
     }
 
+    // Linux: openat(O_RDONLY) + read loop + close, injected via the guest.
+    void copy_linux(Event& event) {
+        result_ = 1;
+        constexpr size_t kMax = static_cast<size_t>(1) << 31; // 2 GiB cap
+        const std::vector<uint8_t> bytes =
+            linux_guest::inject::read_file(event, src_path_, kMax);
+
+        FILE* dst_file = fopen(dst_path_.c_str(), "wb");
+        if (!dst_file) {
+            std::cout << "Failed to open destination file: " << strerror(errno) << '\n';
+            return;
+        }
+        const size_t w = fwrite(bytes.data(), 1, bytes.size(), dst_file);
+        fclose(dst_file);
+        if (w != bytes.size()) {
+            std::cout << "Short write to destination file\n";
+            return;
+        }
+        std::cout << "Read " << bytes.size() << " bytes from " << src_path_ << '\n';
+        result_ = 0;
+    }
+
     void process_event(Event& event) override {
         if (unlikely(event.type() == EventType::EVENT_SHUTDOWN ||
                      event.type() == EventType::EVENT_REBOOT)) {
@@ -152,20 +175,24 @@ class ReadFileTool final : public EventCallback {
 
         if (event.type() == EventType::EVENT_FAST_SYSCALL) {
             if (copy_started_.test_and_set() == 0) {
-                copy();
+                if (is_linux_)
+                    copy_linux(event);
+                else
+                    copy();
                 event.domain().interrupt();
             }
         }
     }
 
-    ReadFileTool(const std::string& src_path, const std::string& dst_path)
-        : src_path_(src_path), dst_path_(dst_path) {}
+    ReadFileTool(const std::string& src_path, const std::string& dst_path, bool is_linux)
+        : src_path_(src_path), dst_path_(dst_path), is_linux_(is_linux) {}
 
     int result() const { return result_; }
 
   private:
     const std::string src_path_;
     const std::string dst_path_;
+    const bool is_linux_;
 
     int result_;
 
@@ -208,19 +235,22 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (domain->guest()->os() != OS::Windows) {
+    const bool is_linux = (domain->guest()->os() == OS::Linux);
+    if (domain->guest()->os() != OS::Windows && !is_linux) {
         std::cerr << "Unsupported OS: " << domain->guest()->os() << '\n';
         return 1;
     }
 
-    // Set our process name filter
-    domain->task_filter().add_name(process_name);
+    // Process filter: Windows hijacks the named process; Linux injects in the
+    // first process to make a syscall unless one was explicitly named.
+    if (!is_linux || !vm["process_name"].defaulted())
+        domain->task_filter().add_name(process_name);
 
     // Enable system call hooking on all vcpus
     domain->intercept_system_calls(true);
 
     // Start the poll
-    ReadFileTool tool(source_file, dest_file);
+    ReadFileTool tool(source_file, dest_file, is_linux);
     domain->poll(tool);
     return tool.result();
 }

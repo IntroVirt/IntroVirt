@@ -23,6 +23,7 @@
  */
 
 #include <introvirt/introvirt.hh>
+#include <introvirt/linux/inject/syscall.hh>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
@@ -31,6 +32,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <sys/stat.h>
@@ -169,6 +171,33 @@ class WriteFileTool final : public EventCallback {
         fclose(src_file);
     }
 
+    // Linux: openat(O_CREAT|O_WRONLY|O_TRUNC) + write + close, injected into the
+    // current process via linux_guest::inject::write_file. No \??\ path mangling.
+    void copy_linux(Event& event) {
+        result_ = 1;
+        FILE* src_file = fopen(src_path_.c_str(), "rb");
+        if (!src_file) {
+            std::cout << "Failed to open source file: " << strerror(errno) << '\n';
+            return;
+        }
+        std::string bytes;
+        char chunk[65536];
+        size_t n;
+        while ((n = fread(chunk, 1, sizeof(chunk), src_file)) > 0)
+            bytes.append(chunk, n);
+        fclose(src_file);
+
+        const int64_t written =
+            linux_guest::inject::write_file(event, dst_path_, bytes.data(), bytes.size(), mode_);
+        if (written < 0 || static_cast<size_t>(written) != bytes.size()) {
+            std::cout << "Failed to write guest file (wrote " << written << " of "
+                      << bytes.size() << " bytes)\n";
+            return;
+        }
+        std::cout << "Wrote " << written << " bytes to " << dst_path_ << '\n';
+        result_ = 0;
+    }
+
     void process_event(Event& event) override {
         if (unlikely(event.type() == EventType::EVENT_SHUTDOWN ||
                      event.type() == EventType::EVENT_REBOOT)) {
@@ -177,15 +206,19 @@ class WriteFileTool final : public EventCallback {
 
         if (event.type() == EventType::EVENT_FAST_SYSCALL) {
             if (copy_started_.test_and_set() == 0) {
-
-                copy();
+                if (is_linux_)
+                    copy_linux(event);
+                else
+                    copy();
                 event.domain().interrupt();
             }
         }
     }
 
-    WriteFileTool(const std::string& src_path, const std::string& dst_path, bool progress_bar)
-        : src_path_(src_path), dst_path_(dst_path), progress_bar_(progress_bar) {}
+    WriteFileTool(const std::string& src_path, const std::string& dst_path, bool progress_bar,
+                  bool is_linux, int mode)
+        : src_path_(src_path), dst_path_(dst_path), progress_bar_(progress_bar),
+          is_linux_(is_linux), mode_(mode) {}
 
     int result() const { return result_; }
 
@@ -193,6 +226,8 @@ class WriteFileTool final : public EventCallback {
     const std::string src_path_;
     std::string dst_path_;
     const bool progress_bar_;
+    const bool is_linux_;
+    const int mode_; // POSIX mode bits for the new guest file (Linux only)
 
     int result_;
 
@@ -205,6 +240,7 @@ int main(int argc, char** argv) {
     std::string process_name;
     std::string source_file;
     std::string dest_file;
+    std::string mode_str;
 
     // clang-format off
     desc.add_options()
@@ -212,6 +248,7 @@ int main(int argc, char** argv) {
       ("source_file,s", po::value<std::string>(&source_file)->required(), "The path to the source file")
       ("dest_file,d", po::value<std::string>(&dest_file)->required(), "The destination file path to write in the guest")
       ("process_name,P", po::value<std::string>(&process_name)->default_value("explorer"), "The name of a process to hijack")
+      ("mode,m", po::value<std::string>(&mode_str)->default_value("0644"), "Octal permission bits for the new guest file, e.g. 0755 (Linux guests only)")
       ("progress", "Display a progress bar")
       ("help", "Display program help");
     // clang-format on
@@ -221,6 +258,22 @@ int main(int argc, char** argv) {
 
     po::variables_map vm;
     parse_program_options(argc, argv, desc, vm);
+
+    // Parse --mode as octal (POSIX permission bits). boost does no octal
+    // validation, so do it explicitly and reject anything malformed or out of
+    // the 0..07777 range. Only consulted on Linux guests; ignored on Windows.
+    int mode = 0644;
+    try {
+        size_t pos = 0;
+        const unsigned long parsed = std::stoul(mode_str, &pos, 8);
+        if (pos != mode_str.size() || parsed > 07777)
+            throw std::out_of_range(mode_str);
+        mode = static_cast<int>(parsed);
+    } catch (const std::exception&) {
+        std::cerr << "ERROR: invalid --mode '" << mode_str
+                  << "' (expected octal permission bits, e.g. 0755)\n";
+        return 1;
+    }
 
     // Get a hypervisor instance
     // This will automatically select the correct type of hypervisor.
@@ -236,24 +289,34 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (domain->guest()->os() != OS::Windows) {
+    const bool is_linux = (domain->guest()->os() == OS::Linux);
+    if (domain->guest()->os() != OS::Windows && !is_linux) {
         std::cerr << "Unsupported OS: " << domain->guest()->os() << '\n';
         return 1;
     }
 
-    // Set our process name filter
-    domain->task_filter().add_name(process_name);
+    // Process filter: on Windows hijack the named process; on Linux inject in
+    // whatever process triggers the first syscall unless one was named.
+    if (!is_linux) {
+        domain->task_filter().add_name(process_name);
+    } else if (!vm["process_name"].defaulted()) {
+        domain->task_filter().add_name(process_name);
+    }
 
     // Enable system call hooking on all vcpus
     domain->intercept_system_calls(true);
 
-    // If the file ends in a backslash, treat it like a directory and append the source file
-    if (boost::ends_with(dest_file, "\\")) {
+    if (is_linux) {
+        // POSIX path; trailing-slash directory means "drop with the source name".
+        if (boost::ends_with(dest_file, "/"))
+            dest_file += get_filename_from_path(source_file);
+    } else if (boost::ends_with(dest_file, "\\")) {
+        // If the file ends in a backslash, treat it like a directory.
         dest_file += get_filename_from_path(source_file);
     }
 
     // Start the poll
-    WriteFileTool tool(source_file, dest_file, vm.count("progress"));
+    WriteFileTool tool(source_file, dest_file, vm.count("progress"), is_linux, mode);
     domain->poll(tool);
 }
 

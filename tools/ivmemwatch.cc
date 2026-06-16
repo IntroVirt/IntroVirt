@@ -24,6 +24,9 @@
 
 #include <introvirt/introvirt.hh>
 
+#include <introvirt/linux/LinuxGuest.hh>
+#include <introvirt/linux/kernel/LinuxKernel.hh>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
 
@@ -201,6 +204,41 @@ int main(int argc, char** argv) {
         guest_ptr<void> ptr(*domain, address, process->DirectoryTableBase());
 
         // Create the watchpoint
+        watchpoint =
+            domain->create_watchpoint(ptr, length, read, write, exec, std::bind(&mem_callback, _1));
+
+        break;
+    }
+    case OS::Linux: {
+        // Find the target task, then translate `address` in its address space
+        // via the process page directory (mm->pgd, physical).
+        const auto& kernel =
+            static_cast<linux_guest::LinuxGuest*>(domain->guest())->kernel();
+        uint64_t task_address = 0;
+        for (const auto& process : kernel.processes()) {
+            if (vm.count("pid") == 0) {
+                if (boost::starts_with(boost::to_lower_copy(process.name()), process_name)) {
+                    task_address = process.task_struct_address();
+                    break;
+                }
+            } else if (static_cast<uint64_t>(process.pid()) == pid) {
+                task_address = process.task_struct_address();
+                break;
+            }
+        }
+
+        if (task_address == 0) {
+            std::cerr << "Failed to find a matching process\n";
+            return 1;
+        }
+
+        const uint64_t page_directory = kernel.process_page_directory(task_address);
+        if (page_directory == 0) {
+            std::cerr << "Failed to resolve the process page directory\n";
+            return 1;
+        }
+
+        guest_ptr<void> ptr(*domain, address, page_directory);
         watchpoint =
             domain->create_watchpoint(ptr, length, read, write, exec, std::bind(&mem_callback, _1));
 
