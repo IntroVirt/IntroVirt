@@ -27,6 +27,7 @@
 #include <introvirt/core/arch/arch.hh>
 #include <introvirt/core/domain/Vcpu.hh>
 #include <introvirt/core/exception/GuestDetectionException.hh>
+#include <introvirt/core/exception/TraceableException.hh>
 
 #include <log4cxx/logger.h>
 
@@ -109,10 +110,93 @@ void KPCR_IMPL<PtrType>::reset() {
     if (!dtb)
         dtb = vcpu_.registers().cr3();
 
-    const guest_ptr<void> pcurrent_thread(vcpu_.domain(), current_thread_address(), dtb);
+    /*
+     * Building the current THREAD here can fail when this VCPU is observed mid-context-switch, or is
+     * in user mode under KPTI with no KernelDirectoryTableBase available (so dtb falls back to the
+     * user CR3 above). In those cases current_thread_address() resolves through the wrong page
+     * tables and yields a garbage/non-canonical pointer, and the subsequent THREAD/OBJECT_HEADER
+     * read throws (e.g. IncorrectTypeException "Type index out of range", or
+     * VirtualAddressNotPresentException for a non-canonical VA).
+     *
+     * This reset() runs on the VCPU poller thread while building an event (via
+     * WindowsEventTaskInformation -> WindowsEventImpl), where the surrounding loop only catches
+     * EventPollException -- so any throw here would escape and std::terminate the process. This is
+     * easy to trigger while another VCPU is performing syscall injection (NtCreateUserProcess),
+     * which churns context switches on the other VCPUs.
+     *
+     * Prevent the bad read at the source: KPRCB.CurrentThread always holds a canonical kernel-half
+     * pointer (>= 0xFFFF800000000000) for any real thread. A value outside that range is a torn /
+     * stale read (e.g. the non-canonical 0x8A.. variant, or a user-half value seen mid-switch), so
+     * reject it up front -- this is cheaper and safer than walking the page tables and constructing
+     * a THREAD/OBJECT_HEADER only to throw deep inside. PageDirectory::translate() masks the top 16
+     * bits off the VA (va_mask_), so a non-canonical pointer would otherwise silently alias a
+     * present-but-wrong page and mis-decode an object header rather than failing cleanly.
+     *
+     * Either way (rejected here, or a residual canonical-but-stale pointer that still throws in the
+     * try below) we degrade to the idle() case above: current_thread_ == nullptr is already a
+     * legitimate, supported state. Downstream KPCR_IMPL::pid()/tid()/process_name() are already
+     * null-safe; the only callers that throw on a null current thread (KPCR::CurrentThread() ->
+     * IdleThreadException) run later in the event_deliverer / callback path, which catches
+     * TraceableException per-event. We clear os_data as well so the stale PROCESS pointer from a
+     * previous event is not reused; all os_data consumers already null-check it.
+     */
+    if constexpr (std::is_same_v<uint64_t, PtrType>) {
+        // x86_64 canonical kernel half. 32-bit kernels use the whole 4 GiB range for kernel
+        // pointers, so this guard only applies to long mode.
+        static constexpr uint64_t kKernelHalf = 0xFFFF800000000000ULL;
+        if (unlikely(current_thread_address() < kKernelHalf)) {
+            LOG4CXX_DEBUG(logger, "Vcpu " << vcpu_.id()
+                                          << " current thread pointer not in kernel half ("
+                                          << n2hexstr(current_thread_address())
+                                          << "), treating as no current thread");
+            current_thread_ = nullptr;
+            vcpu_.os_data(nullptr);
+            return;
+        }
+    }
 
-    current_thread_ = kernel_.thread(pcurrent_thread);
-    vcpu_.os_data(&current_thread_->Process());
+    /*
+     * Count consecutive residual read failures so a genuine, non-transient
+     * regression in THREAD/object parsing stays visible (the FIRST failure of a
+     * streak is logged at WARN, even when DEBUG is disabled), while a stuck vcpu
+     * does not spam a WARN per event. reset() is only ever called from the
+     * event-construction path on a vcpu's own poller thread, so this thread_local
+     * counter is effectively per-vcpu and needs no synchronization. It is reset to
+     * zero whenever the current thread reads cleanly.
+     */
+    thread_local uint64_t reset_failures = 0;
+
+    try {
+        const guest_ptr<void> pcurrent_thread(vcpu_.domain(), current_thread_address(), dtb);
+
+        current_thread_ = kernel_.thread(pcurrent_thread);
+        vcpu_.os_data(&current_thread_->Process());
+
+        // Clean read: clear any failure streak so the next bad read is logged
+        // loudly again.
+        reset_failures = 0;
+    } catch (const TraceableException& ex) {
+        /*
+         * Residual canonical-but-stale pointer that still failed to parse a
+         * THREAD/OBJECT_HEADER. Degrade to the idle() state (current_thread_ ==
+         * nullptr) and clear os_data so the previous event's PROCESS pointer is
+         * not reused.
+         */
+        if (unlikely(reset_failures++ % 1000 == 0)) {
+            LOG4CXX_WARN(logger, "Vcpu " << vcpu_.id()
+                                         << " failed to read current thread during KPCR reset "
+                                            "(failure #"
+                                         << reset_failures
+                                         << "), treating as no current thread: " << ex.what());
+        } else {
+            LOG4CXX_DEBUG(logger, "Vcpu " << vcpu_.id()
+                                          << " failed to read current thread during KPCR reset, "
+                                             "treating as no current thread: "
+                                          << ex.what());
+        }
+        current_thread_ = nullptr;
+        vcpu_.os_data(nullptr);
+    }
 }
 
 template <typename PtrType>
