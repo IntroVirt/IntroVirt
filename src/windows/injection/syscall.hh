@@ -19,6 +19,7 @@
 #include "core/domain/VcpuImpl.hh"
 #include "core/event/EventImpl.hh"
 #include "core/injection/RegisterGuard.hh"
+#include "core/injection/VcpuPauseGuard.hh"
 #include "windows/WindowsGuestImpl.hh"
 
 #include <introvirt/core/breakpoint/Breakpoint.hh>
@@ -188,6 +189,10 @@ class SystemCallInjector final {
             // (expected_return_rip_ is unset), fall back to the original generic
             // behaviour so a single, non-nested injection still wakes.
             const std::optional<uint64_t> expected_return_rip = expected_return_rip_;
+            // Release our pause so the injected syscall actually RUNS on the guest
+            // during the suspend wait (suspend completes the event -> the vcpu
+            // executes the call). Re-paused below once its return is in hand.
+            pause_guard_.reset();
             return_event =
                 event_.impl().suspend([expected_return_rip](const introvirt::Event& event) {
                     if (event.type() == EventType::EVENT_FAST_SYSCALL_RET) {
@@ -210,10 +215,20 @@ class SystemCallInjector final {
                     }
                     return WakeAction::PASS;
                 });
+            // The syscall has returned (we hold its return event). Re-pause for
+            // the cleanup + RAII teardown register accesses (end_injection,
+            // TEB/affinity restores, ~RegisterGuard) so they don't race EBUSY.
+            pause_guard_.emplace(event_.vcpu());
+            refresh_registers_after_repause();
             event_.impl().injection_performed(true);
 
         } catch (...) {
             // Duplicated because c++ doesn't have 'finally'
+            // Ensure the cleanup below runs on a paused vcpu even if we threw while
+            // the pause was released (during suspend / verify_stack_present).
+            if (!pause_guard_)
+                pause_guard_.emplace(event_.vcpu());
+            refresh_registers_after_repause();
             vcpu.syscall_injection_end();
             static_cast<DomainImpl&>(event_.domain()).end_injection(event_);
 
@@ -274,6 +289,13 @@ class SystemCallInjector final {
         introvirt_assert(event.os_type() == OS::Windows, "");
 
         auto& vcpu = event_.vcpu();
+        // SECTEPE: pause this vcpu for the injector's register-access regions.
+        // For a SEQUENTIAL injection the vcpu is running again (the previous
+        // injection released its pause), so without this the very first
+        // registers() read below throws EBUSY -> the injection (e.g. the
+        // NtResumeThread that actually starts the created process) is aborted.
+        // Released only around verify_stack_present + suspend (the executions).
+        pause_guard_.emplace(event_.vcpu());
         auto& regs = vcpu.registers();
 
         // Set the VCPU to the correct call number
@@ -368,6 +390,9 @@ class SystemCallInjector final {
         // Move the stack backwards enough to hold our arguments plus the return address
         const unsigned int stack_offset = (arg_count + 2) * sizeof(uint32_t);
 
+        // Nested verify_stack_present injections must run on the guest; drop our
+        // pause around them, then re-pause + refresh the register cache.
+        pause_guard_.reset();
         switch (event_.type()) {
         case EventType::EVENT_FAST_SYSCALL:
             verify_stack_present(regs.rdx() - stack_offset - additional_stack, regs.rdx());
@@ -377,6 +402,8 @@ class SystemCallInjector final {
             verify_stack_present(regs.rsp() - stack_offset - additional_stack, regs.rsp());
             break;
         }
+        pause_guard_.emplace(event_.vcpu());
+        refresh_registers_after_repause();
 
         // Force a SYSENTER in the guest
         // This works even if we're already in an EVENT_FAST_SYSCALL.
@@ -433,8 +460,14 @@ class SystemCallInjector final {
         const uint64_t stack_bottom = regs.rsp() - (arg_count + 2) * sizeof(uint64_t);
 
         // Prevents a recursive loop with NtDeleteFile to page in the stack
-        if (arg_count > 4 || additional_stack > 0)
+        if (arg_count > 4 || additional_stack > 0) {
+            // The nested NtDeleteFile injections must RUN on the guest, so drop
+            // our pause around them, then re-pause and refresh the register cache.
+            pause_guard_.reset();
             verify_stack_present(stack_bottom - additional_stack, regs.rsp());
+            pause_guard_.emplace(event_.vcpu());
+            refresh_registers_after_repause();
+        }
 
         // This works even if we're already in an EVENT_FAST_SYSCALL.
         // In KVM, since the RIP changes, it won't happen twice.
@@ -456,7 +489,19 @@ class SystemCallInjector final {
         rsp_ = regs.rsp();
     }
 
+    // Refresh the cached register state after the vcpu has been re-paused
+    // following a region where it ran (verify_stack_present / suspend). The
+    // re-pause does not reload registers unless we were in an event, so trigger
+    // a read here; `regs` references the same cache object so it sees the update.
+    void refresh_registers_after_repause() {
+        if (pause_guard_)
+            (void)event_.vcpu().registers();
+    }
+
   private:
+    // Declared BEFORE guard_ so it is destroyed AFTER ~RegisterGuard (whose dtor
+    // restores registers and must run on the still-paused vcpu).
+    std::optional<introvirt::inject::VcpuPauseGuard> pause_guard_;
     std::optional<introvirt::inject::RegisterGuard> guard_;
     WindowsEvent& event_;
     WindowsGuest& guest_;
