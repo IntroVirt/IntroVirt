@@ -313,6 +313,20 @@ Json::Value json() const override {
                     {%- else %}
     handler.{{ arg['name' ] }}({{ arg['name'] }});
                     {%- endif %}
+                {%- elif arg.get('inject_via_ptr') %}
+                    {#- complex-mode pointer-wrapper object (opt-in via typemap "inject_via_ptr"). #}
+                    {#- The constructor only received a default-constructed NULL guest_ptr for #}
+                    {#- this argument, so without this the kernel is handed a NULL pointer. #}
+                    {#- Point the syscall argument at the caller object's own guest buffer. Only #}
+                    {#- types whose impl exposes ptr() opt in (RTL_USER_PROCESS_PARAMETERS, #}
+                    {#- PS_CREATE_INFO); composite/no-ptr() complex types (KEY_VALUE, #}
+                    {#- FILE_BASIC_INFORMATION, ...) are intentionally excluded. #}
+                    {%- if arg.get('optional') %}
+    if ({{arg['name']}})
+        handler.{{ arg['functionName'] }}({{ arg['name'] }}->ptr());
+                    {%- else %}
+    handler.{{ arg['functionName'] }}({{ arg['name'] }}.ptr());
+                    {%- endif %}
                 {%- endif %}
             {%- endif %}
         {%- endif %}
