@@ -29,6 +29,7 @@ FUNCTION(ADD_TOOL_EXECUTABLE EXE_NAME )
 
 ENDFUNCTION()
 
+ADD_TOOL_EXECUTABLE(ivbugcheck "ivbugcheck.cc")
 ADD_TOOL_EXECUTABLE(ivcallmon "ivcallmon.cc")
 ADD_TOOL_EXECUTABLE(ivcr3mon "ivcr3mon.cc")
 ADD_TOOL_EXECUTABLE(ivexec "ivexec.cc")

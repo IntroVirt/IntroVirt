@@ -24,6 +24,9 @@
 
 #include <introvirt/introvirt.hh>
 
+#include <introvirt/linux/LinuxGuest.hh>
+#include <introvirt/linux/kernel/LinuxKernel.hh>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
 
@@ -424,6 +427,21 @@ int main(int argc, char** argv) {
 
     // Parse Windows information
     auto* guest = domain->guest();
+
+    // Linux guests: render the task list via the native LinuxKernel API
+    // (init_task.tasks walk). This is the first iv* tool with a Linux path.
+    if (guest->os() == OS::Linux) {
+        const auto& kernel = static_cast<linux_guest::LinuxGuest*>(guest)->kernel();
+        std::cout << "Linux " << kernel.release() << '\n';
+        for (const auto& process : kernel.processes()) {
+            std::cout << "PID " << process.pid() << ": " << process.name() << " (tid "
+                      << process.tid() << ", task_struct 0x" << std::hex
+                      << process.task_struct_address() << std::dec << ")\n";
+        }
+        domain->resume();
+        return 0;
+    }
+
     if (guest->os() != OS::Windows) {
         std::cerr << "Unsupported OS: " << guest->os() << '\n';
         return 2;
