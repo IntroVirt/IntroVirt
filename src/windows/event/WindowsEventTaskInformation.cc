@@ -15,23 +15,36 @@
  */
 #include <introvirt/windows/event/WindowsEventTaskInformation.hh>
 
+#include <introvirt/core/exception/TraceableException.hh>
 #include <introvirt/windows/kernel/nt/types/KPCR.hh>
 
 namespace introvirt {
 namespace windows {
 
-uint64_t WindowsEventTaskInformation::pid() const { return kpcr_.pid(); }
+// Return the values SNAPSHOTTED at construction (see the header); re-reading
+// kpcr_ here would race the shared per-vcpu KPCR -> stale-pointer SIGSEGV.
+uint64_t WindowsEventTaskInformation::pid() const { return pid_; }
 
-uint64_t WindowsEventTaskInformation::tid() const { return kpcr_.tid(); }
+uint64_t WindowsEventTaskInformation::tid() const { return tid_; }
 
-std::string WindowsEventTaskInformation::process_name() const { return kpcr_.process_name(); }
+std::string WindowsEventTaskInformation::process_name() const { return process_name_; }
 
 nt::KPCR& WindowsEventTaskInformation::pcr() { return kpcr_; }
 
 const nt::KPCR& WindowsEventTaskInformation::pcr() const { return kpcr_; }
 
 WindowsEventTaskInformation::WindowsEventTaskInformation(nt::KPCR& kpcr) : kpcr_(kpcr) {
+    // Built by the poller right after in_event_=true, so registers/KPCR are valid
+    // here. Resolve the current thread once and snapshot the ids so later
+    // accessors never re-read the shared, racy kpcr_.
     kpcr_.reset();
+    try {
+        pid_ = kpcr_.pid();
+        tid_ = kpcr_.tid();
+        process_name_ = kpcr_.process_name();
+    } catch (const TraceableException&) {
+        // degraded KPCR (KPTI non-canonical thread ptr) -> leave defaults
+    }
 }
 
 WindowsEventTaskInformation::~WindowsEventTaskInformation() = default;
