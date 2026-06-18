@@ -215,8 +215,26 @@ class ExecFileTool final : public EventCallback {
         // PsCreateFailExeName). Fall back to the legacy \??\ DosDevices alias if
         // resolution fails (Win10 path / non-drive-letter targets).
         std::string nt_image_path = resolve_nt_device_path(target_);
-        if (nt_image_path.empty())
+        if (nt_image_path.empty()) {
+            // A drive-letter target that failed the \GLOBAL?? walk falls back
+            // to the legacy "\??\X:" alias, which is INVALID in the injected
+            // Win11 victim context (per-process DosDevices map): then
+            // NtCreateUserProcess fails STATUS_OBJECT_PATH_NOT_FOUND at
+            // PsCreateFailExeName, surfacing only as a generic
+            // CommandFailedException. Warn loudly -- the usual culprit is a
+            // secondary/data volume Windows never gave a normal
+            // \GLOBAL??\X: -> \Device\HarddiskVolumeN symlink, e.g. the disk's
+            // MBR partition type is 0x83 (Linux) rather than a Windows FAT/NTFS
+            // type (0x06/0x0b/0x0c/0x0e/0x07); re-type the partition.
+            if (target_.size() >= 2 && target_[1] == ':')
+                std::cerr << "WARNING: could not resolve \\Device\\HarddiskVolumeN for \""
+                          << target_.substr(0, 2)
+                          << "\" via \\GLOBAL??; falling back to \\??\\ (invalid in the "
+                             "injected Win11 context). If the launch fails at "
+                             "PsCreateFailExeName, check the target volume has a Windows "
+                             "partition type, not 0x83/Linux.\n";
             nt_image_path = "\\??\\" + target_;
+        }
         const std::string current_dir =
             directory_.empty() ? std::string("C:\\Windows\\System32\\") : directory_;
         const std::string desktop = "Winsta0\\Default";
