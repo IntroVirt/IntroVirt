@@ -53,12 +53,17 @@ class Domain(ContextDecorator):
         """Access the guest OS type enum."""
         return self._os
 
+    def _windows_guest(self) -> introvirt.WindowsGuest:
+        win_guest = introvirt.WindowsGuest_from_guest(self._guest)
+        if win_guest is None:
+            raise RuntimeError("Guest is not a Windows guest")
+        return win_guest
+
     @property
-    def syscall_categories(self) -> tuple[str]:
+    def syscall_categories(self) -> tuple[str, ...]:
         """Get a list of system call categories."""
         if self.os == introvirt.OS.Windows:
-            win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
-            return win_guest.syscall_categories()
+            return self._windows_guest().syscall_categories()  # ty: ignore[too-many-positional-arguments]
         raise NotImplementedError("Only implemented for Windows guests right now.")
 
     def detach(self) -> None:
@@ -83,24 +88,21 @@ class Domain(ContextDecorator):
     def default_system_call_filter(self):
         """Set the system call filter to the default set of supported system calls for the OS."""
         if self.os == introvirt.OS.Windows:
-            win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
-            win_guest.default_syscall_filter(self._attached().system_call_filter())
+            self._windows_guest().default_syscall_filter(self._attached().system_call_filter())
         else:
             raise NotImplementedError("Only implemented for Windows guests right now.")
 
     def filter_system_call(self, syscall: introvirt.SystemCallIndex, enabled: bool):
         """Toggle filtering of a specific system call."""
         if self.os == introvirt.OS.Windows:
-            win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
-            win_guest.set_system_call_filter(self._attached().system_call_filter(), syscall.value, enabled)
+            self._windows_guest().set_system_call_filter(self._attached().system_call_filter(), syscall.value, enabled)
         else:
             raise NotImplementedError("Only implemented for Windows guests right now.")
 
     def filter_system_call_category(self, category: str):
         """Filter by a system call category."""
         if self.os == introvirt.OS.Windows:
-            win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
-            win_guest.enable_category(category, self._attached().system_call_filter())
+            self._windows_guest().enable_category(category, self._attached().system_call_filter())
         else:
             raise NotImplementedError("Only implemented for Windows guests right now.")
 

@@ -166,7 +166,7 @@ class VMI(ContextDecorator):
         return self._attached_domain().os
 
     @_require_attachment
-    def syscall_categories(self) -> tuple[str]:
+    def syscall_categories(self) -> tuple[str, ...]:
         """Get a list of system call categories."""
         return self._attached_domain().syscall_categories
 

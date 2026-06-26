@@ -106,28 +106,7 @@ jobs:
           name: pyintrovirt_wheel_${{ matrix.os }}
           path: build/python/dist/*
 
-  # Run quality checks on pyintrovirt
-  pyintrovirt-quality:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install dev dependencies
-        run: uv sync --directory pyintrovirt --extra dev
-
-      - name: Pylint
-        run: uv run --directory pyintrovirt pylint pyintrovirt
-
-      - name: Ty
-        run: uv run --directory pyintrovirt ty check pyintrovirt
-
-      - name: Ruff
-        run: uv run --directory pyintrovirt ruff check pyintrovirt && uv run --directory pyintrovirt ruff format --check pyintrovirt
-
-  # Run Python bindings and pyintrovirt tests (no VM required)
+  # Build Python bindings, then run pyintrovirt quality checks and tests (no VM required)
   python-tests:
     runs-on: ubuntu-24.04
     steps:
@@ -167,10 +146,21 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
+      - name: Install dev dependencies
+        run: uv sync --directory pyintrovirt --extra dev
+
+      - name: Pylint
+        run: uv run --directory pyintrovirt pylint pyintrovirt
+
+      - name: Ty
+        run: uv run --directory pyintrovirt ty check --extra-search-path "${{ github.workspace }}/build/python" pyintrovirt
+
+      - name: Ruff
+        run: uv run --directory pyintrovirt ruff check pyintrovirt && uv run --directory pyintrovirt ruff format --check pyintrovirt
+
       - name: Run pytest (no VM tests)
         env:
           PYTHONPATH: ${{ github.workspace }}/build/python
         run: |
           cd pyintrovirt
-          uv sync --extra dev
           uv run pytest tests/ -v -m "not requires_hypervisor"

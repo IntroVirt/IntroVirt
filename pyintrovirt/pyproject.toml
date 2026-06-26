@@ -66,9 +66,6 @@ target-version = "py312"
 select = ["E", "F", "I", "N", "W"]
 ignore = []
 
-[tool.ty.environment]
-extra-paths = ["../build/python", "stubs"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
