@@ -18,6 +18,7 @@ Default symbol set is ntdll!Nt* if none provided.
 
 Requires root and IntroVirt-patched hypervisor.
 """
+
 import argparse
 import functools
 import sys
@@ -52,12 +53,8 @@ class BreakpointHandler(introvirt.BreakpointCallback):
                 rsp = regs.rsp()
                 ret_addr = introvirt.read_guest_uint64(self._domain, vcpu, rsp)
                 if ret_addr != 0:
-                    ret_handler = ReturnBreakpointHandler(
-                        self._domain, self._name, task.pid(), task.tid(), rsp + 8
-                    )
-                    self._return_breakpoint = introvirt.create_breakpoint_holder(
-                        self._domain, vcpu, ret_addr, ret_handler
-                    )
+                    ret_handler = ReturnBreakpointHandler(self._domain, self._name, task.pid(), task.tid(), rsp + 8)
+                    self._return_breakpoint = introvirt.create_breakpoint_holder(self._domain, vcpu, ret_addr, ret_handler)
             except Exception as e:
                 print(f"    (return breakpoint skipped: {e})", file=sys.stderr)
 
@@ -184,9 +181,7 @@ def handle_cr_write(vmi: VMI, event: Event, *, state: CallMonitorState):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Monitor API calls via breakpoints (ivcallmon clone). VAD + PDB symbol resolution."
-    )
+    parser = argparse.ArgumentParser(description="Monitor API calls via breakpoints (ivcallmon clone). VAD + PDB symbol resolution.")
     parser.add_argument("domain", metavar="DOMAIN", help="Domain name or ID")
     parser.add_argument("--procname", metavar="NAME", required=True, help="Process name filter")
     parser.add_argument(
