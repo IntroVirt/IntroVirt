@@ -168,6 +168,12 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 			VERBATIM
 		)
 		add_custom_target(pyintrovirt_wheel DEPENDS "${PYINTROVIRT_WHEEL_STAMP}")
+
+		install(CODE "
+			set(PYINTROVIRT_DIST_DIR \"${CMAKE_BINARY_DIR}/python/dist\")
+			set(PYINTROVIRT_PYTHON \"${Python3_EXECUTABLE}\")
+			include(\"${CMAKE_CURRENT_SOURCE_DIR}/cmake/install_pyintrovirt_wheel.cmake\")
+		" COMPONENT python3-pyintrovirt)
 	else()
 		message(WARNING "uv not found; pyintrovirt wheel will not be built by the packaging step")
 	endif()
@@ -310,6 +316,16 @@ SET(CPACK_DEBIAN_LIBINTROVIRT-DOC_PACKAGE_SUGGESTS "")
 SET(CPACK_DEBIAN_LIBINTROVIRT-DOC_PACKAGE_REPLACES "liblintrovirt-doc (<< 0.50), libwintrovirt-doc (<< 0.50)")
 SET(CPACK_DEBIAN_LIBINTROVIRT-DOC_PACKAGE_BREAKS "liblintrovirt-doc (<< 0.50), libwintrovirt-doc (<< 0.50)")
 SET(CPACK_DEBIAN_LIBINTROVIRT-DOC_PACKAGE_CONFLICTS "liblintrovirt-doc (<< 0.50), libwintrovirt-doc (<< 0.50)")
+
+IF(INTROVIRT_PYTHON_BINDINGS AND UV_EXECUTABLE)
+	SET(CPACK_DEBIAN_LIBINTROVIRT1_PACKAGE_SUGGESTS "introvirt-tools, python3-pyintrovirt")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_NAME "python3-pyintrovirt")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_DESCRIPTION "Python bindings and helpers for IntroVirt VM introspection")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_DEPENDS "python3 (>= 3.12), libintrovirt1 (= ${CPACK_PACKAGE_VERSION})")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_ARCHITECTURE "amd64")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_SECTION "python")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_PRIORITY "extra")
+ENDIF()
 
 INCLUDE(CPack)
 

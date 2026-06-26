@@ -66,11 +66,11 @@ IntroVirt is used to introspect a running virtual machine. The current release o
 
 First, build and install [libmspdb](https://github.com/IntroVirt/libmspdb) and [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
 
-Then, build from source and install debs (python3-dev and swig are needed for optional Python bindings / wheel build):
+Then, build from source and install debs (python3-dev, swig, python3-installer, and uv are needed for optional Python bindings / wheel packaging):
 
 ```shell
 sudo apt-get install -y \
-    python3 python3-jinja2 python3-dev swig cmake make build-essential libcurl4-openssl-dev \
+    python3 python3-jinja2 python3-dev python3-installer swig cmake make build-essential libcurl4-openssl-dev \
     libboost-dev libboost-program-options-dev git clang-format liblog4cxx-dev \
     libboost-stacktrace-dev doxygen graphviz ninja-build
 
@@ -81,7 +81,7 @@ ninja -j$(nproc) package
 sudo apt install ./*.deb
 ```
 
-If you enabled Python bindings, the build also produces a self-contained wheel under `build/python/dist/` that provides the `introvirt` Python module (install it into a virtual environment with `pip install build/python/dist/*.whl`).
+With Python bindings enabled, `ninja package` produces a `python3-pyintrovirt` deb alongside the others. After `sudo apt install ./*.deb`, `import introvirt` and `import pyintrovirt` work system-wide. A wheel is also written to `build/python/dist/` for venv use. SWIG-generated bindings in `build/python/` are for local development and testing.
 
 Confirm everything is installed with: `sudo ivversion`
 

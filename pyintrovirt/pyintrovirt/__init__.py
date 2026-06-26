@@ -1,7 +1,6 @@
 """pyintrovirt: Python library for IntroVirt VM introspection.
 
-Requires IntroVirt to be installed (e.g. `libintrovirt1`).
-The `introvirt` Python bindings are provided via the generated wheel rather than a system-wide package.
+Requires IntroVirt to be installed (e.g. `libintrovirt1` and `python3-pyintrovirt`).
 """
 from __future__ import annotations
 
