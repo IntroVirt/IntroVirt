@@ -1,7 +1,7 @@
-pyintrovirt
-===========
+Domain
+======
 
-.. automodule:: pyintrovirt
+.. automodule:: pyintrovirt.domain
    :members:
    :undoc-members:
    :show-inheritance:

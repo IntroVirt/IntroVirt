@@ -9,6 +9,7 @@ Files in this directory:
 
 - `doxygen-awesome.css` – main theme styles (light/dark via `prefers-color-scheme` or toggle)
 - `doxygen-awesome-darkmode-toggle.js` – optional dark/light toggle button in the nav bar
-- `doxygen-awesome-footer.html` – injects the toggle script into generated pages
+- `doxygen-awesome-tabs.js` – tabbed content in Markdown pages (e.g. C++/Python usage in examples)
+- `doxygen-awesome-footer.html` – injects the toggle and tabs scripts into generated pages
 
 To update the theme, replace the CSS and JS with the desired release from the repo above and re-run `ninja doc`.

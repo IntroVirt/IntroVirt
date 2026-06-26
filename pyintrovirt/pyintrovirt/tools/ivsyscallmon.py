@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """@example ivsyscallmon.py
 
-IntroVirt Python example: A simple example system call monitoring tool.
+A simple example system call monitoring tool.
 
 Demonstrates the minimal Python API: attach to a domain, list running domains, print the version of the hypervisor,
 and filter/monitor system calls.

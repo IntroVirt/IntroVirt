@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """@example ivfilemon.py
 
-IntroVirt Python example: A simple example file monitoring tool.
+A simple example file monitoring tool.
 
 Demonstrates monitoring file access by process/action and file handle tracking.
 

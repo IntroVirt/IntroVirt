@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""IntroVirt Python example: API call monitor (ivcallmon clone).
+"""@example ivcallmon.py
+
+API call monitor (ivcallmon).
 
 Sets breakpoints on specified module!symbol patterns. Walks the process VAD tree
 to find modules and uses PDB for symbol resolution (same as C++ ivcallmon).
 Optional return breakpoints use read_guest_uint64 to read the return address from RSP.
 
 Usage:
-  python3 callmon.py DOMAIN --procname NAME [SYMBOL ...]
+  sudo ivcallmon_py DOMAIN --procname NAME [SYMBOL ...]
+  sudo python3 -m pyintrovirt.tools.ivcallmon DOMAIN --procname NAME 'ntdll!Nt*'
 
 Example:
-  python3 callmon.py myvm --procname notepad.exe 'ntdll!NtCreateFile' 'ntdll!Nt*'
+  sudo ivcallmon_py myvm --procname notepad.exe 'ntdll!NtCreateFile' 'ntdll!Nt*'
 
 Default symbol set is ntdll!Nt* if none provided.
 
@@ -253,7 +256,7 @@ def main():
     guest = _domain.guest()
     print(f"Guest OS: {guest.os()}")
     if guest is None or guest.os() != introvirt.OS.Windows.value:
-        print("callmon only supports Windows guests", file=sys.stderr)
+        print("ivcallmon only supports Windows guests", file=sys.stderr)
         return 1
 
     _domain.task_filter().add_name(args.procname)

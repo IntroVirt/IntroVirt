@@ -50,6 +50,7 @@ jobs:
       - name: Build Python docs
         run: |
           uv sync --project ./pyintrovirt --extra doc
+          uv run --project ./pyintrovirt python pyintrovirt/docs/generate_examples.py
           uv run --project ./pyintrovirt sphinx-build -b html pyintrovirt/docs pyintrovirt/docs/_build/html
           cp -r pyintrovirt/docs/_build/html build/html/python
 

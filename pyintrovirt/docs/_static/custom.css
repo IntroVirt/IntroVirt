@@ -1,0 +1,17 @@
+.sidebar-nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0 0 0.75rem;
+    padding: 0 0.75rem;
+    font-size: var(--font-size--small, 0.875rem);
+}
+
+.sidebar-nav-links a {
+    color: var(--color-foreground-secondary);
+    text-decoration: none;
+}
+
+.sidebar-nav-links a:hover {
+    color: var(--color-foreground-primary);
+}

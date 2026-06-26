@@ -19,6 +19,7 @@ classifiers = [
 [project.scripts]
 ivsyscallmon_py = "pyintrovirt.tools.ivsyscallmon:main"
 ivfilemon_py = "pyintrovirt.tools.ivfilemon:main"
+ivcallmon_py = "pyintrovirt.tools.ivcallmon:main"
 
 [project.optional-dependencies]
 dev = ["pylint", "ty", "ruff", "pytest"]

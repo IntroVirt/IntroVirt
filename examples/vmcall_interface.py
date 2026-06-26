@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""IntroVirt Python example: VMCALL interface (vmcall_interface clone).
+"""! @example vmcall_interface.py
+
+VMCALL interface (vmcall_interface clone).
 
 Demonstrates: (1) CSTRING_REVERSE - read C string from guest (RDX), reverse in place;
 (2) WRITE_PROTECT - watchpoint on (RDX, R8), inject GP on write;
 (3) PROTECT_PROCESS - block NtTerminateProcess/NtOpenProcess for protected PIDs.
+
+For full documentation, build instructions, guest setup, and usage, see the
+\\ref examples_doc "Example documentation" page.
 
 Usage:
   python3 vmcall_interface.py DOMAIN

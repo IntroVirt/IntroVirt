@@ -1,6 +1,6 @@
 /*
  * Guest memory helpers for Python: read/write guest memory without exposing guest_ptr.
- * Used by callmon (return breakpoint), filemon, and vmcall_interface (string reverse).
+ * Used by ivcallmon (return breakpoint), ivfilemon, and vmcall_interface (string reverse).
  */
 /* Python bytes -> (const char* data, size_t size): one Python arg fills both; must be before the function */
 %typemap(in) (const char* data, size_t size) (Py_ssize_t size = 0) {
