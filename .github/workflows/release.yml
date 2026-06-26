@@ -58,6 +58,7 @@ jobs:
       # Run the build
       - name: ${{ matrix.os }} Build Release
         run: |
+          mkdir -p build
           cd build
           cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DINTROVIRT_PYTHON_BINDINGS=ON -DDOXYGEN=ON ..
           ninja package

@@ -1,3 +1,5 @@
+# Build the pyintrovirt wheel before CPack runs install(CODE) for python3-pyintrovirt.
+# CPACK_INSTALL_SCRIPTS run before staging install; CPACK_PRE_BUILD_SCRIPTS run after.
 execute_process(
   COMMAND "@CMAKE_COMMAND@"
     -DSOURCE_DIR:PATH=@CMAKE_SOURCE_DIR@
@@ -8,6 +10,5 @@ execute_process(
   RESULT_VARIABLE _pyintrovirt_uv_rc
 )
 if(NOT _pyintrovirt_uv_rc EQUAL 0)
-  message(FATAL_ERROR "pyintrovirt wheel prebuild failed with exit code ${_pyintrovirt_uv_rc}")
+  message(FATAL_ERROR "pyintrovirt wheel build failed with exit code ${_pyintrovirt_uv_rc}")
 endif()
-

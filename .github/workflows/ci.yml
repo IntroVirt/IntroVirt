@@ -87,6 +87,7 @@ jobs:
       # Run the build
       - name: Validate ${{ matrix.build_type }} Build
         run: |
+          mkdir -p build
           cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DINTROVIRT_PYTHON_BINDINGS=ON -DDOXYGEN=ON ..
           ninja package

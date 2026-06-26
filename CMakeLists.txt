@@ -143,14 +143,13 @@ IF(INTROVIRT_PYTHON_BINDINGS)
 	if(UV_EXECUTABLE)
 		set(PYINTROVIRT_WHEEL_STAMP "${CMAKE_BINARY_DIR}/python/pyintrovirt_wheel.stamp")
 
-		# Have CPack run the wheel build right before packaging.
-		# This makes `ninja package` produce both .debs and the wheel.
+		# Build the wheel before CPack staging install (install(CODE) needs dist/*.whl).
 		configure_file(
-			"${CMAKE_CURRENT_SOURCE_DIR}/cmake/cpack_prebuild_pyintrovirt.cmake.in"
-			"${CMAKE_BINARY_DIR}/python/cpack_prebuild_pyintrovirt.cmake"
+			"${CMAKE_CURRENT_SOURCE_DIR}/cmake/cpack_install_pyintrovirt_wheel.cmake.in"
+			"${CMAKE_BINARY_DIR}/python/cpack_install_pyintrovirt_wheel.cmake"
 			@ONLY
 		)
-		list(APPEND CPACK_PRE_BUILD_SCRIPTS "${CMAKE_BINARY_DIR}/python/cpack_prebuild_pyintrovirt.cmake")
+		list(APPEND CPACK_INSTALL_SCRIPTS "${CMAKE_BINARY_DIR}/python/cpack_install_pyintrovirt_wheel.cmake")
 
 		add_custom_command(
 			OUTPUT "${PYINTROVIRT_WHEEL_STAMP}"
