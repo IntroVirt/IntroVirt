@@ -1,0 +1,7 @@
+<div class="sidebar-nav-links">
+{%- if pagename != "index" %}
+  <a class="reference internal" href="{{ pathto('index') }}">Python docs home</a>
+{%- endif %}
+{%- set cpp_home = "../" * (pagename.count("/") + 1) + "index.html" %}
+  <a class="reference external" href="{{ cpp_home }}">C++ API documentation</a>
+</div>

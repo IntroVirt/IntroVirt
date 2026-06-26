@@ -1,13 +1,10 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
 
 PROJECT(libintrovirt)
 
 IF( NOT CMAKE_BUILD_TYPE )
-     SET(CMAKE_BUILD_TYPE Debug)
+	SET(CMAKE_BUILD_TYPE Debug)
 ENDIF()
-
-#SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-#SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")
 
 add_compile_options("-Wall" "-Wno-switch")
 
@@ -23,12 +20,13 @@ SET(PACKAGE_MINOR_VERSION 57)
 SET(PACKAGE_PATCH_VERSION 4)
 
 IF ( PACKAGE_PATCH_VERSION_EXTRA )
-     SET(PACKAGE_PATCH_VERSION "${PACKAGE_PATCH_VERSION}.${PACKAGE_PATCH_VERSION_EXTRA}")
+	SET(PACKAGE_PATCH_VERSION "${PACKAGE_PATCH_VERSION}.${PACKAGE_PATCH_VERSION_EXTRA}")
 ENDIF()
 
 add_definitions(-DBOOST_STACKTRACE_USE_BACKTRACE=1)
 
 FIND_PACKAGE(Boost REQUIRED)
+FIND_PACKAGE(log4cxx CONFIG REQUIRED)
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -70,10 +68,10 @@ EXECUTE_PROCESS(
 SET_SOURCE_FILES_PROPERTIES(${GENERATED_HEADERS} PROPERTIES GENERATED TRUE)
 
 EXECUTE_PROCESS(
-    COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_SOURCE_DIR}/win_syscall_generator/generate.py" "--sources" "${CMAKE_SOURCE_DIR}"
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE GENERATED_SOURCES
-    OUTPUT_STRIP_TRAILING_WHITESPACE
+	COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_SOURCE_DIR}/win_syscall_generator/generate.py" "--sources" "${CMAKE_SOURCE_DIR}"
+	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+	OUTPUT_VARIABLE GENERATED_SOURCES
+	OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
 SET_PROPERTY(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${SYSCALL_GEN_INPUT}")
@@ -86,13 +84,116 @@ ADD_SUBDIRECTORY(tests)
 ADD_SUBDIRECTORY(tools)
 ADD_DEPENDENCIES(introvirt gitversion)
 
+# Python bindings via SWIG (optional)
+option(INTROVIRT_PYTHON_BINDINGS "Build Python bindings with SWIG" OFF)
+IF(INTROVIRT_PYTHON_BINDINGS)
+	FIND_PACKAGE(SWIG 4.0 REQUIRED)
+	FIND_PACKAGE(Python3 REQUIRED COMPONENTS Interpreter Development)
+	INCLUDE(UseSWIG)
+
+	# Keep all Python binding build outputs under build/python/
+	SET(INTROVIRT_PYTHON_OUTDIR "${CMAKE_BINARY_DIR}/python")
+	FILE(MAKE_DIRECTORY "${INTROVIRT_PYTHON_OUTDIR}")
+	# Where SWIG writes introvirt.py
+	SET(CMAKE_SWIG_OUTDIR "${INTROVIRT_PYTHON_OUTDIR}")
+	FIND_PROGRAM(UV_EXECUTABLE uv)
+
+	SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/swig/introvirt.i
+		PROPERTIES
+		CPLUSPLUS ON
+		SWIG_MODULE_NAME introvirt
+		SWIG_COMPILE_OPTIONS "-doxygen"
+	)
+
+	SWIG_ADD_LIBRARY(introvirt_py
+		TYPE MODULE
+		LANGUAGE python
+		SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/swig/introvirt.i
+	)
+	# Re-run SWIG when the generated syscall fragment changes (it is %included from windows.i)
+	SET_PROPERTY(TARGET introvirt_py PROPERTY SWIG_EXTRA_DEPS ${CMAKE_CURRENT_SOURCE_DIR}/swig/windows/windows_syscalls_generated.i)
+
+	TARGET_INCLUDE_DIRECTORIES(introvirt_py PRIVATE
+		${CMAKE_SOURCE_DIR}/include
+		${CMAKE_SOURCE_DIR}/swig
+		${CMAKE_SOURCE_DIR}/swig/core
+		${CMAKE_SOURCE_DIR}/swig/windows
+		${CMAKE_CURRENT_BINARY_DIR}
+		${Python3_INCLUDE_DIRS}
+	)
+	TARGET_LINK_LIBRARIES(introvirt_py PRIVATE introvirt ${Python3_LIBRARIES})
+	ADD_DEPENDENCIES(introvirt_py generate_syscalls)
+
+	# Ensure the compiled extension (_introvirt_py*.so) lands alongside introvirt.py
+	SET_TARGET_PROPERTIES(introvirt_py PROPERTIES
+		LIBRARY_OUTPUT_DIRECTORY "${INTROVIRT_PYTHON_OUTDIR}"
+		RUNTIME_OUTPUT_DIRECTORY "${INTROVIRT_PYTHON_OUTDIR}"
+	)
+
+	# Generate type stub file from the built introvirt module
+	ADD_CUSTOM_COMMAND(TARGET introvirt_py POST_BUILD
+		BYPRODUCTS ${INTROVIRT_PYTHON_OUTDIR}/introvirt.pyi
+		COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/swig/generate_introvirt_pyi.py
+			--module-dir ${INTROVIRT_PYTHON_OUTDIR}
+			--output ${INTROVIRT_PYTHON_OUTDIR}/introvirt.pyi
+	)
+
+	# Build the pyintrovirt wheel as part of the packaging step (only if bindings are enabled)
+	if(UV_EXECUTABLE)
+		set(PYINTROVIRT_WHEEL_STAMP "${CMAKE_BINARY_DIR}/python/pyintrovirt_wheel.stamp")
+
+		# Build the wheel before CPack staging install (install(CODE) needs dist/*.whl).
+		configure_file(
+			"${CMAKE_CURRENT_SOURCE_DIR}/cmake/cpack_install_pyintrovirt_wheel.cmake.in"
+			"${CMAKE_BINARY_DIR}/python/cpack_install_pyintrovirt_wheel.cmake"
+			@ONLY
+		)
+		list(APPEND CPACK_INSTALL_SCRIPTS "${CMAKE_BINARY_DIR}/python/cpack_install_pyintrovirt_wheel.cmake")
+
+		add_custom_command(
+			OUTPUT "${PYINTROVIRT_WHEEL_STAMP}"
+			COMMAND "${CMAKE_COMMAND}"
+				-DSOURCE_DIR:PATH=${CMAKE_SOURCE_DIR}
+				-DBINARY_DIR:PATH=${CMAKE_BINARY_DIR}
+				-DPYTHON_OUTDIR:PATH=${INTROVIRT_PYTHON_OUTDIR}
+				-DUV_EXECUTABLE:FILEPATH=${UV_EXECUTABLE}
+				-P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_pyintrovirt_wheel.cmake"
+			COMMAND "${CMAKE_COMMAND}" -E touch "${PYINTROVIRT_WHEEL_STAMP}"
+			DEPENDS introvirt_py
+				"${CMAKE_CURRENT_SOURCE_DIR}/pyintrovirt/pyproject.toml"
+				"${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_pyintrovirt_wheel.cmake"
+			COMMENT "Building pyintrovirt wheel"
+			VERBATIM
+		)
+		add_custom_target(pyintrovirt_wheel DEPENDS "${PYINTROVIRT_WHEEL_STAMP}")
+
+		install(CODE "
+			set(PYINTROVIRT_DIST_DIR \"${CMAKE_BINARY_DIR}/python/dist\")
+			set(PYINTROVIRT_PYTHON \"${Python3_EXECUTABLE}\")
+			include(\"${CMAKE_CURRENT_SOURCE_DIR}/cmake/install_pyintrovirt_wheel.cmake\")
+		" COMPONENT python3-pyintrovirt)
+	else()
+		message(WARNING "uv not found; pyintrovirt wheel will not be built by the packaging step")
+	endif()
+ENDIF()
+
 IF (DOXYGEN)
-	FIND_PACKAGE(Doxygen REQUIRED)
+	FIND_PACKAGE(Doxygen QUIET COMPONENTS dot)
+
+	# So we can log something actually useful about what to install (it's non-obvious that you get "dot" from the "graphviz" package)
+	if (Doxygen_FOUND)
+		message(STATUS "Found Doxygen: ${Doxygen_VERSION}")
+	else()
+		# Print a custom error message and stop the configuration
+		message(FATAL_ERROR "Could not find Doxygen or required component: dot. On debian systems, try: 'sudo apt install doxygen graphviz' and then re-run cmake")
+	endif()
+
 
 	# add a target to generate API documentation with Doxygen
 	CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
-    FILE(GLOB_RECURSE EXAMPLES ${PROJECT_SOURCE_DIR}/examples/*.cc)
+	FILE(GLOB_RECURSE EXAMPLES ${PROJECT_SOURCE_DIR}/examples/*.cc)
 
 	ADD_CUSTOM_COMMAND(
 		OUTPUT ${CMAKE_BINARY_DIR}/html/index.html
@@ -105,7 +206,7 @@ IF (DOXYGEN)
 		doc ALL DEPENDS ${CMAKE_BINARY_DIR}/html/index.html
 	)
 
-    ADD_DEPENDENCIES(doc generate_syscalls generate_funccalls)
+	ADD_DEPENDENCIES(doc generate_syscalls generate_funccalls)
 
 	# Install rules for doxygen
 	INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/html/ DESTINATION share/doc/libintrovirt-doc/html COMPONENT libintrovirt-doc)
@@ -113,40 +214,46 @@ ENDIF(DOXYGEN)
 
 FILE(GLOB_RECURSE WIN_FUNCCALL_GEN_INPUT ${PROJECT_SOURCE_DIR}/win_func_call_generator/*.tpl ${PROJECT_SOURCE_DIR}/win_func_call_generator/*.py ${PROJECT_SOURCE_DIR}/win_func_call_generator/*.json)
 
+SET(GENERATE_FUNCCALLS_STAMP "${CMAKE_BINARY_DIR}/generate_funccalls.stamp")
 ADD_CUSTOM_COMMAND(
-	OUTPUT ${GENERATED_WINLIB_HEADERS} ${GENERATED_WINLIB_SOURCES}
+	OUTPUT ${GENERATE_FUNCCALLS_STAMP}
+	BYPRODUCTS ${GENERATED_WINLIB_HEADERS} ${GENERATED_WINLIB_SOURCES}
 	COMMAND ${PYTHON_EXECUTABLE} win_func_call_generator/generate.py "${PROJECT_SOURCE_DIR}/include/introvirt/windows/libraries/" "${PROJECT_SOURCE_DIR}/src/windows/libraries/"
-    DEPENDS ${WIN_FUNCCALL_GEN_INPUT}
+	COMMAND ${CMAKE_COMMAND} -E touch ${GENERATE_FUNCCALLS_STAMP}
+	DEPENDS ${WIN_FUNCCALL_GEN_INPUT}
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 	COMMENT "Generating Windows library call handlers..." VERBATIM
 )
 
 ADD_CUSTOM_TARGET(
-	generate_funccalls ALL DEPENDS ${GENERATED_WINLIB_HEADERS} ${GENERATED_WINLIB_SOURCES}
+	generate_funccalls ALL DEPENDS ${GENERATE_FUNCCALLS_STAMP}
 )
 
 SET_PROPERTY(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${WIN_FUNCCALL_GEN_INPUT}")
 
 FILE(GLOB_RECURSE SYSCALL_GEN_INPUT ${PROJECT_SOURCE_DIR}/win_syscall_generator/*.tpl ${PROJECT_SOURCE_DIR}/win_syscall_generator/*.py ${PROJECT_SOURCE_DIR}/win_syscall_generator/*.json)
 
+SET(GENERATED_SWIG_FRAGMENT "${CMAKE_CURRENT_SOURCE_DIR}/swig/windows/windows_syscalls_generated.i")
+SET_SOURCE_FILES_PROPERTIES(${GENERATED_SWIG_FRAGMENT} PROPERTIES GENERATED TRUE)
+
 ADD_CUSTOM_COMMAND(
-	OUTPUT ${GENERATED_HEADERS} ${GENERATED_SOURCES}
+	OUTPUT ${GENERATED_HEADERS} ${GENERATED_SOURCES} ${GENERATED_SWIG_FRAGMENT}
 	COMMAND ${PYTHON_EXECUTABLE} win_syscall_generator/generate.py ${PROJECT_SOURCE_DIR}
-    DEPENDS ${SYSCALL_GEN_INPUT}
+	DEPENDS ${SYSCALL_GEN_INPUT}
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 	COMMENT "Generating Windows NT system call handlers..." VERBATIM
 )
 
 ADD_CUSTOM_TARGET(
-	generate_syscalls ALL DEPENDS ${GENERATED_HEADERS} ${GENERATED_SOURCES}
+	generate_syscalls ALL DEPENDS ${GENERATED_HEADERS} ${GENERATED_SOURCES} ${GENERATED_SWIG_FRAGMENT}
 )
 
 SET_PROPERTY(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${SYSCALL_GEN_INPUT}")
 
 # Format target
 ADD_CUSTOM_TARGET(
-     format
-     COMMAND find ${PROJECT_SOURCE_DIR}/tests ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/tools ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include -name '*.hh' -o -iname '*.cc' | xargs clang-format -i -style=file
+	format
+	COMMAND find ${PROJECT_SOURCE_DIR}/tests ${PROJECT_SOURCE_DIR}/examples ${PROJECT_SOURCE_DIR}/tools ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include -name '*.hh' -o -iname '*.cc' | xargs clang-format -i -style=file
 )
 
 # Install rule for include headers
@@ -209,4 +316,19 @@ SET(CPACK_DEBIAN_LIBINTROVIRT-DOC_PACKAGE_REPLACES "liblintrovirt-doc (<< 0.50),
 SET(CPACK_DEBIAN_LIBINTROVIRT-DOC_PACKAGE_BREAKS "liblintrovirt-doc (<< 0.50), libwintrovirt-doc (<< 0.50)")
 SET(CPACK_DEBIAN_LIBINTROVIRT-DOC_PACKAGE_CONFLICTS "liblintrovirt-doc (<< 0.50), libwintrovirt-doc (<< 0.50)")
 
+IF(INTROVIRT_PYTHON_BINDINGS AND UV_EXECUTABLE)
+	SET(CPACK_DEBIAN_LIBINTROVIRT1_PACKAGE_SUGGESTS "introvirt-tools, python3-pyintrovirt")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_NAME "python3-pyintrovirt")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_DESCRIPTION "Python bindings and helpers for IntroVirt VM introspection")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_DEPENDS "python3 (>= 3.12), libintrovirt1 (= ${CPACK_PACKAGE_VERSION})")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_ARCHITECTURE "amd64")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_SECTION "python")
+	SET(CPACK_DEBIAN_PYTHON3-PYINTROVIRT_PACKAGE_PRIORITY "extra")
+ENDIF()
+
 INCLUDE(CPack)
+
+# Ensure `ninja package` also builds the wheel when Python bindings are enabled.
+if(INTROVIRT_PYTHON_BINDINGS AND TARGET pyintrovirt_wheel AND TARGET package)
+	add_dependencies(package pyintrovirt_wheel)
+endif()

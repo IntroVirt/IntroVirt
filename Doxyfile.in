@@ -896,7 +896,7 @@ EXAMPLE_PATH           = @CMAKE_CURRENT_SOURCE_DIR@/examples/ @CMAKE_CURRENT_SOU
 # *.h) to filter out the source-files in the directories. If left blank all
 # files are included.
 
-EXAMPLE_PATTERNS       = *.cc
+EXAMPLE_PATTERNS       = *.cc *.py
 
 # If the EXAMPLE_RECURSIVE tag is set to YES then subdirectories will be
 # searched for input files to be used with the \include or \dontinclude commands
@@ -1155,7 +1155,6 @@ HTML_HEADER            =
 
 # Load doxygen-awesome dark mode toggle (script copied via HTML_EXTRA_FILES)
 HTML_FOOTER            = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen-awesome-footer.html
-
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading style
 # sheet that is used by each HTML page. It can be used to fine-tune the look of
 # the HTML output. If left blank doxygen will generate a default style sheet.
@@ -1190,7 +1189,8 @@ HTML_EXTRA_STYLESHEET  = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen-awesome.css
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_FILES       = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen-awesome-darkmode-toggle.js
+HTML_EXTRA_FILES       = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen-awesome-darkmode-toggle.js \
+                         @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen-awesome-tabs.js
 
 # The HTML_COLORSTYLE_HUE tag controls the color of the HTML output. Doxygen
 # will adjust the colors in the style sheet and background images according to

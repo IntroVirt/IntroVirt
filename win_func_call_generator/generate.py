@@ -171,11 +171,11 @@ def generate_library(library_dir: os.DirEntry, global_typemap: dict, include_dir
         settings = json.load(file)
     with open(os.path.join(library_dir, "typemap.json")) as file:
         if DEBUG:
-            print(f"Loading {os.path.join(library_dir, 'typemap.json')}")        
+            print(f"Loading {os.path.join(library_dir, 'typemap.json')}")
         typemap.update(json.load(file))
     with open(os.path.join(library_dir, "functions.json")) as file:
         if DEBUG:
-            print(f"Loading {os.path.join(library_dir, 'functions.json')}")        
+            print(f"Loading {os.path.join(library_dir, 'functions.json')}")
         functions = json.load(file)
 
     for function in functions:

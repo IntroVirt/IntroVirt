@@ -48,7 +48,7 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 | 18.04 | [HWE 5.4.0-150-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | EoL         |
 | 20.04 | [HWE 5.15.0-119-generic](https://github.com/IntroVirt/kvm-introvirt/releases) | EoL         |
 | 22.04 | [HWE 6.5.0-35-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | EoL         |
-| 24.04 | [HWE 6.8.0-90-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | Supported   |
+| 24.04 | [HWE 6.17.0-14-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | Supported   |
 | 26.04 | coming soon                                                                   | Coming Soon |
 
 ### Supported Introspection Targets
@@ -66,20 +66,22 @@ IntroVirt is used to introspect a running virtual machine. The current release o
 
 First, build and install [libmspdb](https://github.com/IntroVirt/libmspdb) and [kvm-introvirt](https://github.com/IntroVirt/kvm-introvirt/)
 
-Then, build from source and install debs:
+Then, build from source and install debs (python3-dev, swig, python3-installer, and uv are needed for optional Python bindings / wheel packaging):
 
 ```shell
 sudo apt-get install -y \
-    python3 python3-jinja2 cmake make build-essential libcurl4-openssl-dev libboost-dev \
-    libboost-program-options-dev git clang-format liblog4cxx-dev libboost-stacktrace-dev \
-    doxygen graphviz ninja-build
+    python3 python3-jinja2 python3-dev python3-installer swig cmake make build-essential libcurl4-openssl-dev \
+    libboost-dev libboost-program-options-dev git clang-format liblog4cxx-dev \
+    libboost-stacktrace-dev doxygen graphviz ninja-build
 
 git clone https://github.com/IntroVirt/IntroVirt.git
 cd IntroVirt/build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOXYGEN=ON ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DDOXYGEN=ON -DINTROVIRT_PYTHON_BINDINGS=ON ..
 ninja -j$(nproc) package
 sudo apt install ./*.deb
 ```
+
+With Python bindings enabled, `ninja package` produces a `python3-pyintrovirt` deb alongside the others. After `sudo apt install ./*.deb`, `import introvirt` and `import pyintrovirt` work system-wide. A wheel is also written to `build/python/dist/` for venv use. SWIG-generated bindings in `build/python/` are for local development and testing.
 
 Confirm everything is installed with: `sudo ivversion`
 
