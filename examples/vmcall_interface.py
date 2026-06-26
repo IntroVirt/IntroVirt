@@ -58,7 +58,7 @@ class WatchpointHandler(introvirt.WatchpointCallback):
                 print(f"\tProcess wrote to read-only memory!")
                 print(f"\tPhysical address: 0x{event.mem_access().physical_address_value():x}")
                 print(f"\tRIP: 0x{vcpu.registers().rip():x}")
-                vcpu.inject_exception(introvirt.Exception_GP_FAULT, 0)
+                vcpu.inject_exception(introvirt.Exception.GP_FAULT.value, 0)
             sys.stdout.flush()
         except Exception as e:
             import traceback
@@ -79,13 +79,13 @@ class VmcallHandler(introvirt.EventCallback):
 
     def process_event(self, event):
         try:
-            if event.type() == introvirt.EventType_EVENT_HYPERCALL:
+            if introvirt.EventType(event.type()) == introvirt.EventType.EVENT_HYPERCALL:
                 self._handle_hypercall(event)
-            elif event.type() == introvirt.EventType_EVENT_FAST_SYSCALL:
+            elif introvirt.EventType(event.type()) == introvirt.EventType.EVENT_FAST_SYSCALL:
                 self._handle_syscall(event)
-            elif event.type() == introvirt.EventType_EVENT_FAST_SYSCALL_RET:
+            elif introvirt.EventType(event.type()) == introvirt.EventType.EVENT_FAST_SYSCALL_RET:
                 self._handle_sysret(event)
-            elif event.type() == introvirt.EventType_EVENT_MEM_ACCESS:
+            elif introvirt.EventType(event.type()) == introvirt.EventType.EVENT_MEM_ACCESS:
                 self._handle_mem_access(event)
         except Exception as e:
             print(f"process_event error: {e}", file=sys.stderr)
@@ -174,11 +174,12 @@ class VmcallHandler(introvirt.EventCallback):
         handler = wevent.syscall().handler()
         if handler is None:
             return
+        handler = introvirt.get_concrete_handler(wevent)
         task = wevent.task()
         pid = task.pid()
         tid = task.tid()
 
-        if index == introvirt.SystemCallIndex_NtTerminateProcess and isinstance(handler, introvirt.NtTerminateProcess):
+        if index == introvirt.SystemCallIndex.NtTerminateProcess.value:
             target = handler.target_pid()
             with self._lock:
                 if target in self._protected_pids:
@@ -196,7 +197,7 @@ class VmcallHandler(introvirt.EventCallback):
                 self._pending_terminate[(pid, tid)] = target
             return
 
-        if index == introvirt.SystemCallIndex_NtOpenProcess and isinstance(handler, introvirt.NtOpenProcess):
+        if index == introvirt.SystemCallIndex.NtOpenProcess.value:
             target = introvirt.get_nt_open_process_target_pid(handler)
             with self._lock:
                 if target in self._protected_pids:
@@ -208,7 +209,7 @@ class VmcallHandler(introvirt.EventCallback):
         wevent = introvirt.WindowsEvent_from_event(event)
         if wevent is None:
             return
-        if wevent.syscall().index() != introvirt.SystemCallIndex_NtTerminateProcess:
+        if wevent.syscall().index() != introvirt.SystemCallIndex.NtTerminateProcess.value:
             return
         handler = wevent.syscall().handler()
         if handler is None or not handler.result().NT_SUCCESS():
@@ -255,7 +256,7 @@ def main():
         return 1
 
     guest = _domain.guest()
-    if guest is None or guest.os() != introvirt.OS_Windows:
+    if guest is None or introvirt.OS(guest.os()) != introvirt.OS.Windows:
         print("Windows guest required", file=sys.stderr)
         return 1
     win_guest = introvirt.WindowsGuest_from_guest(guest)
@@ -265,10 +266,10 @@ def main():
 
     # Match vmcall_interface.cc: set trap at guest level only, then enable at domain level (no set_64).
     win_guest.set_system_call_filter(
-        _domain.system_call_filter(), introvirt.SystemCallIndex_NtTerminateProcess, True
+        _domain.system_call_filter(), introvirt.SystemCallIndex.NtTerminateProcess.value, True
     )
     win_guest.set_system_call_filter(
-        _domain.system_call_filter(), introvirt.SystemCallIndex_NtOpenProcess, True
+        _domain.system_call_filter(), introvirt.SystemCallIndex.NtOpenProcess.value, True
     )
     _domain.system_call_filter().enabled(True)
     _domain.intercept_system_calls(True)
