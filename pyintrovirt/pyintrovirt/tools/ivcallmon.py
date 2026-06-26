@@ -24,13 +24,17 @@ import functools
 import sys
 import threading
 import traceback
+from dataclasses import dataclass, field
+from typing import Any
 
 import introvirt  # pylint: disable=import-error
 
 from pyintrovirt import OS, VMI, Event, EventType, SystemCallIndex, nt_success
 
 
-class BreakpointHandler(introvirt.BreakpointCallback):
+class BreakpointHandler(introvirt.BreakpointCallback):  # pylint: disable=too-few-public-methods
+    """Handle breakpoint hits and optionally install return breakpoints."""
+
     def __init__(self, domain, name: str, pid: int, return_bp: bool):
         super().__init__()
         self._domain = domain
@@ -39,11 +43,12 @@ class BreakpointHandler(introvirt.BreakpointCallback):
         self._return_bp = return_bp
         self._return_breakpoint = None
 
-    def breakpoint_hit(self, event):
-        if event.task().pid() != self._pid:
+    def breakpoint_hit(self, e: Any) -> Any:
+        """Called from C++ when a breakpoint fires."""
+        if e.task().pid() != self._pid:
             return
-        task = event.task()
-        vcpu = event.vcpu()
+        task = e.task()
+        vcpu = e.vcpu()
         regs = vcpu.registers()
         print(f"[{task.pid()}:{task.tid()}] {task.process_name()}")
         print(f"    Hit breakpoint {self._name}")
@@ -53,27 +58,29 @@ class BreakpointHandler(introvirt.BreakpointCallback):
                 rsp = regs.rsp()
                 ret_addr = introvirt.read_guest_uint64(self._domain, vcpu, rsp)
                 if ret_addr != 0:
-                    ret_handler = ReturnBreakpointHandler(self._domain, self._name, task.pid(), task.tid(), rsp + 8)
+                    ret_handler = ReturnBreakpointHandler(self._domain, self._name, task.tid(), rsp + 8)
                     self._return_breakpoint = introvirt.create_breakpoint_holder(self._domain, vcpu, ret_addr, ret_handler)
-            except Exception as e:
-                print(f"    (return breakpoint skipped: {e})", file=sys.stderr)
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"    (return breakpoint skipped: {exc})", file=sys.stderr)
 
 
-class ReturnBreakpointHandler(introvirt.BreakpointCallback):
-    def __init__(self, domain, name: str, pid: int, tid: int, expected_rsp: int):
+class ReturnBreakpointHandler(introvirt.BreakpointCallback):  # pylint: disable=too-few-public-methods
+    """Handle return-address breakpoints for a prior API call."""
+
+    def __init__(self, domain, name: str, tid: int, expected_rsp: int):
         super().__init__()
         self._domain = domain
         self._name = name
-        self._pid = pid
         self._tid = tid
         self._expected_rsp = expected_rsp
 
-    def breakpoint_hit(self, event):
-        if event.task().tid() != self._tid:
+    def breakpoint_hit(self, e: Any) -> Any:
+        """Called from C++ when a return breakpoint fires."""
+        if e.task().tid() != self._tid:
             return
-        if event.vcpu().registers().rsp() != self._expected_rsp:
+        if e.vcpu().registers().rsp() != self._expected_rsp:
             return
-        task = event.task()
+        task = e.task()
         print(f"[{task.pid()}:{task.tid()}] {task.process_name()}")
         print(f"    Return hit for {self._name}")
         sys.stdout.flush()
@@ -87,70 +94,96 @@ def _filename_ends_with_dll(filename: str, dll: str) -> bool:
     return fn.endswith(d)
 
 
-class CallMonitorState:
+def _iv_event(event: Event) -> introvirt.Event:
+    """Return the underlying introvirt event."""
+    return event._iv_event  # pylint: disable=protected-access
+
+
+def _iv_domain(vmi: VMI) -> introvirt.Domain:
+    """Return the underlying introvirt domain."""
+    return vmi._attached_domain()._attached()  # pylint: disable=protected-access
+
+
+@dataclass
+class CallMonitorConfig:
+    """Static configuration for ivcallmon breakpoint setup."""
+
+    domain: introvirt.Domain
+    requested_symbols: dict
+    requested_dlls: set
+    return_bp: bool
+
+
+@dataclass
+class CallMonitorState:  # pylint: disable=too-few-public-methods
     """Mutable state shared across ivcallmon event callbacks."""
 
-    def __init__(
-        self,
-        domain: introvirt.Domain,
-        requested_symbols: dict,
-        requested_dlls: set,
-        return_bp: bool,
-    ):
-        self._domain = domain
-        self._requested_symbols = requested_symbols
-        self._requested_dlls = requested_dlls
-        self._return_bp = return_bp
-        self._breakpoints = []
-        self._found_dlls = set()
-        self.all_symbols_resolved = False
-        self.initial_check_done = False
-        self.lock = threading.Lock()
+    config: CallMonitorConfig
+    breakpoints: list = field(default_factory=list)
+    found_dlls: set = field(default_factory=set)
+    all_symbols_resolved: bool = False
+    initial_check_done: bool = False
+    lock: threading.Lock = field(default_factory=threading.Lock)
+
+
+def _create_breakpoints_for_module(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    state: CallMonitorState,
+    vcpu: introvirt.Vcpu,
+    pid: int,
+    base: int,
+    filename: str,
+    matched_dll: str,
+) -> bool:
+    """Resolve symbols and create breakpoints for one mapped module. Returns True if all DLLs are done."""
+    module_name = matched_dll[:-4] if matched_dll.lower().endswith(".dll") else matched_dll
+    patterns = state.config.requested_symbols.get(module_name)
+    if not patterns:
+        return False
+
+    try:
+        print(f"Resolving symbols for {filename} with patterns {patterns}")
+        symbol_list = introvirt.resolve_symbols_via_pdb(state.config.domain, vcpu, base, patterns)
+        print(f"Resolved symbols: {symbol_list}")
+    except Exception:  # pylint: disable=broad-exception-caught
+        traceback.print_exc(file=sys.stderr)
+        return False
+
+    for addr, name in symbol_list:
+        print(f"Creating breakpoint for {module_name}!{name} at {addr}")
+        handler = BreakpointHandler(state.config.domain, f"{module_name}!{name}", pid, state.config.return_bp)
+        bp = introvirt.create_breakpoint_holder(state.config.domain, vcpu, addr, handler)
+        if bp is not None:
+            state.breakpoints.append((handler, bp))
+    state.found_dlls.add(matched_dll)
+    return len(state.found_dlls) >= len(state.config.requested_dlls)
 
 
 def _set_breakpoints(state: CallMonitorState, vmi: VMI, event: Event):
     with state.lock:
         if state.all_symbols_resolved:
             return
-        if not isinstance(event._iv_event, introvirt.WindowsEvent):
+        iv_event = _iv_event(event)
+        if not isinstance(iv_event, introvirt.WindowsEvent):
             return
         vcpu = event.vcpu
         pid = event.pid
-        modules = introvirt.get_executable_mapped_modules(event._iv_event)
+        modules = introvirt.get_executable_mapped_modules(iv_event)
         for base, filename in modules:
             matched_dll = None
-            for dll in state._requested_dlls:
+            for dll in state.config.requested_dlls:
                 if _filename_ends_with_dll(filename, dll):
                     matched_dll = dll
                     break
-            if matched_dll is None or matched_dll in state._found_dlls:
+            if matched_dll is None or matched_dll in state.found_dlls:
                 continue
-            module_name = matched_dll[:-4] if matched_dll.lower().endswith(".dll") else matched_dll
-            patterns = state._requested_symbols.get(module_name)
-            if not patterns:
-                continue
-            try:
-                print(f"Resolving symbols for {filename} with patterns {patterns}")
-                symbol_list = introvirt.resolve_symbols_via_pdb(state._domain, vcpu, base, patterns)
-                print(f"Resolved symbols: {symbol_list}")
-            except Exception:
-                traceback.print_exc(file=sys.stderr)
-                continue
-
-            for addr, name in symbol_list:
-                print(f"Creating breakpoint for {module_name}!{name} at {addr}")
-                handler = BreakpointHandler(state._domain, f"{module_name}!{name}", pid, state._return_bp)
-                bp = introvirt.create_breakpoint_holder(state._domain, vcpu, addr, handler)
-                if bp is not None:
-                    state._breakpoints.append((handler, bp))
-            state._found_dlls.add(matched_dll)
-            if len(state._found_dlls) >= len(state._requested_dlls):
+            if _create_breakpoints_for_module(state, vcpu, pid, base, filename, matched_dll):
                 state.all_symbols_resolved = True
                 vmi.intercept_system_calls(False)
                 return
 
 
 def handle_syscall(_vmi: VMI, event: Event, *, state: CallMonitorState):
+    """Handle syscall events to trigger initial breakpoint setup."""
     if event.syscall_index == SystemCallIndex.NtMapViewOfSection:
         event.hook_return(True)
     if not state.initial_check_done:
@@ -160,6 +193,7 @@ def handle_syscall(_vmi: VMI, event: Event, *, state: CallMonitorState):
 
 
 def handle_sysret(vmi: VMI, event: Event, *, state: CallMonitorState):
+    """Handle syscall return events after module mapping."""
     if event.syscall_index == SystemCallIndex.NtMapViewOfSection:
         handler = event.get_syscall_handler()
         result = event.get_result()
@@ -171,7 +205,8 @@ def handle_sysret(vmi: VMI, event: Event, *, state: CallMonitorState):
 
 
 def handle_cr_write(vmi: VMI, event: Event, *, state: CallMonitorState):
-    if event._iv_event.cr().index() != 3:
+    """Handle CR3 write events to trigger initial breakpoint setup."""
+    if _iv_event(event).cr().index() != 3:
         return
     if not state.initial_check_done:
         state.initial_check_done = True
@@ -181,6 +216,7 @@ def handle_cr_write(vmi: VMI, event: Event, *, state: CallMonitorState):
 
 
 def main():
+    """Entry point for ivcallmon."""
     parser = argparse.ArgumentParser(description="Monitor API calls via breakpoints (ivcallmon clone). VAD + PDB symbol resolution.")
     parser.add_argument("domain", metavar="DOMAIN", help="Domain name or ID")
     parser.add_argument("--procname", metavar="NAME", required=True, help="Process name filter")
@@ -227,10 +263,12 @@ def main():
             vmi.intercept_cr_writes(3, True)
 
             state = CallMonitorState(
-                vmi._attached_domain()._attached(),
-                requested_symbols,
-                requested_dlls,
-                return_bp=not args.no_return,
+                CallMonitorConfig(
+                    _iv_domain(vmi),
+                    requested_symbols,
+                    requested_dlls,
+                    return_bp=not args.no_return,
+                )
             )
 
             vmi.register_callback(
