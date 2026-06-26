@@ -8,13 +8,18 @@ Demonstrates monitoring file access by process/action and file handle tracking.
 Usage:
   sudo python3 ivfilemon.py -d win10 -f "C:\\users\\user\\desktop\\test.txt"
 """
-import sys
-import json
+
 import argparse
-import threading
 import functools
+import json
+import sys
+import threading
 import traceback
-from pyintrovirt import VMI, EventType, Event, OS, SystemCallIndex, WindowsSystemCall
+from typing import cast
+
+import introvirt  # pylint: disable=import-error
+
+from pyintrovirt import OS, VMI, Event, EventType, SystemCallIndex
 
 HANDLE_TRACKER: set[tuple[int, int]] = set()
 PROCESS_TRACKER: set[int] = set()
@@ -70,7 +75,7 @@ def normalize_dict(event: Event, event_source: str) -> dict:
         "result": obj.get("syscall", {}).get("result", {}),
         "pid": obj.get("task", {}).get("pid", None),
         "tid": obj.get("task", {}).get("tid", None),
-        "process_name": obj.get("task", {}).get("process_name", None)
+        "process_name": obj.get("task", {}).get("process_name", None),
     }
     # Flatten the output JSON so it's not so nested
     return result
@@ -94,14 +99,19 @@ def emit_file_event(event: Event, *, print_json: bool, pretty_json: bool):
         sys.stdout.write(f"FILE HANDLE TRACKING: {str(event)}\n")
 
 
-def handle_sysret(_vmi: VMI, event: Event, *, monitor_file_paths: list[str], print_json: bool, pretty_json: bool, follow_process: bool, ignore_processes: set[str]):
+def handle_sysret(
+    _vmi: VMI, event: Event, *, monitor_file_paths: list[str], print_json: bool, pretty_json: bool, follow_process: bool, _ignore_processes: set[str]
+):  # pylint: disable=too-many-arguments
     """Handle system call return."""
-    handler: WindowsSystemCall = event.get_syscall_handler()
+    handler = event.get_syscall_handler()
+    if handler is None:
+        return
 
     match event.syscall_index:
         case SystemCallIndex.NtTerminateProcess:
-            if follow_process and handler.result().NT_SUCCESS():
-                target = handler.target_pid()
+            term = cast(introvirt.NtTerminateProcess, handler)
+            if follow_process and term.result().NT_SUCCESS():
+                target = term.target_pid()
                 with TRACKER_LOCK:
                     if target in PROCESS_TRACKER:
                         emit_process_event(event, print_json=print_json, pretty_json=pretty_json)
@@ -145,7 +155,9 @@ def handle_syscall(_vmi: VMI, event: Event, *, print_json: bool, pretty_json: bo
     if event.will_return():
         event.hook_return(True)
 
-    handler: WindowsSystemCall = event.get_syscall_handler()
+    handler = event.get_syscall_handler()
+    if handler is None:
+        return
 
     match event.syscall_index:
         case SystemCallIndex.NtClose:
@@ -157,7 +169,7 @@ def handle_syscall(_vmi: VMI, event: Event, *, print_json: bool, pretty_json: bo
         case SystemCallIndex.NtTerminateProcess:
             if not follow_process:
                 return
-            target = handler.target_pid()
+            target = cast(introvirt.NtTerminateProcess, handler).target_pid()
             with TRACKER_LOCK:
                 if target in PROCESS_TRACKER and (not event.will_return() or target == event.pid):
                     emit_process_event(event, print_json=print_json, pretty_json=pretty_json)
@@ -170,7 +182,6 @@ def handle_syscall(_vmi: VMI, event: Event, *, print_json: bool, pretty_json: bo
                 with TRACKER_LOCK:
                     if event.pid in PROCESS_TRACKER:
                         emit_process_event(event, print_json=print_json, pretty_json=pretty_json)
-
 
 
 def main():
@@ -187,7 +198,12 @@ def main():
         required=True,
     )
     parser.add_argument("--follow-process", action="store_true", help="Follow the processes that access monitored files")
-    parser.add_argument("--ignore-process", action="append", help="Ignore this process for file access and process tracking (can be specified multiple times)", dest="ignore_processes")
+    parser.add_argument(
+        "--ignore-process",
+        action="append",
+        help="Ignore this process for file access and process tracking (can be specified multiple times)",
+        dest="ignore_processes",
+    )
     parser.add_argument("--json", action="store_true", help="Print the events as JSON")
     parser.add_argument("--pretty-json", action="store_true", help="Pretty-print JSON output (Warning: LOUD)")
     args = parser.parse_args()
@@ -221,11 +237,7 @@ def main():
                 vmi.default_system_call_filter()
 
             syscall_handler = functools.partial(
-                handle_syscall,
-                print_json=print_json,
-                pretty_json=pretty_json,
-                follow_process=follow_process,
-                ignore_processes=ignore_processes
+                handle_syscall, print_json=print_json, pretty_json=pretty_json, follow_process=follow_process, ignore_processes=ignore_processes
             )
             sysret_handler = functools.partial(
                 handle_sysret,
@@ -233,7 +245,7 @@ def main():
                 print_json=print_json,
                 pretty_json=pretty_json,
                 follow_process=follow_process,
-                ignore_processes=ignore_processes
+                ignore_processes=ignore_processes,
             )
             vmi.register_callback(EventType.EVENT_FAST_SYSCALL, syscall_handler)
             vmi.register_callback(EventType.EVENT_FAST_SYSCALL_RET, sysret_handler)

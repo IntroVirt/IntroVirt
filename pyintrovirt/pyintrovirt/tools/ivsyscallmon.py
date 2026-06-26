@@ -12,12 +12,15 @@ Usage:
   sudo python3 ivsyscallmon.py --domain win10 --syscall NtCreateUserProcess
   sudo python3 ivsyscallmon.py -d win10 -c file -f explorer -f notepad --json
 """
-import sys
-import json
+
 import argparse
 import functools
+import json
+import sys
 import traceback
-from pyintrovirt import VMI, EventType, Event
+
+from pyintrovirt import VMI, Event, EventType
+
 
 def print_version(vmi: VMI):
     """Print the version of the hypervisor"""
@@ -102,10 +105,7 @@ def main():
     parser.add_argument(
         "--unsupported",
         action="store_true",
-        help=(
-            "Show unsupported system calls (no filter at all. "
-            "Only works if no other filters are provided)"
-        ),
+        help=("Show unsupported system calls (no filter at all. Only works if no other filters are provided)"),
     )
     args = parser.parse_args()
 

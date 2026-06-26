@@ -2,6 +2,7 @@
 
 Requires IntroVirt to be installed (e.g. `libintrovirt1` and `python3-pyintrovirt`).
 """
+
 from __future__ import annotations
 
 import os
@@ -10,60 +11,73 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    import introvirt as _introvirt  # pragma: no cover
-
-if sys.platform != "linux":
-    raise RuntimeError("pyintrovirt only supports Linux")
-
-if os.getuid() != 0:
-    warnings.warn(
-        "pyintrovirt is typically run with elevated privileges (root/sudo) to interface with hypervisors/VMs; "
-        "some functionality may fail without them.",
-        RuntimeWarning,
-        stacklevel=2,
-    )
-
-try:
-    from introvirt import (  # type: ignore[import-not-found]  # pylint: disable=import-error
+    from introvirt import (
         OS,
-        EventType,
-        IntroVirtError,
-        SystemCallIndex,
-        NoSuchDomainException,
+        BadPhysicalAddressException,
+        CommandFailedException,
         DomainBusyException,
-        UnsupportedHypervisorException,
+        EventType,
         GuestDetectionException,
+        IntroVirtError,
         InvalidMethodException,
         InvalidVcpuException,
+        NoSuchDomainException,
         NotImplementedException,
-        CommandFailedException,
-        BadPhysicalAddressException,
-        VirtualAddressNotPresentException,
         PeException,
+        SystemCallIndex,
+        UnsupportedHypervisorException,
+        VirtualAddressNotPresentException,
         WindowsSystemCall,
-        nt_success,
         nt_error,
-    )
-except ImportError:
-    _BINDINGS_ERR = (
-        "IntroVirt Python bindings are not installed. Install the generated "
-        "IntroVirt Python wheel (which provides the `introvirt` module) "
-        "before using this library."
+        nt_success,
     )
 
-    def _missing(*_args: Any, **_kwargs: Any) -> None:
-        raise RuntimeError(_BINDINGS_ERR)
-
-    OS = EventType = IntroVirtError = SystemCallIndex = _missing  # type: ignore[assignment]
-    NoSuchDomainException = DomainBusyException = UnsupportedHypervisorException = _missing  # type: ignore[assignment]
-    GuestDetectionException = InvalidMethodException = InvalidVcpuException = _missing  # type: ignore[assignment]
-    NotImplementedException = CommandFailedException = BadPhysicalAddressException = _missing  # type: ignore[assignment]
-    VirtualAddressNotPresentException = PeException = WindowsSystemCall = _missing  # type: ignore[assignment]
-    nt_success = nt_error = _missing  # type: ignore[assignment]
-
-if TYPE_CHECKING:
     from .event import Event
     from .vmi import VMI
+else:
+    if sys.platform != "linux":
+        raise RuntimeError("pyintrovirt only supports Linux")
+
+    if os.getuid() != 0:
+        warnings.warn(
+            "pyintrovirt is typically run with elevated privileges (root/sudo) to interface with hypervisors/VMs; some functionality may fail without them.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
+    try:
+        from introvirt import (  # pylint: disable=import-error
+            OS,
+            BadPhysicalAddressException,
+            CommandFailedException,
+            DomainBusyException,
+            EventType,
+            GuestDetectionException,
+            IntroVirtError,
+            InvalidMethodException,
+            InvalidVcpuException,
+            NoSuchDomainException,
+            NotImplementedException,
+            PeException,
+            SystemCallIndex,
+            UnsupportedHypervisorException,
+            VirtualAddressNotPresentException,
+            WindowsSystemCall,
+            nt_error,
+            nt_success,
+        )
+    except ImportError:
+        _BINDINGS_ERR = "IntroVirt Python bindings are not installed."
+
+        def _missing(*_args: Any, **_kwargs: Any) -> None:
+            raise RuntimeError(_BINDINGS_ERR)
+
+        OS = EventType = IntroVirtError = SystemCallIndex = _missing
+        NoSuchDomainException = DomainBusyException = UnsupportedHypervisorException = _missing
+        GuestDetectionException = InvalidMethodException = InvalidVcpuException = _missing
+        NotImplementedException = CommandFailedException = BadPhysicalAddressException = _missing
+        VirtualAddressNotPresentException = PeException = WindowsSystemCall = _missing
+        nt_success = nt_error = _missing
 
 
 def __getattr__(name: str) -> Any:
@@ -77,6 +91,7 @@ def __getattr__(name: str) -> Any:
 
         return _Event
     raise AttributeError(name)
+
 
 __all__: list[str] = [
     "VMI",

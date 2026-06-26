@@ -1,14 +1,19 @@
 """Event handling helpers and classes."""
+
 import traceback
-from typing import Protocol, Union
+from typing import TYPE_CHECKING, Optional, Protocol, Union, cast
 
 import introvirt  # pylint: disable=import-error
+
+if TYPE_CHECKING:
+    from .vmi import VMI
 
 
 class EventCallback(Protocol):
     # pylint: disable=too-few-public-methods
     """The event callback function signature."""
-    def __call__(self, vmi: "pyintrovirt.VMI", event: "Event") -> None: ...
+
+    def __call__(self, vmi: "VMI", event: "Event") -> None: ...
 
 
 class Event:
@@ -16,8 +21,8 @@ class Event:
 
     def __init__(self, iv_event: introvirt.Event):
         self._iv_event = iv_event
-        self._syscall: introvirt.SystemCallEvent = None
-        self._handler: introvirt.SystemCall = None
+        self._syscall: Optional[introvirt.SystemCallEvent] = None
+        self._handler: Optional[introvirt.SystemCall] = None
         self._vcpu: introvirt.Vcpu = self._iv_event.vcpu()
         self._task: introvirt.EventTaskInformation = self._iv_event.task()
 
@@ -62,7 +67,7 @@ class Event:
     @property
     def kpcr(self) -> introvirt.KPCR:
         """Get the KPCR from the task."""
-        return self._task.pcr()
+        return cast(introvirt.WindowsEventTaskInformation, self._task).pcr()
 
     @property
     def vcpu(self) -> introvirt.Vcpu:
@@ -77,16 +82,16 @@ class Event:
     @property
     def syscall_name(self) -> Union[None, str]:
         """Get the system call name if it's a system call."""
-        if not self.is_syscall():
+        if self._syscall is None:
             return None
         return self._syscall.name()
 
     @property
     def syscall_index(self) -> Union[None, introvirt.SystemCallIndex]:
         """Get the system call index if it's a system call."""
-        if not self.is_syscall():
+        if not self.is_syscall() or self._syscall is None:
             return None
-        return introvirt.SystemCallIndex(self._syscall.index())
+        return introvirt.SystemCallIndex(cast(introvirt.WindowsSystemCallEvent, self._syscall).index())
 
     def event_type(self) -> introvirt.EventType:
         """Wrap in an introvirt.EventType object."""
@@ -104,7 +109,7 @@ class Event:
 
     def hook_return(self, enabled: bool):
         """Set whether or not we'll hook the return. Only valid on system calls."""
-        if not self.is_syscall():
+        if self._syscall is None:
             return  # Not a system call
         if self.event_type() != introvirt.EventType.EVENT_FAST_SYSCALL:
             return  # Not a system call call
@@ -148,7 +153,7 @@ class Event:
 class CallbackEventHandler(introvirt.EventCallback):
     """Event callback handler."""
 
-    def __init__(self, vmi: "pyintrovirt.VMI"):
+    def __init__(self, vmi: "VMI"):
         super().__init__()  # required so SWIG director wrapper is created for poll()
         self.event_callbacks = {}
         self.global_event_callback = None

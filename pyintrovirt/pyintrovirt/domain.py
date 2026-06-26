@@ -1,6 +1,7 @@
 """Classes for dealing with a domain/VM being introspected."""
+
 from contextlib import ContextDecorator
-from typing import Union, NamedTuple
+from typing import NamedTuple, Optional, Union
 
 import introvirt  # pylint: disable=import-error
 
@@ -26,18 +27,17 @@ class Domain(ContextDecorator):
             domain_id: The domain to attach to. Can be an integer domain ID or a string domain name.
             hypervisor: The hypervisor instance with the target domain to attach to.
         """
-        #: The domain being attached
-        self._domain: introvirt.Domain = None
-        #: The guest OS for the attached domain
-        self._guest: introvirt.Guest = None
-        #: The guest OS type for the attached domain
-        self._os: introvirt.OS = None
-
-        self._domain: introvirt.Domain = hypervisor.attach_domain(domain_id)
-        if not self._domain.detect_guest():
+        domain = hypervisor.attach_domain(domain_id)
+        if not domain.detect_guest():
             raise RuntimeError("Failed to detect guest OS")
-        self._guest: introvirt.Guest = self._domain.guest()
+        self._domain: Optional[introvirt.Domain] = domain
+        self._guest: introvirt.Guest = domain.guest()
         self._os: introvirt.OS = introvirt.OS(self._guest.os())
+
+    def _attached(self) -> introvirt.Domain:
+        if self._domain is None:
+            raise RuntimeError("Domain is detached")
+        return self._domain
 
     def __enter__(self):
         return self
@@ -70,21 +70,21 @@ class Domain(ContextDecorator):
 
     def poll(self, event_handler: introvirt.EventCallback):
         """Start the poller for events. No events will be recieved until this is started."""
-        self._domain.poll(event_handler)
+        self._attached().poll(event_handler)
 
     def clear_system_call_filter(self):
         """Clear the system call filter if set."""
-        self._domain.system_call_filter().clear()
+        self._attached().system_call_filter().clear()
 
     def clear_task_filter(self):
         """Clear the process filter if set."""
-        self._domain.task_filter().clear()
+        self._attached().task_filter().clear()
 
     def default_system_call_filter(self):
         """Set the system call filter to the default set of supported system calls for the OS."""
         if self.os == introvirt.OS.Windows:
             win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
-            win_guest.default_syscall_filter(self._domain.system_call_filter())
+            win_guest.default_syscall_filter(self._attached().system_call_filter())
         else:
             raise NotImplementedError("Only implemented for Windows guests right now.")
 
@@ -92,7 +92,7 @@ class Domain(ContextDecorator):
         """Toggle filtering of a specific system call."""
         if self.os == introvirt.OS.Windows:
             win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
-            win_guest.set_system_call_filter(self._domain.system_call_filter(), syscall.value, enabled)
+            win_guest.set_system_call_filter(self._attached().system_call_filter(), syscall.value, enabled)
         else:
             raise NotImplementedError("Only implemented for Windows guests right now.")
 
@@ -100,42 +100,42 @@ class Domain(ContextDecorator):
         """Filter by a system call category."""
         if self.os == introvirt.OS.Windows:
             win_guest: introvirt.WindowsGuest = introvirt.WindowsGuest_from_guest(self._guest)
-            win_guest.enable_category(category, self._domain.system_call_filter())
+            win_guest.enable_category(category, self._attached().system_call_filter())
         else:
             raise NotImplementedError("Only implemented for Windows guests right now.")
 
     def filter_system_calls(self, enabled: bool):
         """Toggle system call filtering on/off. Required for the filter to take effect."""
-        self._domain.system_call_filter().enabled(enabled)
+        self._attached().system_call_filter().enabled(enabled)
 
     def filter_task_name(self, name: str):
         """Filter by task name. Name is a case-insensitive process name prefix."""
-        self._domain.task_filter().add_name(name)
+        self._attached().task_filter().add_name(name)
 
     def filter_task_pid(self, pid: int):
         """Filter by task PID."""
-        self._domain.task_filter().add_pid(pid)
+        self._attached().task_filter().add_pid(pid)
 
     def filter_task_tid(self, tid: int):
         """Filter by task TID."""
-        self._domain.task_filter().add_tid(tid)
+        self._attached().task_filter().add_tid(tid)
 
     def unfilter_task_name(self, name: str):
         """Remove a name from the task filter."""
-        self._domain.task_filter().remove_name(name)
+        self._attached().task_filter().remove_name(name)
 
     def unfilter_task_pid(self, pid: int):
         """Remove a PID from the task filter."""
-        self._domain.task_filter().remove_pid(pid)
+        self._attached().task_filter().remove_pid(pid)
 
     def unfilter_task_tid(self, tid: int):
         """Remove a TID from the task filter."""
-        self._domain.task_filter().remove_tid(tid)
+        self._attached().task_filter().remove_tid(tid)
 
     def intercept_system_calls(self, enabled: bool):
         """Toggle system call interception on/off. Required to received system call events at all."""
-        self._domain.intercept_system_calls(enabled)
+        self._attached().intercept_system_calls(enabled)
 
     def intercept_cr_writes(self, cr: int, enabled: bool):
         """Intercept CR writes."""
-        self._domain.intercept_cr_writes(cr, enabled)
+        self._attached().intercept_cr_writes(cr, enabled)

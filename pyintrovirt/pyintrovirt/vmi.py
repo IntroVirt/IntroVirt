@@ -1,12 +1,12 @@
 """VMI Helpers for the IntroVirt Python Bindings."""
 
-import signal
 import functools
+import signal
 import threading
 from contextlib import ContextDecorator
 from typing import Optional, Union
 
-import introvirt  # type: ignore[import-not-found]  # noqa: F401  # pylint: disable=import-error
+import introvirt  # noqa: F401  # pylint: disable=import-error
 
 from .domain import Domain, DomainInformation
 from .event import CallbackEventHandler, EventCallback
@@ -14,21 +14,25 @@ from .event import CallbackEventHandler, EventCallback
 
 def _require_attachment(func):
     """Helper decorator so we don't need to check self._domain at the beginning of VMI methods."""
+
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         if getattr(self, "_domain") is None:
             raise RuntimeError(f"Must call 'attach()' before '{func.__name__}'")
         return func(self, *args, **kwargs)
+
     return wrapper
 
 
 def _require_no_attachment(func):
     """Helper decorator so we don't need to check self._domain at the beginning of VMI methods."""
+
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         if getattr(self, "_domain") is not None:
             raise RuntimeError(f"Must call 'attach()' before '{func.__name__}'")
         return func(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -69,21 +73,19 @@ class VMI(ContextDecorator):
             domain_id: The target domain to attach to. Can be an integer domain ID or a string domain name.
                        The domain ID is the Qemu process PID and the domain name is the name (e.g. "win10").
         """
-        #: The hypervisor instance we're connected to
-        self._hypervisor: introvirt.Hypervisor = None
-        #: An event handler we'll use to register callbacks that will receive events
-        self._event_handler: CallbackEventHandler = None
-        #: Thread that runs _poll_thread or _interrupt_listener based on the blocking value in poll().
-        self._thread: threading.Thread = None
-        #: The domain we're introspecting.
-        self._domain: Domain = None
-        #: The list of system calls currently being filtered
+        self._thread: Optional[threading.Thread] = None
+        self._domain: Optional[Domain] = None
         self._filtering_syscalls: set[introvirt.SystemCallIndex] = set()
 
         self._event_handler = CallbackEventHandler(self)
         self._hypervisor = introvirt.Hypervisor.instance()
         if domain_id:
             self.attach(domain_id)
+
+    def _attached_domain(self) -> Domain:
+        if self._domain is None:
+            raise RuntimeError("Must call attach() before accessing the domain")
+        return self._domain
 
     def __enter__(self):
         return self
@@ -105,7 +107,7 @@ class VMI(ContextDecorator):
 
     def _poll_thread(self):
         """Polling thread."""
-        self._domain.poll(self._event_handler)
+        self._attached_domain().poll(self._event_handler)
 
     @_require_no_attachment
     def attach(self, domain_id: Union[int, str]) -> None:
@@ -132,7 +134,7 @@ class VMI(ContextDecorator):
         signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
         self._thread = threading.Thread(target=self._interrupt_listener, daemon=True)
         self._thread.start()
-        self._domain.poll(self._event_handler)  # Blocking until self._domain.detach()
+        self._attached_domain().poll(self._event_handler)  # Blocking until self._domain.detach()
 
     def hypervisor_name(self) -> str:
         """Get the name of the hypervisor."""
@@ -161,12 +163,12 @@ class VMI(ContextDecorator):
     @_require_attachment
     def guest_os(self) -> introvirt.OS:
         """Get the guest OS type."""
-        return self._domain.os
+        return self._attached_domain().os
 
     @_require_attachment
     def syscall_categories(self) -> tuple[str]:
         """Get a list of system call categories."""
-        return self._domain.syscall_categories
+        return self._attached_domain().syscall_categories
 
     @_require_attachment
     def filter_system_calls(self, syscalls: list[Union[introvirt.SystemCallIndex, int, str]]):
@@ -174,15 +176,15 @@ class VMI(ContextDecorator):
         norm_syscalls: list[introvirt.SystemCallIndex] = _normalize_syscalls(syscalls)
         self._filtering_syscalls.update(norm_syscalls)
         for syscall in self._filtering_syscalls:
-            self._domain.filter_system_call(syscall, True)
+            self._attached_domain().filter_system_call(syscall, True)
         should_filter = len(self._filtering_syscalls) > 0
-        self._domain.filter_system_calls(should_filter)
+        self._attached_domain().filter_system_calls(should_filter)
 
     @_require_attachment
     def filter_system_call_category(self, category: str):
         """Filter by a system call category."""
-        self._domain.filter_system_call_category(category)
-        self._domain.filter_system_calls(True)
+        self._attached_domain().filter_system_call_category(category)
+        self._attached_domain().filter_system_calls(True)
 
     @_require_attachment
     def unfilter_system_calls(self, syscalls: list[Union[introvirt.SystemCallIndex, str, int]]):
@@ -190,22 +192,22 @@ class VMI(ContextDecorator):
         norm_syscalls: list[introvirt.SystemCallIndex] = _normalize_syscalls(syscalls)
         self._filtering_syscalls.difference_update(norm_syscalls)
         for syscall in set(norm_syscalls):
-            self._domain.filter_system_call(syscall, False)
+            self._attached_domain().filter_system_call(syscall, False)
         should_filter = len(self._filtering_syscalls) > 0
-        self._domain.filter_system_calls(should_filter)
+        self._attached_domain().filter_system_calls(should_filter)
 
     @_require_attachment
     def clear_system_call_filter(self):
         """Clear the system call filter if set."""
         self._filtering_syscalls.clear()
-        self._domain.clear_system_call_filter()
-        self._domain.filter_system_calls(False)
+        self._attached_domain().clear_system_call_filter()
+        self._attached_domain().filter_system_calls(False)
 
     @_require_attachment
     def default_system_call_filter(self):
         """Set the system call filter to the default set of supported system calls for the OS."""
-        self._domain.default_system_call_filter()
-        self._domain.filter_system_calls(True)
+        self._attached_domain().default_system_call_filter()
+        self._attached_domain().filter_system_calls(True)
 
     @_require_attachment
     def filter_task(self, name: Optional[str] = None, pid: Optional[int] = None, tid: Optional[int] = None):
@@ -213,36 +215,36 @@ class VMI(ContextDecorator):
         # The result of this call is effectively (name OR pid OR tid).
         # There is no relationship between the arguments.
         if name:
-            self._domain.filter_task_name(name.strip().lower())
+            self._attached_domain().filter_task_name(name.strip().lower())
         if pid:
-            self._domain.filter_task_pid(pid)
+            self._attached_domain().filter_task_pid(pid)
         if tid:
-            self._domain.filter_task_tid(tid)
+            self._attached_domain().filter_task_tid(tid)
 
     @_require_attachment
     def unfilter_task(self, name: Optional[str] = None, pid: Optional[int] = None, tid: Optional[int] = None):
         """Remove a process name, pid, or tid from the task filter."""
         if name:
-            self._domain.unfilter_task_name(name.strip().lower())
+            self._attached_domain().unfilter_task_name(name.strip().lower())
         if pid:
-            self._domain.unfilter_task_pid(pid)
+            self._attached_domain().unfilter_task_pid(pid)
         if tid:
-            self._domain.unfilter_task_tid(tid)
+            self._attached_domain().unfilter_task_tid(tid)
 
     @_require_attachment
     def clear_task_filter(self):
         """Clear the process filter."""
-        self._domain.clear_task_filter()
+        self._attached_domain().clear_task_filter()
 
     @_require_attachment
     def intercept_system_calls(self, enabled: bool):
         """Toggle system call interception on/off. Required to received system call events at all regardless of filter."""
-        self._domain.intercept_system_calls(enabled)
+        self._attached_domain().intercept_system_calls(enabled)
 
     @_require_attachment
     def intercept_cr_writes(self, cr: int, enabled: bool):
         """Intercept CR writes."""
-        self._domain.intercept_cr_writes(cr, enabled)
+        self._attached_domain().intercept_cr_writes(cr, enabled)
 
     def set_global_callback(self, callback: EventCallback):
         """Set the global callback that gets called for any event type."""
