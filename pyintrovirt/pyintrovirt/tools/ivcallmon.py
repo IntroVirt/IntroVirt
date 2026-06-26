@@ -19,25 +19,14 @@ Default symbol set is ntdll!Nt* if none provided.
 Requires root and IntroVirt-patched hypervisor.
 """
 import argparse
-import signal
+import functools
 import sys
 import threading
+import traceback
 
-import introvirt
+import introvirt  # pylint: disable=import-error
 
-_domain = None
-
-
-def _interrupt_listener():
-    signal.pthread_sigmask(signal.SIG_UNBLOCK, [signal.SIGINT])
-    while True:
-        try:
-            signal.sigwait([signal.SIGINT])
-        except (ValueError, OSError):
-            break
-        d = _domain
-        if d is not None:
-            d.interrupt()
+from pyintrovirt import OS, VMI, Event, EventType, SystemCallIndex, nt_success
 
 
 class BreakpointHandler(introvirt.BreakpointCallback):
@@ -101,113 +90,100 @@ def _filename_ends_with_dll(filename: str, dll: str) -> bool:
     return fn.endswith(d)
 
 
-class CallMonitor(introvirt.EventCallback):
-    def __init__(self, domain, procname: str, requested_symbols: dict, requested_dlls: set,
-                 return_bp: bool):
-        super().__init__()
+class CallMonitorState:
+    """Mutable state shared across ivcallmon event callbacks."""
+
+    def __init__(
+        self,
+        domain: introvirt.Domain,
+        requested_symbols: dict,
+        requested_dlls: set,
+        return_bp: bool,
+    ):
         self._domain = domain
-        self._procname = procname
-        self._requested_symbols = requested_symbols  # module_name -> list of patterns
-        self._requested_dlls = requested_dlls       # e.g. {"ntdll.dll"}
+        self._requested_symbols = requested_symbols
+        self._requested_dlls = requested_dlls
         self._return_bp = return_bp
-        self._breakpoints = []  # list of (handler, bp) to keep handler alive for C++ callback
+        self._breakpoints = []
         self._found_dlls = set()
-        self._all_symbols_resolved = False
-        self._initial_check_done = False
-        self._lock = threading.Lock()
+        self.all_symbols_resolved = False
+        self.initial_check_done = False
+        self.lock = threading.Lock()
 
-    def process_event(self, event):
-        try:
-            if event.type() == introvirt.EventType.EVENT_FAST_SYSCALL.value:
-                self._handle_syscall(event)
-            elif event.type() == introvirt.EventType.EVENT_FAST_SYSCALL_RET.value:
-                self._handle_sysret(event)
-            elif event.type() == introvirt.EventType.EVENT_CR_WRITE.value:
-                if event.cr().index() == 3:
-                    if not self._initial_check_done:
-                        self._initial_check_done = True
-                        self._domain.intercept_cr_writes(3, False)
-                        print("Initial CR3 write event, turning off CR3 monitoring")
-                        self._set_breakpoints(event)
-        except Exception as e:
-            print(f"process_event error: {e}", file=sys.stderr)
-            import traceback
-            traceback.print_exc(file=sys.stderr)
 
-    def _handle_syscall(self, event):
-        wevent = introvirt.WindowsEvent_from_event(event)
-        if wevent is not None and wevent.syscall().index() == introvirt.SystemCallIndex.NtMapViewOfSection.value:
-            wevent.syscall().hook_return(True)
-        if not self._initial_check_done:
-            self._initial_check_done = True
-            print("Initial syscall event, setting breakpoints")
-            self._set_breakpoints(event)
-
-    def _handle_sysret(self, event):
-        wevent = introvirt.WindowsEvent_from_event(event)
-        if wevent is None:
+def _set_breakpoints(state: CallMonitorState, vmi: VMI, event: Event):
+    with state.lock:
+        if state.all_symbols_resolved:
             return
-        if wevent.syscall().index() == introvirt.SystemCallIndex.NtMapViewOfSection.value:
-            handler = wevent.syscall().handler()
-            ok, result = introvirt.get_windows_syscall_result_value(event)
-            if handler is not None and ok and introvirt.nt_success(result):
-                print("NtMapViewOfSection succeeded, setting breakpoints")
-                self._set_breakpoints(event)
-        if self._all_symbols_resolved:
-            self._domain.intercept_system_calls(False)
+        if not isinstance(event._iv_event, introvirt.WindowsEvent):
+            return
+        vcpu = event.vcpu
+        pid = event.pid
+        modules = introvirt.get_executable_mapped_modules(event._iv_event)
+        for base, filename in modules:
+            matched_dll = None
+            for dll in state._requested_dlls:
+                if _filename_ends_with_dll(filename, dll):
+                    matched_dll = dll
+                    break
+            if matched_dll is None or matched_dll in state._found_dlls:
+                continue
+            module_name = matched_dll[:-4] if matched_dll.lower().endswith(".dll") else matched_dll
+            patterns = state._requested_symbols.get(module_name)
+            if not patterns:
+                continue
+            try:
+                print(f"Resolving symbols for {filename} with patterns {patterns}")
+                symbol_list = introvirt.resolve_symbols_via_pdb(state._domain, vcpu, base, patterns)
+                print(f"Resolved symbols: {symbol_list}")
+            except Exception:
+                traceback.print_exc(file=sys.stderr)
+                continue
 
-    def _set_breakpoints(self, event):
-        with self._lock:
-            if self._all_symbols_resolved:
+            for addr, name in symbol_list:
+                print(f"Creating breakpoint for {module_name}!{name} at {addr}")
+                handler = BreakpointHandler(state._domain, f"{module_name}!{name}", pid, state._return_bp)
+                bp = introvirt.create_breakpoint_holder(state._domain, vcpu, addr, handler)
+                if bp is not None:
+                    state._breakpoints.append((handler, bp))
+            state._found_dlls.add(matched_dll)
+            if len(state._found_dlls) >= len(state._requested_dlls):
+                state.all_symbols_resolved = True
+                vmi.intercept_system_calls(False)
                 return
-            wevent = introvirt.WindowsEvent_from_event(event)
-            if wevent is None:
-                return
-            task = event.task()
-            vcpu = event.vcpu()
-            pid = task.pid()
-            modules = introvirt.get_executable_mapped_modules(event)
-            for base, filename in modules:
-                filename_lower = filename.lower().replace("/", "\\")
-                matched_dll = None
-                for dll in self._requested_dlls:
-                    if _filename_ends_with_dll(filename, dll):
-                        matched_dll = dll
-                        break
-                if matched_dll is None or matched_dll in self._found_dlls:
-                    continue
-                module_name = matched_dll[:-4] if matched_dll.lower().endswith(".dll") else matched_dll
-                patterns = self._requested_symbols.get(module_name)
-                if not patterns:
-                    continue
-                try:
-                    print(f"Resolving symbols for {filename} with patterns {patterns}")
-                    symbol_list = introvirt.resolve_symbols_via_pdb(
-                        self._domain, vcpu, base, patterns
-                    )
-                    print(f"Resolved symbols: {symbol_list}")
-                except Exception:
-                    import traceback
-                    traceback.print_exc(file=sys.stderr)
-                    continue
 
-                for addr, name in symbol_list:
-                    print(f"Creating breakpoint for {module_name}!{name} at {addr}")
-                    handler = BreakpointHandler(
-                        self._domain, f"{module_name}!{name}", pid, self._return_bp
-                    )
-                    bp = introvirt.create_breakpoint_holder(self._domain, vcpu, addr, handler)
-                    if bp is not None:
-                        self._breakpoints.append((handler, bp))
-                self._found_dlls.add(matched_dll)
-                if len(self._found_dlls) >= len(self._requested_dlls):
-                    self._all_symbols_resolved = True
-                    self._domain.intercept_system_calls(False)
-                    return
+
+def handle_syscall(_vmi: VMI, event: Event, *, state: CallMonitorState):
+    if event.syscall_index == SystemCallIndex.NtMapViewOfSection:
+        event.hook_return(True)
+    if not state.initial_check_done:
+        state.initial_check_done = True
+        print("Initial syscall event, setting breakpoints")
+        _set_breakpoints(state, _vmi, event)
+
+
+def handle_sysret(vmi: VMI, event: Event, *, state: CallMonitorState):
+    if event.syscall_index == SystemCallIndex.NtMapViewOfSection:
+        handler = event.get_syscall_handler()
+        result = event.get_result()
+        if handler is not None and result is not None and nt_success(result):
+            print("NtMapViewOfSection succeeded, setting breakpoints")
+            _set_breakpoints(state, vmi, event)
+    if state.all_symbols_resolved:
+        vmi.intercept_system_calls(False)
+
+
+def handle_cr_write(vmi: VMI, event: Event, *, state: CallMonitorState):
+    if event._iv_event.cr().index() != 3:
+        return
+    if not state.initial_check_done:
+        state.initial_check_done = True
+        vmi.intercept_cr_writes(3, False)
+        print("Initial CR3 write event, turning off CR3 monitoring")
+        _set_breakpoints(state, vmi, event)
 
 
 def main():
-    global _domain
     parser = argparse.ArgumentParser(
         description="Monitor API calls via breakpoints (ivcallmon clone). VAD + PDB symbol resolution."
     )
@@ -240,46 +216,45 @@ def main():
         dll = mod + ".dll"
         requested_dlls.add(dll)
 
+    rc = 1
+
     try:
-        hypervisor = introvirt.Hypervisor.instance()
-    except Exception as e:
-        print(f"Failed to get hypervisor: {e}", file=sys.stderr)
-        return 1
-    try:
-        _domain = hypervisor.attach_domain(args.domain)
-    except Exception as e:
-        print(f"Failed to attach to domain: {e}", file=sys.stderr)
-        return 1
-    if not _domain.detect_guest():
-        print("Failed to detect guest OS", file=sys.stderr)
-        return 1
-    guest = _domain.guest()
-    print(f"Guest OS: {guest.os()}")
-    if guest is None or guest.os() != introvirt.OS.Windows.value:
-        print("ivcallmon only supports Windows guests", file=sys.stderr)
-        return 1
+        with VMI(args.domain) as vmi:
+            if vmi.guest_os() != OS.Windows:
+                print("ivcallmon only supports Windows guests", file=sys.stderr)
+                return rc
 
-    _domain.task_filter().add_name(args.procname)
-    win_guest = introvirt.WindowsGuest_from_guest(guest)
-    if win_guest is not None:
-        _domain.system_call_filter().enabled(True)
-        win_guest.set_system_call_filter(
-            _domain.system_call_filter(),
-            introvirt.SystemCallIndex.NtMapViewOfSection.value,
-            True,
-        )
-    _domain.intercept_system_calls(True)
-    _domain.intercept_cr_writes(3, True)
+            print(f"Guest OS: {vmi.guest_os().name}")
 
-    monitor = CallMonitor(
-        _domain, args.procname, requested_symbols, requested_dlls,
-        return_bp=not args.no_return,
-    )
+            vmi.filter_task(name=args.procname)
+            vmi.filter_system_calls([SystemCallIndex.NtMapViewOfSection])
+            vmi.intercept_system_calls(True)
+            vmi.intercept_cr_writes(3, True)
 
-    signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
-    listener = threading.Thread(target=_interrupt_listener, daemon=True)
-    listener.start()
-    _domain.poll(monitor)
+            state = CallMonitorState(
+                vmi._attached_domain()._attached(),
+                requested_symbols,
+                requested_dlls,
+                return_bp=not args.no_return,
+            )
+
+            vmi.register_callback(
+                EventType.EVENT_FAST_SYSCALL,
+                functools.partial(handle_syscall, state=state),
+            )
+            vmi.register_callback(
+                EventType.EVENT_FAST_SYSCALL_RET,
+                functools.partial(handle_sysret, state=state),
+            )
+            vmi.register_callback(
+                EventType.EVENT_CR_WRITE,
+                functools.partial(handle_cr_write, state=state),
+            )
+            vmi.poll(blocking=True)
+    except Exception:  # pylint: disable=broad-exception-caught
+        traceback.print_exc()
+        return rc
+
     return 0
 
 
