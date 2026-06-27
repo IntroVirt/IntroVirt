@@ -13,6 +13,8 @@ IntroVirt, short for introspective virtualization, is a customized Hypervisor an
 
 IntroVirt consists of three components: a patched version of the [KVM Hypervisor](https://github.com/IntroVirt/kvm-introvirt), the [IntroVirt userland library](https://github.com/IntroVirt/IntroVirt), and a Microsoft Program Database (MS PDB) parsing library [libmspdb](https://github.com/IntroVirt/libmspdb/tree/main).
 
+Introvirt supports both Intel and AMD CPUs. AMD support was fixed starting with the Linux kernel patch for 6.17.0-35 and only support system call tracing at this time (no breakpoints/watchpoints).
+
 ## Quick start
 
 1. Make sure SecureBoot is disabled on your system (you can also run IntroVirt nested in KVM)
@@ -31,8 +33,8 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
     * _We try to keep up with the latest kernel for each supported LTS. If you are behind, consider updating._
 
     ```shell
-    wget https://github.com/IntroVirt/kvm-introvirt/releases/latest/download/kvm-introvirt-$(uname -r).$(lsb_release -sr)-1.0.0.deb
-    sudo apt install ./kvm-introvirt-$(uname -r).$(lsb_release -sr)-1.0.0.deb
+    wget https://github.com/IntroVirt/kvm-introvirt/releases/latest/download/kvm-introvirt-$(uname -r).$(lsb_release -sr)-1.1.0.deb
+    sudo apt install ./kvm-introvirt-$(uname -r).$(lsb_release -sr)-1.1.0.deb
     ```
 
 1. Test with: `sudo ivversion`
@@ -48,7 +50,7 @@ IntroVirt consists of three components: a patched version of the [KVM Hypervisor
 | 18.04 | [HWE 5.4.0-150-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | EoL         |
 | 20.04 | [HWE 5.15.0-119-generic](https://github.com/IntroVirt/kvm-introvirt/releases) | EoL         |
 | 22.04 | [HWE 6.5.0-35-generic](https://github.com/IntroVirt/kvm-introvirt/releases)   | EoL         |
-| 24.04 | [HWE 6.17.0-14-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | Supported   |
+| 24.04 | [HWE 6.17.0-35-generic](https://github.com/IntroVirt/kvm-introvirt/releases)  | Supported   |
 | 26.04 | coming soon                                                                   | Coming Soon |
 
 ### Supported Introspection Targets
