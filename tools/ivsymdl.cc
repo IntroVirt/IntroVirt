@@ -81,8 +81,8 @@ bool module_matches(const std::string& requested, const std::string& module_name
 }
 
 std::string pdb_download_url(const PdbTarget& target) {
-    return std::string(kSymbolServerUrl) + target.pdb_filename + "/" + target.pdb_identifier +
-           "/" + target.pdb_filename;
+    return std::string(kSymbolServerUrl) + target.pdb_filename + "/" + target.pdb_identifier + "/" +
+           target.pdb_filename;
 }
 
 filesystem::path pdb_cache_path(const PdbTarget& target) {
@@ -412,15 +412,14 @@ int main(int argc, char** argv) {
     const auto& kernel = windows_guest.kernel();
 
     std::cout << "OS version: " << kernel.MajorVersion() << '.' << kernel.MinorVersion()
-              << " build " << kernel.NtBuildNumber() << " ("
-              << (kernel.x64() ? "x64" : "x86") << ")\n";
+              << " build " << kernel.NtBuildNumber() << " (" << (kernel.x64() ? "x64" : "x86")
+              << ")\n";
     std::cout << "Build lab: " << kernel.NtBuildLab() << '\n';
 
-    const auto* cv_info =
-        kernel.pe().optional_header().debug_directory()->codeview_data();
+    const auto* cv_info = kernel.pe().optional_header().debug_directory()->codeview_data();
     if (cv_info) {
-        std::cout << "Symbol version: " << cv_info->PdbFileName() << " "
-                  << cv_info->PdbIdentifier() << '\n';
+        std::cout << "Symbol version: " << cv_info->PdbFileName() << " " << cv_info->PdbIdentifier()
+                  << '\n';
         std::cout << "  GUID: " << cv_info->PdbGUID() << "  Age: " << cv_info->Age() << '\n';
     }
 
