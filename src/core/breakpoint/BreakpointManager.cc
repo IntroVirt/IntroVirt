@@ -24,6 +24,7 @@
 #include <log4cxx/logger.h>
 
 #include <cassert>
+#include <functional>
 #include <stdexcept>
 
 namespace introvirt {
@@ -118,19 +119,17 @@ bool InternalBreakpoint::remove_expired() {
     return false;
 }
 
-InternalBreakpoint::InternalBreakpoint(const guest_phys_ptr<void>& address)
-    : mapping_(static_ptr_cast<uint8_t>(address)), original_byte_(*mapping_) {
+InternalBreakpoint::InternalBreakpoint(const guest_ptr<void>& address)
+    : mapping_(static_ptr_cast<uint8_t>(guest_phys_ptr<void>(address))), original_byte_(*mapping_) {
 
     enable();
 
     // Configure out watchpoint if supported
     try {
-#if 0
         auto& domain = const_cast<DomainImpl&>(static_cast<const DomainImpl&>(address.domain()));
         watchpoint_ = domain.create_watchpoint(
             address, 1, true, true, false,
             std::bind(&InternalBreakpoint::watchpoint_event, this, std::placeholders::_1));
-#endif
     } catch (CommandFailedException& ex) {
         // Guest doesn't support watchpoints
         LOG4CXX_DEBUG(logger, "Failed to create watchpoint for breakpoint: " << ex.what());
@@ -152,14 +151,14 @@ void BreakpointManager::add_ref(const std::shared_ptr<BreakpointImpl>& breakpoin
     auto iter = breakpoints_.map_.find(physical_address.address());
     if (iter == breakpoints_.map_.end()) {
         // Entry doesn't exist, create it
-        entry = std::make_shared<InternalBreakpoint>(physical_address);
+        entry = std::make_shared<InternalBreakpoint>(breakpoint->virt_ptr());
         iter = breakpoints_.map_.emplace(physical_address.address(), std::move(entry)).first;
     } else {
         // Entry exists, try to lock it
         entry = iter->second.lock();
         if (!entry) {
             // Entry has expired, recreate it
-            entry = std::make_shared<InternalBreakpoint>(physical_address);
+            entry = std::make_shared<InternalBreakpoint>(breakpoint->virt_ptr());
             iter = breakpoints_.map_.emplace(physical_address.address(), std::move(entry)).first;
         }
     }

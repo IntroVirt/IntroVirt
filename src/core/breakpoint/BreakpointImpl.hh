@@ -59,6 +59,7 @@ class BreakpointImpl final : public Breakpoint {
     void callback(std::function<void(Event&)> callback) override;
 
     guest_phys_ptr<uint8_t> ptr() const;
+    const guest_ptr<void>& virt_ptr() const { return ptr_; }
 
     std::shared_ptr<BreakpointImplCallback> callback() { return cbdata_; }
 
@@ -68,12 +69,12 @@ class BreakpointImpl final : public Breakpoint {
 
     std::shared_ptr<InternalBreakpoint> internal_breakpoint() { return internal_breakpoint_; }
 
-    BreakpointImpl(const guest_phys_ptr<void>& ptr, std::function<void(Event&)> callback);
+    BreakpointImpl(const guest_ptr<void>& ptr, std::function<void(Event&)> callback);
 
     ~BreakpointImpl() override;
 
   private:
-    const guest_phys_ptr<uint8_t> ptr_;
+    const guest_ptr<void> ptr_;
     std::shared_ptr<BreakpointImplCallback> cbdata_;
     std::shared_ptr<void> data_;
     std::shared_ptr<InternalBreakpoint> internal_breakpoint_;

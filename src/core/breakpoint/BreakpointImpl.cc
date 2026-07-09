@@ -32,9 +32,11 @@ void BreakpointImpl::callback(std::function<void(Event&)> callback) {
     cbdata_->callback_ = callback;
 }
 
-guest_phys_ptr<uint8_t> BreakpointImpl::ptr() const { return ptr_; }
+guest_phys_ptr<uint8_t> BreakpointImpl::ptr() const {
+    return static_ptr_cast<uint8_t>(guest_phys_ptr<void>(ptr_));
+}
 
-BreakpointImpl::BreakpointImpl(const guest_phys_ptr<void>& ptr,
+BreakpointImpl::BreakpointImpl(const guest_ptr<void>& ptr,
                                std::function<void(Event&)> callback)
     : ptr_(ptr), cbdata_(std::make_shared<BreakpointImplCallback>(std::move(callback))) {}
 

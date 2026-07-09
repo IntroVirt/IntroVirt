@@ -61,7 +61,7 @@ class InternalBreakpoint final {
     void add_callback(const std::shared_ptr<BreakpointImpl>& bpimpl);
     bool remove_expired();
 
-    InternalBreakpoint(const guest_phys_ptr<void>& address);
+    InternalBreakpoint(const guest_ptr<void>& address);
     ~InternalBreakpoint();
 
   private:
