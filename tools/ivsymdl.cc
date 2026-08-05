@@ -55,7 +55,7 @@ namespace po = boost::program_options;
 namespace {
 
 constexpr const char* kDefaultCacheDir = "/var/lib/introvirt/pdb/";
-constexpr const char* kSymbolServerUrl = "http://msdl.microsoft.com/download/symbols/";
+constexpr const char* kSymbolServerUrl = "https://msdl.microsoft.com/download/symbols/";
 
 struct PdbTarget {
     std::string module_name;
