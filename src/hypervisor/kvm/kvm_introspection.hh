@@ -60,6 +60,18 @@ struct kvm_cr_monitor {
     int mode; // Bitmask of KVM_MONITOR_CR_[READ/WRITE]
 };
 
+#define KVM_SYSCALL_FILTER_BITMAP_BYTES 2040
+
+/* 4KiB page shared with KVM for syscall filtering. */
+struct kvm_syscall_filter {
+    __u32 enabled;
+    __u32 mask;
+    __u32 deliver_returns;
+    __u32 pad;
+    __u8 bits32[KVM_SYSCALL_FILTER_BITMAP_BYTES];
+    __u8 bits64[KVM_SYSCALL_FILTER_BITMAP_BYTES];
+};
+
 struct kvm_introspection_event {
     __u64 event_id; // Increments with each event
     int event_type; // KVM_EVENT_TYPE_
@@ -143,6 +155,7 @@ struct kvm_introspection_event {
 
 // VM Level
 #define KVM_ATTACH_VCPU _IOW(KVMIO, 0xd2, unsigned long)
+#define KVM_SET_SYSCALL_FILTER _IOW(KVMIO, 0xd3, unsigned long)
 #define KVM_SET_MEM_ACCESS_ENABLED _IOW(KVMIO, 0xd4, unsigned long)
 #define KVM_SET_MEM_ACCESS _IOW(KVMIO, 0xd5, struct kvm_ept_permissions)
 

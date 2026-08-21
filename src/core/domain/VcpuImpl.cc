@@ -56,6 +56,11 @@ const SystemCallFilter& VcpuImpl::system_call_filter() const {
     return *pImpl_->system_call_filter_;
 }
 
+void VcpuImpl::replace_system_call_filter(std::unique_ptr<SystemCallFilter> filter) {
+    pImpl_->system_call_filter_alloc_ = std::move(filter);
+    pImpl_->system_call_filter_ = pImpl_->system_call_filter_alloc_.get();
+}
+
 int VcpuImpl::event_fd() const {
     throw NotImplementedException("Vcpu does not support event polling");
 }

@@ -42,6 +42,7 @@
 #include <csignal>
 #include <cstring>
 #include <functional>
+#include <memory>
 #include <pthread.h>
 #include <sys/eventfd.h>
 #include <thread>
@@ -726,8 +727,8 @@ void DomainImpl::initialize() {
 
 TaskFilter& DomainImpl::task_filter() { return task_filter_; }
 
-SystemCallFilter& DomainImpl::system_call_filter() { return system_call_filter_; }
-const SystemCallFilter& DomainImpl::system_call_filter() const { return system_call_filter_; }
+SystemCallFilter& DomainImpl::system_call_filter() { return *system_call_filter_; }
+const SystemCallFilter& DomainImpl::system_call_filter() const { return *system_call_filter_; }
 
 void DomainImpl::pause_all_other_vcpus(const Vcpu& v) {
     for (uint32_t i = 0; i < vcpu_count(); ++i) {
@@ -856,8 +857,8 @@ void DomainImpl::suspend_event_step(Event& event) {
 const x86::PageDirectory& DomainImpl::page_directory() const { return page_directory_; }
 
 DomainImpl::DomainImpl()
-    : watchpoint_manager_(), breakpoint_manager_(), page_directory_(*this),
-      efd_(eventfd(0, EFD_SEMAPHORE)) {}
+    : system_call_filter_(std::make_unique<SystemCallFilter>()), watchpoint_manager_(),
+      breakpoint_manager_(), page_directory_(*this), efd_(eventfd(0, EFD_SEMAPHORE)) {}
 
 DomainImpl::~DomainImpl() { close(efd_); }
 
