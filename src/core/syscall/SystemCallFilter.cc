@@ -19,9 +19,11 @@
 #include <introvirt/core/syscall/SystemCallFilter.hh>
 #include <introvirt/util/compiler.hh>
 
-#include <algorithm>
+#include <cstring>
 #include <mutex>
-#include <vector>
+#include <new>
+
+#include <sys/mman.h>
 
 #include <log4cxx/logger.h>
 
@@ -29,21 +31,32 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("introvirt.syscall.S
 
 namespace introvirt {
 
-static constexpr size_t MaxCall = 16384;
+/* Must match struct kvm_syscall_filter in the kvm-introvirt UAPI. */
+static constexpr size_t FilterPageSize = 4096;
+static constexpr size_t BitmapBytes = 2040;
+static constexpr size_t MaxCall = BitmapBytes * 8; /* 16320 */
+
+struct FilterPage {
+    uint32_t enabled;
+    uint32_t mask;
+    uint32_t deliver_returns;
+    uint32_t pad;
+    uint8_t bits32[BitmapBytes];
+    uint8_t bits64[BitmapBytes];
+};
+static_assert(sizeof(FilterPage) == FilterPageSize, "SystemCallFilter page must be 4KiB");
 
 class SystemCallFilter::IMPL {
   public:
     void clear() {
         std::lock_guard lock(mtx_);
-
-        std::fill(filter_32_.begin(), filter_32_.end(), 0);
-        std::fill(filter_64_.begin(), filter_64_.end(), 0);
+        std::memset(page_->bits32, 0, sizeof(page_->bits32));
+        std::memset(page_->bits64, 0, sizeof(page_->bits64));
     }
 
-    bool matches(unsigned int index, std::vector<bool>& filter) const {
-        index &= mask_;
+    bool matches(unsigned int index, const uint8_t* bits) const {
+        index &= page_->mask;
 
-        // The incoming system call number is larger than we can fit in our map
         if (unlikely(index >= MaxCall)) {
             LOG4CXX_WARN(logger, "Rejecting incoming system call index "
                                      << index << ": Index too large for bitmap");
@@ -51,10 +64,10 @@ class SystemCallFilter::IMPL {
         }
 
         std::lock_guard lock(mtx_);
-        return filter.at(index);
+        return (bits[index >> 3] & (1u << (index & 7))) != 0;
     }
 
-    void set(unsigned int index, std::vector<bool>& filter, bool enabled) {
+    void set(unsigned int index, uint8_t* bits, bool enabled) {
         if (unlikely(index == 0xFFFFFFFF)) {
             LOG4CXX_DEBUG(
                 logger,
@@ -62,9 +75,8 @@ class SystemCallFilter::IMPL {
             return;
         }
 
-        index &= mask_;
+        index &= page_->mask;
 
-        // The incoming system call number is larger than we can fit in our map
         if (unlikely(index >= MaxCall)) {
             LOG4CXX_WARN(logger, "Rejecting set for system call index "
                                      << index << ": Index too large for bitmap");
@@ -72,65 +84,77 @@ class SystemCallFilter::IMPL {
         }
 
         std::lock_guard lock(mtx_);
-        filter[index] = enabled;
+        const uint8_t bit = static_cast<uint8_t>(1u << (index & 7));
+        if (enabled)
+            bits[index >> 3] |= bit;
+        else
+            bits[index >> 3] &= static_cast<uint8_t>(~bit);
     }
 
     IMPL() {
-        filter_32_.resize(MaxCall, false);
-        filter_64_.resize(MaxCall, false);
+        void* mapping = mmap(nullptr, FilterPageSize, PROT_READ | PROT_WRITE,
+                             MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+        if (mapping == MAP_FAILED)
+            throw std::bad_alloc();
+
+        page_ = static_cast<FilterPage*>(mapping);
+        std::memset(page_, 0, FilterPageSize);
+        page_->mask = 0xFFFFFFFFu;
+        page_->deliver_returns = 1;
+    }
+
+    ~IMPL() {
+        if (page_)
+            munmap(page_, FilterPageSize);
     }
 
   public:
     mutable std::mutex mtx_;
-
-    std::vector<bool> filter_32_;
-    std::vector<bool> filter_64_;
-
-    bool enabled_ = false;
-    uint32_t mask_;
+    FilterPage* page_ = nullptr;
 };
 
 SystemCallFilter::SystemCallFilter() : pImpl_(std::make_unique<IMPL>()) {}
 
 bool SystemCallFilter::matches(const Event& event) const {
     if (event.vcpu().long_mode()) {
-        return pImpl_->matches(event.syscall().raw_index(), pImpl_->filter_64_);
+        return pImpl_->matches(event.syscall().raw_index(), pImpl_->page_->bits64);
     } else {
-        return pImpl_->matches(event.syscall().raw_index(), pImpl_->filter_32_);
+        return pImpl_->matches(event.syscall().raw_index(), pImpl_->page_->bits32);
     }
 }
 
 bool SystemCallFilter::matches(const Vcpu& vcpu) const {
     if (vcpu.long_mode()) {
-        return pImpl_->matches(vcpu.registers().rax(), pImpl_->filter_64_);
+        return pImpl_->matches(vcpu.registers().rax(), pImpl_->page_->bits64);
     } else {
-        return pImpl_->matches(vcpu.registers().rax(), pImpl_->filter_32_);
+        return pImpl_->matches(vcpu.registers().rax(), pImpl_->page_->bits32);
     }
 }
 
 void SystemCallFilter::set_32(uint32_t index, bool enabled) {
-    pImpl_->set(index, pImpl_->filter_32_, enabled);
+    pImpl_->set(index, pImpl_->page_->bits32, enabled);
 }
 
 void SystemCallFilter::set_64(uint32_t index, bool enabled) {
-    pImpl_->set(index, pImpl_->filter_64_, enabled);
+    pImpl_->set(index, pImpl_->page_->bits64, enabled);
 }
 
 void SystemCallFilter::clear() { pImpl_->clear(); }
 
-void SystemCallFilter::mask(uint64_t mask) { pImpl_->mask_ = mask; }
-uint64_t SystemCallFilter::mask() const { return pImpl_->mask_; }
+void SystemCallFilter::mask(uint64_t mask) { pImpl_->page_->mask = static_cast<uint32_t>(mask); }
+uint64_t SystemCallFilter::mask() const { return pImpl_->page_->mask; }
 
-void SystemCallFilter::enabled(bool enabled) {
-    std::lock_guard lock(pImpl_->mtx_);
+void SystemCallFilter::enabled(bool enabled) { pImpl_->page_->enabled = enabled ? 1 : 0; }
 
-    pImpl_->enabled_ = enabled;
+bool SystemCallFilter::enabled() const { return pImpl_->page_->enabled != 0; }
+
+void SystemCallFilter::deliver_returns(bool enabled) {
+    pImpl_->page_->deliver_returns = enabled ? 1 : 0;
 }
 
-bool SystemCallFilter::enabled() const {
-    std::lock_guard lock(pImpl_->mtx_);
-    return pImpl_->enabled_;
-}
+bool SystemCallFilter::deliver_returns() const { return pImpl_->page_->deliver_returns != 0; }
+
+void* SystemCallFilter::page() const { return pImpl_->page_; }
 
 SystemCallFilter::~SystemCallFilter() = default;
 

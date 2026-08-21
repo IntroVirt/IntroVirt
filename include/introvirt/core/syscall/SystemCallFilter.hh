@@ -28,9 +28,19 @@ namespace introvirt {
  * This class may be used on its own, but checks will be performed in libintrovirt rather than the
  * hypervisor, which will perform worse.
  *
- * Ideally, the hypervisor library exends this class, and has the hypervisor map in the bitmap page.
- * Then, system call filtering can be performed at the hypervisor level, rather than in
+ * Ideally, the hypervisor library extends this class, and has the hypervisor map in the bitmap
+ * page. Then, system call filtering can be performed at the hypervisor level, rather than in
  * libintrovirt.
+ *
+ * The filter is stored in a single 4KiB page so the hypervisor can pin it and check bits without a
+ * context switch. Layout:
+ *
+ *   offset 0x000  u32 enabled
+ *   offset 0x004  u32 mask
+ *   offset 0x008  u32 deliver_returns
+ *   offset 0x00C  u32 pad
+ *   offset 0x010  u8  bits32[2040]   (16320 bits)
+ *   offset 0x808  u8  bits64[2040]   (16320 bits)
  */
 class SystemCallFilter {
   public:
@@ -67,6 +77,24 @@ class SystemCallFilter {
      * @return false if the bitmap is not enabled
      */
     bool enabled() const;
+
+    /**
+     * @brief Control whether FAST_SYSCALL_RET events are delivered by the hypervisor
+     *
+     * When false, KVM skips SYSRET/SYSEXIT event delivery (tools that call hook_return() must
+     * leave this true). Default is true.
+     *
+     * @param enabled If set to true, deliver return events
+     */
+    void deliver_returns(bool enabled);
+
+    /**
+     * @brief Check if syscall return events should be delivered by the hypervisor
+     *
+     * @return true if SYSRET/SYSEXIT events are delivered
+     * @return false if SYSRET/SYSEXIT events may be dropped in the hypervisor
+     */
+    bool deliver_returns() const;
 
     /**
      * @brief Check if the filter matches the given system call event
@@ -122,6 +150,12 @@ class SystemCallFilter {
      * @brief Destroy the instance
      */
     virtual ~SystemCallFilter();
+
+  protected:
+    /**
+     * @brief Pointer to the 4KiB filter page (for hypervisor mapping)
+     */
+    void* page() const;
 
   private:
     class IMPL;

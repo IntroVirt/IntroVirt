@@ -16,6 +16,7 @@
 #include "KvmVcpu.hh"
 #include "KvmDomain.hh"
 #include "KvmEvent.hh"
+#include "KvmSystemCallFilter.hh"
 #include "kvm_introspection.hh"
 
 #include <introvirt/core/exception/CommandFailedException.hh>
@@ -407,6 +408,8 @@ void* KvmVcpu::os_data() const {
 KvmVcpu::KvmVcpu(KvmDomain& domain, uint32_t id, int fd)
     : VcpuImpl(domain, id), id_(id), fd_(fd), registers_(event_data_, fd) {
 
+    replace_system_call_filter(std::make_unique<KvmSystemCallFilter>(fd_));
+
     static const std::string error_string = "Failed to set vmcall intercept";
     _send_command(KVM_SET_VMCALL_HOOK, 1, error_string);
 
@@ -426,6 +429,9 @@ KvmVcpu::KvmVcpu(const KvmVcpu& src)
 
 KvmVcpu::~KvmVcpu() {
     if (fd_) {
+        // Unpin while the VCPU fd is still open
+        replace_system_call_filter(nullptr);
+
         LOG4CXX_DEBUG(logger, "~KvmVcpu(" << id() << ") fd: " << fd_);
         /*
          * Do NOT call pause(), intercept_exception, intercept_system_calls,

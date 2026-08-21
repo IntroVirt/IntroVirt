@@ -15,6 +15,7 @@
  */
 #include "KvmDomain.hh"
 #include "KvmHypervisor.hh"
+#include "KvmSystemCallFilter.hh"
 #include "kvm_introspection.hh"
 
 #include <introvirt/core/exception/BadPhysicalAddressException.hh>
@@ -132,6 +133,8 @@ std::shared_ptr<GuestMemoryMapping> KvmDomain::map_pfns(const uint64_t* pfns, si
 KvmDomain::KvmDomain(const KvmHypervisor& hypervisor, const std::string& name, uint32_t id, int fd)
     : hypervisor_(hypervisor), name_(name), id_(id), fd_(fd) {
 
+    system_call_filter_ = std::make_unique<KvmSystemCallFilter>(fd_);
+
     // Attach to the domains VCPUs
     for (unsigned long i = 0;; ++i) {
         const int vcpu_fd = ioctl(fd, KVM_ATTACH_VCPU, i);
@@ -171,6 +174,9 @@ KvmDomain::~KvmDomain() {
 
     // Release the VCPUs before closing the domain
     vcpus_.clear();
+
+    // Unpin the domain filter page while the VM fd is still open
+    system_call_filter_.reset();
 
     // Close the handle to the domain
     close(fd_);

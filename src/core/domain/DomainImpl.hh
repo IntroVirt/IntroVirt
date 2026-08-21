@@ -41,6 +41,7 @@
 #include <shared_mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace introvirt {
@@ -178,6 +179,8 @@ class DomainImpl : public Domain {
      */
     void reset_guest() { guest_.reset(); }
 
+    std::unique_ptr<SystemCallFilter> system_call_filter_;
+
   private:
     void handle_breakpoint(Event& event);
 
@@ -193,7 +196,6 @@ class DomainImpl : public Domain {
 
     std::shared_mutex event_filter_mtx_;
 
-    SystemCallFilter system_call_filter_;
     std::vector<struct pollfd> pollfds_;
 
     TaskFilter task_filter_;
