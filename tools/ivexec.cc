@@ -25,15 +25,35 @@
 #include "shared/SystemCallMonitor.hh"
 
 #include <introvirt/introvirt.hh>
+#include <introvirt/linux/inject/syscall.hh>
+
+// Win11-compatible launch via NtCreateUserProcess syscall injection
+#include <introvirt/windows/kernel/nt/NtKernel.hh>
+#include <introvirt/windows/kernel/nt/const/ObjectType.hh>
+#include <introvirt/windows/kernel/nt/const/ProcessCreateFlags.hh>
+#include <introvirt/windows/kernel/nt/const/ThreadCreateFlags.hh>
+#include <introvirt/windows/kernel/nt/syscall/NtCreateUserProcess.hh>
+#include <introvirt/windows/kernel/nt/syscall/types/PS_CREATE_INFO.hh>
+#include <introvirt/windows/kernel/nt/types/RTL_USER_PROCESS_PARAMETERS.hh>
+#include <introvirt/windows/kernel/nt/types/access_mask/PROCESS_ACCESS_MASK.hh>
+#include <introvirt/windows/kernel/nt/types/access_mask/THREAD_ACCESS_MASK.hh>
+#include <introvirt/windows/kernel/nt/types/objects/OBJECT.hh>
+#include <introvirt/windows/kernel/nt/types/objects/OBJECT_DIRECTORY.hh>
+#include <introvirt/windows/kernel/nt/types/objects/OBJECT_HEADER.hh>
+#include <introvirt/windows/kernel/nt/types/objects/OBJECT_HEADER_NAME_INFO.hh>
+#include <introvirt/windows/kernel/nt/types/objects/OBJECT_SYMBOLIC_LINK.hh>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
 
+#include <cctype>
+#include <chrono>
 #include <csignal>
 #include <cstring>
 #include <iostream>
 #include <memory>
 #include <thread>
+#include <vector>
 
 using namespace introvirt;
 using namespace introvirt::windows;
@@ -81,84 +101,332 @@ class ExecFileTool final : public EventCallback {
           no_window_(no_window), session_id_(session_id), system_call_monitor_(system_call_monitor),
           unsupported_(all) {}
 
+    /*
+     * Resolve a drive-letter-qualified Win32 path ("C:\\dir\\file.exe") to a
+     * session-independent NT object-namespace path
+     * ("\\Device\\HarddiskVolumeN\\dir\\file.exe").
+     *
+     * NtCreateUserProcess opens the PsAttributeImageName value in the context
+     * of the hijacked victim thread. The "\\??\\" prefix is a per-process /
+     * per-session DosDevices alias resolved via the current thread's
+     * EPROCESS.DeviceMap; on Win11 22621 that map may not expose the drive
+     * letter in the injected context, yielding STATUS_OBJECT_PATH_INVALID
+     * (0xC0000039) at PsCreateFailExeName. "\\Device\\HarddiskVolumeN" is a
+     * real, global object with no DeviceMap/session dependency, so it resolves
+     * identically in any thread.
+     *
+     * Resolution mirrors NtKernelImpl::reparse_drive_letters(): walk
+     * RootDirectoryObject() -> the "GLOBAL??" OBJECT_DIRECTORY -> the "X:"
+     * OBJECT_SYMBOLIC_LINK -> LinkTarget(). Returns "" if it cannot resolve,
+     * so the caller can fall back to the legacy "\\??\\" form (Win10 path /
+     * non-drive-letter targets).
+     */
+    std::string resolve_nt_device_path(const std::string& win32_path) const {
+        // Need at least "X:\\..."; first two chars must be a drive letter + ':'.
+        if (win32_path.size() < 3 || win32_path[1] != ':')
+            return "";
+
+        std::string letter(1, static_cast<char>(std::toupper(
+                                  static_cast<unsigned char>(win32_path[0]))));
+        if (!(letter[0] >= 'A' && letter[0] <= 'Z'))
+            return "";
+        letter += ':';
+        const std::string remainder = win32_path.substr(2); // "\\Windows\\System32\\..."
+
+        // KPTI/VCPU-running race: this object-namespace walk reads guest kernel
+        // structures. A single sample can land on a user-CR3 / VCPU-running
+        // moment where root / GLOBAL?? resolve as null or the link target reads
+        // empty (or a read throws), yielding "" -> the caller falls back to
+        // "\??\", which is invalid in the injected Win11 context ->
+        // STATUS_OBJECT_PATH_NOT_FOUND / PsCreateFailOnFileOpen. Retry across
+        // fresh samples so a transient miss doesn't fail the launch; a genuinely
+        // absent drive letter just costs the (bounded) retry budget then falls back.
+        constexpr int kResolveTries = 30;
+        for (int attempt = 0; attempt < kResolveTries; ++attempt) {
+            try {
+                auto& kernel = guest_.kernel();
+                auto root = kernel.RootDirectoryObject();
+                if (root) {
+                    // Find the \GLOBAL?? directory (global DosDevices, session-independent).
+                    std::shared_ptr<nt::OBJECT_DIRECTORY> global;
+                    for (const auto& obj : root->objects()) {
+                        const auto& hdr = obj->header();
+                        if (hdr.type() == nt::ObjectType::Directory && hdr.has_name_info() &&
+                            hdr.NameInfo().Name() == "GLOBAL??") {
+                            global = nt::OBJECT_DIRECTORY::make_shared(kernel, obj->ptr());
+                            break;
+                        }
+                    }
+                    // Find the "X:" symbolic link and read its target device path.
+                    if (global) {
+                        for (const auto& obj : global->objects()) {
+                            const auto& hdr = obj->header();
+                            if (hdr.type() != nt::ObjectType::SymbolicLink || !hdr.has_name_info())
+                                continue;
+                            if (!boost::iequals(hdr.NameInfo().Name(), letter))
+                                continue;
+
+                            auto link = nt::OBJECT_SYMBOLIC_LINK::make_shared(kernel, obj->ptr());
+                            std::string target = link->LinkTarget(); // e.g. "\\Device\\HarddiskVolume3"
+                            if (!target.empty()) {
+                                // Strip a trailing backslash before appending remainder.
+                                if (target.back() == '\\')
+                                    target.pop_back();
+                                return target + remainder; // "\\Device\\HarddiskVolume3\\Windows\\...\\file.exe"
+                            }
+                        }
+                    }
+                }
+            } catch (std::exception& ex) {
+                // transient racy walk; resample on the next attempt
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        }
+        return "";
+    }
+
     /**
      * @brief Perform the actual injection to launch a process in the guest
      */
     bool launch(WindowsEvent& wevent) {
-        bool result;
-
-        // Allocate STARTUPINFO, which holds the launch settings
-        // We mostly leave it zeroed
-        auto startupinfo = inject::allocate<STARTUPINFOW>();
-        if (no_window_) {
-            startupinfo->dwFlags(STARTF_USESHOWWINDOW);
-            startupinfo->wShowWindow(SW_HIDE);
-        }
-
-        const uint32_t dwCreationFlags = kernel32::CREATE_SUSPENDED | CREATE_NEW_CONSOLE |
-                                         CREATE_UNICODE_ENVIRONMENT | NORMAL_PRIORITY_CLASS;
-
-        // Structure that gets populated by CreateProcessA with results
-        auto procinfo = inject::allocate<kernel32::PROCESS_INFORMATION>();
+        /*
+         * Launch the target via direct NtCreateUserProcess syscall injection.
+         *
+         * The previous implementation redirected RIP to call CreateProcessW
+         * (function-call injection). On Windows 11 22621 the redirected
+         * CreateProcessW faults when executed and bugchecks the guest
+         * (IRQL_NOT_LESS_OR_EQUAL). Syscall injection is stable on both Win10
+         * and Win11, so we build the structures CreateProcessW would otherwise
+         * construct (RTL_USER_PROCESS_PARAMETERS / PS_ATTRIBUTE_LIST /
+         * PS_CREATE_INFO) ourselves and invoke NtCreateUserProcess directly.
+         */
+        auto& kernel = guest_.kernel();
 
         std::string cmdline = target_;
         if (!args_.empty())
             cmdline += ' ' + args_;
 
-        auto guest_cmdline = inject::allocate(Utf16String::convert(cmdline));
-        guest_ptr<char16_t[]> pguest_directory;
+        // The NT path is what NtCreateUserProcess uses to open the image; it is
+        // passed via the PsAttributeImageName process attribute and resolved in
+        // the injected victim thread's object/DeviceMap context. Prefer a
+        // session-independent \Device\HarddiskVolumeN path (Win11-safe, since
+        // "\??\" is a per-session/per-process DosDevices alias that may not
+        // expose the drive letter in the injected context -> 0xC0000039 at
+        // PsCreateFailExeName). Fall back to the legacy \??\ DosDevices alias if
+        // resolution fails (Win10 path / non-drive-letter targets).
+        std::string nt_image_path = resolve_nt_device_path(target_);
+        if (nt_image_path.empty()) {
+            // A drive-letter target that failed the \GLOBAL?? walk falls back
+            // to the legacy "\??\X:" alias, which is INVALID in the injected
+            // Win11 victim context (per-process DosDevices map): then
+            // NtCreateUserProcess fails STATUS_OBJECT_PATH_NOT_FOUND at
+            // PsCreateFailExeName, surfacing only as a generic
+            // CommandFailedException. Warn loudly -- the usual culprit is a
+            // secondary/data volume Windows never gave a normal
+            // \GLOBAL??\X: -> \Device\HarddiskVolumeN symlink, e.g. the disk's
+            // MBR partition type is 0x83 (Linux) rather than a Windows FAT/NTFS
+            // type (0x06/0x0b/0x0c/0x0e/0x07); re-type the partition.
+            if (target_.size() >= 2 && target_[1] == ':')
+                std::cerr << "WARNING: could not resolve \\Device\\HarddiskVolumeN for \""
+                          << target_.substr(0, 2)
+                          << "\" via \\GLOBAL??; falling back to \\??\\ (invalid in the "
+                             "injected Win11 context). If the launch fails at "
+                             "PsCreateFailExeName, check the target volume has a Windows "
+                             "partition type, not 0x83/Linux.\n";
+            nt_image_path = "\\??\\" + target_;
+        }
+        const std::string current_dir =
+            directory_.empty() ? std::string("C:\\Windows\\System32\\") : directory_;
+        const std::string desktop = "Winsta0\\Default";
 
-        std::optional<inject::GuestAllocation<char16_t[]>> guest_directory;
-        if (!directory_.empty()) {
-            guest_directory.emplace(inject::allocate(Utf16String::convert(directory_)));
-            pguest_directory = guest_directory->ptr();
+        // UTF-16 path strings, each its own guest allocation. The parameter
+        // block is NORMALIZED, so it references these by absolute pointer.
+        const std::u16string wImage = Utf16String::convert(target_);
+        const std::u16string wCmd = Utf16String::convert(cmdline);
+        const std::u16string wCurDir = Utf16String::convert(current_dir);
+        const std::u16string wDesktop = Utf16String::convert(desktop);
+        const std::u16string wNtImage = Utf16String::convert(nt_image_path);
+
+        // NT image path (referenced by the attribute list) is a separate allocation.
+        auto sNtImage = inject::allocate(wNtImage);
+
+        // Minimal empty environment: a single UTF-16 NUL pair (double-null).
+        auto env = inject::allocate<uint8_t[]>(4);
+        {
+            auto e = env.ptr();
+            for (int i = 0; i < 4; ++i)
+                e[i] = 0;
         }
 
-        // Call CreateProcessA in the guest
-        result = inject::function_call<CreateProcessW>(nullptr, guest_cmdline, nullptr, nullptr,
-                                                       false, dwCreationFlags, nullptr,
-                                                       pguest_directory, startupinfo, procinfo);
+        // ----- Build RTL_USER_PROCESS_PARAMETERS (x64), strings appended inline -----
+        // RtlCreateProcessParametersEx lays the path strings out immediately after
+        // the fixed header within the same block; each UNICODE_STRING.Buffer points
+        // within [block, block+Length]. We reproduce that exactly.
+        //
+        // HDR must cover the FULL fixed header so trailing members
+        // (EnvironmentSize@0x3F0, EnvironmentVersion@0x3F8, PackageDependencyData@0x400,
+        // ProcessGroupId@0x408, LoaderThreads@0x40C, RedirectionDllName/HeapPartitionName/
+        // DefaultThreadpoolCpuSetMasks...) are present and zeroed. On Win11 22H2 x64
+        // sizeof(RTL_USER_PROCESS_PARAMETERS) is 0x440; using 0x410 would let the inline
+        // path strings overlap those defined members.
+        constexpr size_t HDR = 0x440;
+        auto bytes = [](const std::u16string& s) { return (s.length() + 1) * 2; };
+        const size_t offImage = HDR;
+        const size_t offCmd = offImage + bytes(wImage);
+        const size_t offCurDir = offCmd + bytes(wCmd);
+        const size_t offDesktop = offCurDir + bytes(wCurDir);
+        const size_t TOTAL = offDesktop + bytes(wDesktop);
 
-        if (result) {
-            std::cerr << "Created process [" << procinfo->dwProcessId() << ':'
-                      << procinfo->dwThreadId() << "]\n";
+        auto rupp = inject::allocate<uint8_t[]>(TOTAL);
+        const uint64_t G = rupp.address();
 
-            // Update this so we can track the new process
-            new_pid_ = procinfo->dwProcessId();
+        std::vector<uint8_t> b(TOTAL, 0);
+        auto put16 = [&](size_t o, uint16_t v) {
+            b[o] = v & 0xff;
+            b[o + 1] = (v >> 8) & 0xff;
+        };
+        auto put32 = [&](size_t o, uint32_t v) {
+            for (int i = 0; i < 4; ++i)
+                b[o + i] = (v >> (8 * i)) & 0xff;
+        };
+        auto put64 = [&](size_t o, uint64_t v) {
+            for (int i = 0; i < 8; ++i)
+                b[o + i] = (v >> (8 * i)) & 0xff;
+        };
+        auto putStr = [&](size_t o, const std::u16string& s) {
+            for (size_t i = 0; i < s.size(); ++i) {
+                b[o + i * 2] = s[i] & 0xff;
+                b[o + i * 2 + 1] = (s[i] >> 8) & 0xff;
+            }
+        };
+        // UNICODE_STRING { USHORT Length; USHORT MaximumLength; <pad>; PWSTR Buffer; }
+        auto putUS = [&](size_t field, size_t stroff, const std::u16string& s) {
+            put16(field, s.length() * 2);             // Length (bytes, no NUL)
+            put16(field + 2, (s.length() + 1) * 2);   // MaximumLength (incl NUL)
+            put64(field + 8, G + stroff);             // Buffer (absolute, within block)
+        };
 
-            // Reconfigure the task filter for our new PID
-            domain_.task_filter().clear();
-            domain_.task_filter().add_pid(new_pid_);
+        putStr(offImage, wImage);
+        putStr(offCmd, wCmd);
+        putStr(offCurDir, wCurDir);
+        putStr(offDesktop, wDesktop);
 
-            if (admin_) {
-                auto handle_table = wevent.task().pcr().CurrentThread().Process().ObjectTable();
-                auto new_process = handle_table->ProcessObject(procinfo->hProcess());
-                auto& token = new_process->Token();
-                token.PrivilegesPresent(0xFFFFFFFFFFFFFFFF);
-                token.PrivilegesEnabled(0xFFFFFFFFFFFFFFFF);
+        put32(0x00, TOTAL);                  // MaximumLength
+        put32(0x04, TOTAL);                  // Length
+        put32(0x08, 0x1);                    // Flags = NORMALIZED
+        putUS(0x38, offCurDir, wCurDir);     // CurrentDirectory.DosPath (Handle @0x48 = 0)
+        putUS(0x60, offImage, wImage);       // ImagePathName
+        putUS(0x70, offCmd, wCmd);           // CommandLine
+        put64(0x80, env.address());          // Environment
+        putUS(0xB0, offImage, wImage);       // WindowTitle (reuse inline image buffer)
+        putUS(0xC0, offDesktop, wDesktop);   // DesktopInfo
+        put64(0x3F0, 4);                     // EnvironmentSize
 
-                for (auto& group : token.Groups()) {
-                    if (group->Attributes().SE_GROUP_USE_FOR_DENY_ONLY()) {
-                        SID_AND_ATTRIBUTES::SidAttributeFlags new_flags(
-                            SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED);
-                        group->Attributes(new_flags);
-                    }
+        {
+            auto p = rupp.ptr();
+            for (size_t i = 0; i < TOTAL; ++i)
+                p[i] = b[i];
+        }
+
+        // ----- Build PS_ATTRIBUTE_LIST with one PsAttributeImageName entry -----
+        // PS_ATTRIBUTE_LIST { SIZE_T TotalLength; PS_ATTRIBUTE Attributes[1]; }
+        // PS_ATTRIBUTE { ULONG_PTR Attribute; SIZE_T Size; ULONG_PTR Value; PSIZE_T ReturnLength; }
+        constexpr size_t AL_SIZE = 0x28;
+        std::vector<uint8_t> al(AL_SIZE, 0);
+        auto putAL = [&](size_t o, uint64_t v) {
+            for (int i = 0; i < 8; ++i)
+                al[o + i] = (v >> (8 * i)) & 0xff;
+        };
+        // Attribute@0x08 is intentionally written 0 here and set below via the typed
+        // PS_ATTRIBUTE setters, so the encoding is exactly the canonical
+        // PsAttributeImageName = num 5 | PS_ATTRIBUTE_INPUT (0x20005). Hand-writing it
+        // previously produced 0x60005 (an extra 0x40000 "additive/unknown" bit) which
+        // PspValidateAttributeList rejects during early create-context build (before the
+        // image file is opened), yielding STATUS_INVALID_PARAMETER with
+        // PS_CREATE_INFO.State left at PsCreateInitialState.
+        putAL(0x00, AL_SIZE);                  // TotalLength
+        putAL(0x08, 0);                        // Attribute (set via typed setters below)
+        putAL(0x10, wNtImage.length() * 2);    // Size (bytes, no NUL)
+        putAL(0x18, sNtImage.address());       // Value -> NT image path
+        putAL(0x20, 0);                        // ReturnLength
+        auto attrlist = inject::allocate<uint8_t[]>(AL_SIZE);
+        {
+            auto p = attrlist.ptr();
+            for (size_t i = 0; i < AL_SIZE; ++i)
+                p[i] = al[i];
+        }
+
+        // Encode the attribute number/flags via IntroVirt's typed PS_ATTRIBUTE setters
+        // so the value is provably 0x20005 (PsAttributeImageName, input-only,
+        // non-thread, non-additive) rather than a hand-packed constant.
+        {
+            auto pal_set = PS_ATTRIBUTE_LIST::make_unique(kernel, attrlist);
+            auto& attr = (*pal_set)[0];
+            attr.AttributeNumber(PsAttributeImageName); // num 5
+            attr.AttributeInputOnly(true);              // PS_ATTRIBUTE_INPUT (0x20000)
+            attr.AttributeThreads(false);               // not a thread attribute
+        }
+
+        // ----- PS_CREATE_INFO: Size = sizeof (0x58), State = PsCreateInitialState (0) -----
+        constexpr size_t PSCI_SIZE = 0x58;
+        auto psci_buf = inject::allocate<uint8_t[]>(PSCI_SIZE);
+        {
+            auto p = psci_buf.ptr();
+            for (size_t i = 0; i < PSCI_SIZE; ++i)
+                p[i] = 0;
+            for (int i = 0; i < 8; ++i)
+                p[i] = (PSCI_SIZE >> (8 * i)) & 0xff; // Size
+        }
+
+        auto procParams = RTL_USER_PROCESS_PARAMETERS::make_unique(kernel, rupp);
+        auto createInfo = PS_CREATE_INFO::make_unique(kernel, psci_buf);
+
+        uint64_t hProcess = 0, hThread = 0;
+        const guest_ptr<void> nullAttr;
+
+        NTSTATUS status = inject::system_call<nt::NtCreateUserProcess>(
+            hProcess, hThread, PROCESS_ACCESS_MASK(0x1FFFFF), THREAD_ACCESS_MASK(0x1FFFFF), nullAttr,
+            nullAttr, ProcessCreateFlags(0), ThreadCreateFlags(nt::CREATE_SUSPENDED), procParams.get(),
+            *createInfo, attrlist);
+
+        if (!status.NT_SUCCESS() || hProcess == 0) {
+            std::cerr << "Failed to launch process: NtCreateUserProcess returned " << status
+                      << " (0x" << std::hex << status.value() << std::dec << ")"
+                      << " PS_CREATE_INFO.State=" << createInfo->State() << '\n';
+            return false;
+        }
+
+        // Resolve the new process from its handle (handle lives in the launcher's table).
+        auto handle_table = wevent.task().pcr().CurrentThread().Process().ObjectTable();
+        auto new_process = handle_table ? handle_table->ProcessObject(hProcess) : nullptr;
+        new_pid_ = new_process ? new_process->UniqueProcessId() : 0;
+
+        std::cerr << "Created process [" << new_pid_ << "]\n";
+
+        // Reconfigure the task filter for our new PID
+        domain_.task_filter().clear();
+        domain_.task_filter().add_pid(new_pid_);
+
+        if (admin_ && new_process) {
+            auto& token = new_process->Token();
+            token.PrivilegesPresent(0xFFFFFFFFFFFFFFFF);
+            token.PrivilegesEnabled(0xFFFFFFFFFFFFFFFF);
+
+            for (auto& group : token.Groups()) {
+                if (group->Attributes().SE_GROUP_USE_FOR_DENY_ONLY()) {
+                    SID_AND_ATTRIBUTES::SidAttributeFlags new_flags(
+                        SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED);
+                    group->Attributes(new_flags);
                 }
             }
-
-            // No longer have a need for the process handle
-            inject::system_call<nt::NtClose>(procinfo->hProcess());
-
-            // Resume the suspended thread
-            inject::system_call<nt::NtResumeThread>(procinfo->hThread(), nullptr);
-
-            // No longer have a need for the thread handle
-            inject::system_call<nt::NtClose>(procinfo->hThread());
-        } else {
-            std::cerr << "Failed to launch process: " << GetLastError() << std::endl;
         }
 
-        return result;
+        // Close the process handle, resume the suspended thread, close the thread handle.
+        inject::system_call<nt::NtClose>(hProcess);
+        inject::system_call<nt::NtResumeThread>(hThread, nullptr);
+        inject::system_call<nt::NtClose>(hThread);
+
+        return true;
     }
 
     bool matches_session_id(WindowsEvent& event) const {
@@ -370,6 +638,95 @@ class ExecFileTool final : public EventCallback {
     const bool unsupported_;
 };
 
+/*
+ * Native-Linux process launch via fork()+execve() injection.
+ *
+ * execve replaces the current process image, so injecting it directly would
+ * kill the host process. Instead we fork() a child from a victim process, then
+ * execve() the target *in the child* (the victim survives). Two phases keyed on
+ * the child's pid:
+ *   1. On the first syscall event, inject fork() in the victim → child pid.
+ *   2. The fork's child shares the victim's comm, so its syscall events are
+ *      delivered too; on the first event with task().pid() == child, inject
+ *      execve(target, argv, envp). The child becomes the sample.
+ */
+class LinuxExecTool final : public EventCallback {
+  public:
+    LinuxExecTool(std::string path, std::vector<std::string> argv, std::vector<std::string> envp)
+        : path_(std::move(path)), argv_(std::move(argv)), envp_(std::move(envp)) {}
+
+    int result() const { return result_; }
+
+    void process_event(Event& event) override {
+        if (unlikely(event.type() == EventType::EVENT_SHUTDOWN ||
+                     event.type() == EventType::EVENT_REBOOT)) {
+            exit(64);
+        }
+        if (event.type() != EventType::EVENT_FAST_SYSCALL)
+            return;
+
+        if (phase_ == Phase::Fork) {
+            const int64_t child = linux_guest::inject::inject_fork(event);
+            if (child <= 0) {
+                std::cerr << "fork injection failed: " << child << '\n';
+                event.domain().interrupt();
+                return;
+            }
+            child_pid_ = static_cast<uint64_t>(child);
+            std::cout << "Forked child pid " << child_pid_ << "; awaiting its first syscall\n";
+            phase_ = Phase::Exec;
+            return;
+        }
+
+        if (phase_ == Phase::Exec) {
+            if (event.task().pid() != child_pid_)
+                return; // not our child yet
+            const int64_t r = linux_guest::inject::execve(event, path_, argv_, envp_);
+            // execve only returns on failure.
+            if (r < 0)
+                std::cerr << "execve injection failed: " << r << '\n';
+            else
+                std::cout << "Launched " << path_ << " in pid " << child_pid_ << '\n';
+            result_ = (r < 0) ? 1 : 0;
+            phase_ = Phase::Done;
+            event.domain().interrupt();
+        }
+    }
+
+  private:
+    enum class Phase { Fork, Exec, Done };
+    Phase phase_ = Phase::Fork;
+    const std::string path_;
+    const std::vector<std::string> argv_;
+    const std::vector<std::string> envp_;
+    uint64_t child_pid_ = 0;
+    int result_ = 1;
+};
+
+static int run_linux_exec(Domain& domain, const std::string& target,
+                          const std::string& arguments, const std::string& process_name,
+                          bool procname_set) {
+    std::vector<std::string> argv{target};
+    if (!arguments.empty()) {
+        std::vector<std::string> parts;
+        boost::split(parts, arguments, boost::is_any_of(" "), boost::token_compress_on);
+        for (auto& p : parts)
+            if (!p.empty())
+                argv.push_back(p);
+    }
+    const std::vector<std::string> envp{
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "HOME=/root"};
+
+    // Host the fork in a named victim if given, else any process that syscalls.
+    if (procname_set)
+        domain.task_filter().add_name(process_name);
+
+    domain.intercept_system_calls(true);
+    LinuxExecTool tool(target, argv, envp);
+    domain.poll(tool);
+    return tool.result();
+}
+
 int main(int argc, char** argv) {
     po::options_description desc("Options");
     std::string domain_name;
@@ -425,6 +782,13 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        if (domain->guest()->os() == OS::Linux) {
+            // Native-Linux launch via fork()+execve() injection (self-contained;
+            // the Windows path below is untouched).
+            return run_linux_exec(*domain, target_file, arguments, process_name,
+                                  !vm["procname"].defaulted());
+        }
+
         if (domain->guest()->os() != OS::Windows) {
             std::cerr << "Unsupported OS: " << domain->guest()->os() << '\n';
             return 1;
@@ -468,25 +832,45 @@ int main(int argc, char** argv) {
         guest->set_system_call_filter(domain->system_call_filter(),
                                       SystemCallIndex::NtTerminateProcess, true);
 
-        // Get the session id for the target process
+        // Get the session id for the target process.
+        // KPTI/VCPU-running race: a single CidTable walk can land on a user-CR3 /
+        // VCPU-running moment where the kernel reads (CidTable / open_handles /
+        // ObjectHeader / process->Session()) transiently fail. The original
+        // single-shot walk then reported "Failed to find the session ID"; worse,
+        // CidTable()/open_handles() sat OUTSIDE the per-entry try, so a raced read
+        // there threw a CommandFailedException ("Cannot access register state
+        // while VCPU is running") straight to std::terminate. Retry the whole walk
+        // across fresh samples, catching the walk-level read as well.
         uint64_t session_id = 0xFFFFFFFFFFFFFFFF;
         auto& kernel = guest->kernel();
-        auto CidTable = kernel.CidTable();
-        auto handles = CidTable->open_handles();
-        for (auto& entry : handles) {
+        constexpr int kSessionTries = 40;
+        for (int attempt = 0;
+             attempt < kSessionTries && session_id == 0xFFFFFFFFFFFFFFFF; ++attempt) {
             try {
-                if (entry->ObjectHeader()->type() == ObjectType::Process) {
-                    auto process = kernel.process(entry->ObjectHeader()->Body());
-                    if (boost::istarts_with(process->ImageFileName(), process_name)) {
-                        // Found the target process
-                        if (process->Session()) {
-                            session_id = process->Session()->SessionID();
-                            break;
+                auto CidTable = kernel.CidTable();
+                auto handles = CidTable->open_handles();
+                for (auto& entry : handles) {
+                    try {
+                        if (entry->ObjectHeader()->type() == ObjectType::Process) {
+                            auto process = kernel.process(entry->ObjectHeader()->Body());
+                            if (boost::istarts_with(process->ImageFileName(), process_name)) {
+                                // Found the target process
+                                if (process->Session()) {
+                                    session_id = process->Session()->SessionID();
+                                    break;
+                                }
+                            }
                         }
+                    } catch (TraceableException& ex) {
+                        // racy per-entry read; skip this entry
                     }
                 }
             } catch (TraceableException& ex) {
+                // racy walk-level read (CidTable/open_handles unreadable at this
+                // CR3); resample on the next attempt
             }
+            if (session_id == 0xFFFFFFFFFFFFFFFF)
+                std::this_thread::sleep_for(std::chrono::milliseconds(40));
         }
 
         if (session_id == 0xFFFFFFFFFFFFFFFF) {

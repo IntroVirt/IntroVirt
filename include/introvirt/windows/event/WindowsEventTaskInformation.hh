@@ -49,6 +49,15 @@ class WindowsEventTaskInformation final : public EventTaskInformation {
 
   private:
     nt::KPCR& kpcr_;
+    // SECTEPE: pid/tid/process_name SNAPSHOTTED at construction (while the vcpu
+    // is in its event and registers are valid). kpcr_ is a shared per-vcpu object
+    // that later events reset() to their current thread; re-reading it later
+    // (e.g. from end_injection) reads a stale/wrong current-thread pointer ->
+    // non-canonical deref -> SIGSEGV. The event's task is the thread that
+    // generated it, so the snapshot is also more correct.
+    uint64_t pid_ = 0;
+    uint64_t tid_ = 0;
+    std::string process_name_;
 };
 
 } // namespace windows

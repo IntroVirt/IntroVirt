@@ -19,6 +19,7 @@
 #include "core/domain/VcpuImpl.hh"
 #include "core/event/EventImpl.hh"
 #include "core/injection/RegisterGuard.hh"
+#include "core/injection/VcpuPauseGuard.hh"
 #include "windows/WindowsGuestImpl.hh"
 
 #include <introvirt/core/breakpoint/Breakpoint.hh>
@@ -41,6 +42,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <cstdio>
 #include <optional>
 
 namespace introvirt {
@@ -70,10 +72,66 @@ class SystemCallInjector final {
         const auto original_ideal_processor = thread.IdealProcessor();
         const auto original_user_ideal_processor = thread.UserIdealProcessor();
 
-        thread.Affinity(desired_affinity);
-        thread.UserAffinity(desired_affinity);
-        thread.IdealProcessor(event_.vcpu().id());
-        thread.UserIdealProcessor(event_.vcpu().id());
+        // SECTEPE: the hard-affinity pin (writing KTHREAD.Affinity /
+        // KTHREAD.UserAffinity to a single-vcpu mask in live guest memory) is
+        // what deadlocks a heavy, blocking, cross-thread syscall such as
+        // NtCreateUserProcess on Win11.
+        //
+        // Why the pin hangs the heavy syscall but not a trivial one:
+        //   * start_injection() does NOT pause the other vcpus for a
+        //     FAST_SYSCALL injection (only INT3/MEM_ACCESS breakpoint
+        //     injections pause peers — see DomainImpl::start_injection). So
+        //     while the hijacked thread runs the injected syscall on this vcpu,
+        //     the other vcpu(s) keep executing guest code, including the kernel
+        //     scheduler.
+        //   * NtDeleteFile (and the other trivial calls) complete entirely
+        //     inside the syscall with no reschedule / no cross-processor wait,
+        //     so a bogus single-cpu affinity mask is never consulted before the
+        //     call returns: it SYSRETs fine.
+        //   * NtCreateUserProcess is long and blocking: it waits on the
+        //     PspCreateThread/section/IO paths, takes resources, and crucially
+        //     touches per-processor scheduler state and may need to be
+        //     rescheduled / have work run on another processor. With the hard
+        //     KTHREAD.Affinity clamped to exactly this one vcpu, the guest
+        //     scheduler can no longer migrate or wake the thread the way the
+        //     create path expects; the thread is left blocked in the kernel and
+        //     never SYSRETs (INJ=11 / RET=10) -> hang / -T timeout. The injector
+        //     is then stuck in suspend() waiting for a FAST_SYSCALL_RET that the
+        //     guest will never produce.
+        //   * On Win10 19045 the same clamp happens to be tolerated by that
+        //     build's create/scheduler path, so Win10 works WITH the pin and we
+        //     must NOT regress it.
+        //
+        // The differentiator is purely the scheduler clamp interacting with the
+        // Win11 heavy-create path, NOT the byte layout of KTHREAD.Affinity: that
+        // field is a KAFFINITY_EX structure on both Win10 and Win11 x64 and the
+        // 8-byte get()/set() round-trips it identically on both, so it cannot
+        // explain why only Win11 hangs. (We still capture the original 8 bytes
+        // and write the exact same value back on restore on every OS, so no new
+        // corruption is introduced regardless.)
+        //
+        // Fix: branch on the build number. Pre-22000 (Win10 and earlier) keeps
+        // the proven hard-affinity pin so the working path is unchanged.
+        // 22000+ (Win11) skips the hard Affinity/UserAffinity clamp and only
+        // sets the *soft* IdealProcessor / UserIdealProcessor scheduling hint
+        // (advisory: the scheduler prefers this cpu but is still free to migrate
+        // / wake the thread, so the heavy syscall can complete and SYSRET).
+        const uint16_t build_number = guest_.kernel().NtBuildNumber();
+        const bool win11_or_newer = (build_number >= 22000);
+
+        if (win11_or_newer) {
+            // Win11: advisory soft hint only, no hard Affinity/UserAffinity
+            // clamp, so the guest scheduler can still migrate/wake the thread
+            // and the heavy NtCreateUserProcess can complete and SYSRET.
+            thread.IdealProcessor(event_.vcpu().id());
+            thread.UserIdealProcessor(event_.vcpu().id());
+        } else {
+            // Win10 and earlier: keep the original, proven hard pin.
+            thread.Affinity(desired_affinity);
+            thread.UserAffinity(desired_affinity);
+            thread.IdealProcessor(event_.vcpu().id());
+            thread.UserIdealProcessor(event_.vcpu().id());
+        }
 
         // Save the original LastStatusValue so we can restore it later
         auto* teb = thread.Teb();
@@ -89,16 +147,88 @@ class SystemCallInjector final {
         try {
             // Wait for the return event
             vcpu.syscall_injection_start();
-            return_event = event_.impl().suspend([](const introvirt::Event& event) {
-                if (event.type() == EventType::EVENT_FAST_SYSCALL_RET) {
-                    return WakeAction::ACCEPT;
-                }
-                return WakeAction::PASS;
-            });
+
+            // SECTEPE: return-RIP-aware wake matching.
+            //
+            // On Win11 a >4-argument syscall (e.g. NtCreateUserProcess) whose
+            // stack is not fully paged in triggers verify_stack_present(), which
+            // injects a NESTED NtDeleteFile syscall to fault the stack in. The
+            // nesting is SYNCHRONOUS on one worker thread: the inner NtDeleteFile
+            // injector runs entirely inside the outer call's begin_syscall() ->
+            // verify_stack_present(), i.e. the inner ctor + inner call() +
+            // inner suspend()/wake() all complete BEFORE the outer ever reaches
+            // this suspend(). Both injectors obtain the SAME Event via
+            // ThreadLocalEvent::get(), so they share one EventImplTpl
+            // (check_wakeup_/cv_) and, for the pure nested case, the per-thread
+            // suspended_events_ multimap holds exactly ONE entry at each return.
+            //
+            // The hazard the generic "any FAST_SYSCALL_RET => ACCEPT" lambda
+            // caused: that single shared waiter accepts the FIRST FAST_SYSCALL_RET
+            // seen for the thread, even a foreign/early one. The inner waiter
+            // could consume the wrong return (or, when two different worker
+            // threads inject on the same guest KTHREAD and the map genuinely
+            // holds two entries for the tid, the outer waiter could swallow the
+            // inner's return). Either way verify_stack_present() never returns
+            // and the session deadlocks / -T times out.
+            //
+            // Fix: each injection only accepts the return whose userland return
+            // RIP equals the return address captured for ITS OWN injection point.
+            // For SYSCALL the hardware leaves the return address in RCX at kernel
+            // entry (captured in begin_syscall, after inject_syscall()). For
+            // SYSENTER the saved userland rip is written to the new stack frame
+            // (captured in begin_sysenter). On the matching SYSRET/SYSEXIT the
+            // guest is back at that userland address, so event.registers().rip()
+            // equals expected_return_rip_. A return that is not for THIS injection
+            // PASSes (EventImplTpl::wake only moves the event on ACCEPT, so the
+            // event is left intact for the filter_event loop / a later waiter).
+            // This is the same proven shape as the rsp-based hook_return
+            // correlation in DomainImpl::filter_event. Correctness does NOT depend
+            // on the unordered_multimap's equal-key iteration order.
+            //
+            // Defensive fallback: if we somehow failed to capture an expected RIP
+            // (expected_return_rip_ is unset), fall back to the original generic
+            // behaviour so a single, non-nested injection still wakes.
+            const std::optional<uint64_t> expected_return_rip = expected_return_rip_;
+            // Release our pause so the injected syscall actually RUNS on the guest
+            // during the suspend wait (suspend completes the event -> the vcpu
+            // executes the call). Re-paused below once its return is in hand.
+            pause_guard_.reset();
+            return_event =
+                event_.impl().suspend([expected_return_rip](const introvirt::Event& event) {
+                    if (event.type() == EventType::EVENT_FAST_SYSCALL_RET) {
+                        if (!expected_return_rip ||
+                            event.vcpu().registers().rip() == *expected_return_rip) {
+                            return WakeAction::ACCEPT;
+                        }
+                        // A FAST_SYSCALL_RET for this thread but a different
+                        // injection point (e.g. the inner NtDeleteFile return
+                        // arriving while a different waiter is offered the event
+                        // first, or the kernel running other work in the context
+                        // of the suspended thread). Let it PASS so the loop
+                        // offers it to the matching suspended injection. Mirrors
+                        // the hook_return rsp-mismatch TRACE in DomainImpl.
+                        LOG4CXX_TRACE(syscall_injector_logger,
+                                      "Incorrect return rip: 0x"
+                                          << std::hex << event.vcpu().registers().rip()
+                                          << " Wanted 0x" << *expected_return_rip);
+                        return WakeAction::PASS;
+                    }
+                    return WakeAction::PASS;
+                });
+            // The syscall has returned (we hold its return event). Re-pause for
+            // the cleanup + RAII teardown register accesses (end_injection,
+            // TEB/affinity restores, ~RegisterGuard) so they don't race EBUSY.
+            pause_guard_.emplace(event_.vcpu());
+            refresh_registers_after_repause();
             event_.impl().injection_performed(true);
 
         } catch (...) {
             // Duplicated because c++ doesn't have 'finally'
+            // Ensure the cleanup below runs on a paused vcpu even if we threw while
+            // the pause was released (during suspend / verify_stack_present).
+            if (!pause_guard_)
+                pause_guard_.emplace(event_.vcpu());
+            refresh_registers_after_repause();
             vcpu.syscall_injection_end();
             static_cast<DomainImpl&>(event_.domain()).end_injection(event_);
 
@@ -159,6 +289,13 @@ class SystemCallInjector final {
         introvirt_assert(event.os_type() == OS::Windows, "");
 
         auto& vcpu = event_.vcpu();
+        // SECTEPE: pause this vcpu for the injector's register-access regions.
+        // For a SEQUENTIAL injection the vcpu is running again (the previous
+        // injection released its pause), so without this the very first
+        // registers() read below throws EBUSY -> the injection (e.g. the
+        // NtResumeThread that actually starts the created process) is aborted.
+        // Released only around verify_stack_present + suspend (the executions).
+        pause_guard_.emplace(event_.vcpu());
         auto& regs = vcpu.registers();
 
         // Set the VCPU to the correct call number
@@ -253,6 +390,9 @@ class SystemCallInjector final {
         // Move the stack backwards enough to hold our arguments plus the return address
         const unsigned int stack_offset = (arg_count + 2) * sizeof(uint32_t);
 
+        // Nested verify_stack_present injections must run on the guest; drop our
+        // pause around them, then re-pause + refresh the register cache.
+        pause_guard_.reset();
         switch (event_.type()) {
         case EventType::EVENT_FAST_SYSCALL:
             verify_stack_present(regs.rdx() - stack_offset - additional_stack, regs.rdx());
@@ -262,6 +402,8 @@ class SystemCallInjector final {
             verify_stack_present(regs.rsp() - stack_offset - additional_stack, regs.rsp());
             break;
         }
+        pause_guard_.emplace(event_.vcpu());
+        refresh_registers_after_repause();
 
         // Force a SYSENTER in the guest
         // This works even if we're already in an EVENT_FAST_SYSCALL.
@@ -294,6 +436,11 @@ class SystemCallInjector final {
 
         // Write the return address on our new stack
         *guest_ptr<uint32_t>(vcpu, regs.rdx()) = rip;
+
+        // SECTEPE: this is the userland address SYSEXIT/SYSRET will return to;
+        // the matching FAST_SYSCALL_RET for this injection lands here. Used to
+        // disambiguate nested injections on the same thread in call().
+        expected_return_rip_ = rip;
     }
 
     void begin_syscall(unsigned int arg_count, unsigned int additional_stack) {
@@ -313,8 +460,14 @@ class SystemCallInjector final {
         const uint64_t stack_bottom = regs.rsp() - (arg_count + 2) * sizeof(uint64_t);
 
         // Prevents a recursive loop with NtDeleteFile to page in the stack
-        if (arg_count > 4 || additional_stack > 0)
+        if (arg_count > 4 || additional_stack > 0) {
+            // The nested NtDeleteFile injections must RUN on the guest, so drop
+            // our pause around them, then re-pause and refresh the register cache.
+            pause_guard_.reset();
             verify_stack_present(stack_bottom - additional_stack, regs.rsp());
+            pause_guard_.emplace(event_.vcpu());
+            refresh_registers_after_repause();
+        }
 
         // This works even if we're already in an EVENT_FAST_SYSCALL.
         // In KVM, since the RIP changes, it won't happen twice.
@@ -322,17 +475,45 @@ class SystemCallInjector final {
         // For example, if we do this in a CR3 write event the guest will die.
         event_.vcpu().inject_syscall();
 
+        // SECTEPE: SYSCALL stashes the userland return address (the instruction
+        // after SYSCALL) in RCX, and the KVM layer reloads the registers after
+        // injecting, so RCX is valid here. SYSRET restores RIP from RCX, so the
+        // matching FAST_SYSCALL_RET for this injection returns to this address.
+        // This is captured per-injector (each nested NtDeleteFile from
+        // verify_stack_present is a distinct SystemCallInjector with its own
+        // member) so returns are routed to the correct waiter in call().
+        expected_return_rip_ = regs.rcx();
+
         regs.rsp(stack_bottom);
 
         rsp_ = regs.rsp();
     }
 
+    // Refresh the cached register state after the vcpu has been re-paused
+    // following a region where it ran (verify_stack_present / suspend). The
+    // re-pause does not reload registers unless we were in an event, so trigger
+    // a read here; `regs` references the same cache object so it sees the update.
+    void refresh_registers_after_repause() {
+        if (pause_guard_)
+            (void)event_.vcpu().registers();
+    }
+
   private:
+    // Declared BEFORE guard_ so it is destroyed AFTER ~RegisterGuard (whose dtor
+    // restores registers and must run on the still-paused vcpu).
+    std::optional<introvirt::inject::VcpuPauseGuard> pause_guard_;
     std::optional<introvirt::inject::RegisterGuard> guard_;
     WindowsEvent& event_;
     WindowsGuest& guest_;
     std::optional<x86::Segment> original_cs_;
     uint64_t rsp_;
+
+    // SECTEPE: userland return RIP for THIS injection's call site, used to
+    // route the matching FAST_SYSCALL_RET to the correct waiter when nested
+    // injections share a thread_id (see call()). Captured in
+    // begin_syscall()/begin_sysenter() right after the SYSCALL/SYSENTER is
+    // forced into the guest.
+    std::optional<uint64_t> expected_return_rip_;
 };
 
 } // namespace inject

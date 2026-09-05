@@ -126,6 +126,13 @@ def load_typemap(arg, typemap):
     if 'use_address_for_injection' in arg_type:
         arg['use_address_for_injection'] = arg_type['use_address_for_injection']
 
+    # Opt-in: marshal this complex arg into the injected syscall by pointing the
+    # register at the caller object's own guest buffer (handler.<name>Ptr(obj.ptr())).
+    # Only set on pointer-wrapper impls that expose ptr() (RTL_USER_PROCESS_PARAMETERS,
+    # PS_CREATE_INFO) so NtCreateUserProcess injection passes them instead of NULL.
+    if 'inject_via_ptr' in arg_type:
+        arg['inject_via_ptr'] = arg_type['inject_via_ptr']
+
     if 'helper' in arg_type:
         if 'helper' not in arg:
             arg['helper'] = dict(arg_type['helper'])

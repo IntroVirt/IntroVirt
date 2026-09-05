@@ -222,6 +222,17 @@ class EventImplTpl : public _BaseClass, public EventImpl {
     WakeAction wake(std::unique_ptr<Event>&& event) override {
         introvirt_assert(check_wakeup_ != nullptr, "");
 
+        // SECTEPE: guard an unarmed wake. `introvirt_assert` is a no-op in
+        // release builds, so when wake() runs with no `check_wakeup_` armed —
+        // a second event for the same thread arrives before the suspended
+        // entry event re-arms, or a duplicate/spurious wake — invoking the
+        // empty std::function below threw std::bad_function_call and aborted
+        // the whole session mid-trace. The Linux entry→return syscall
+        // correlation (every syscall sets will_return()) hits this on a busy
+        // guest. Treat "not armed" as PASS: let the event flow normally.
+        if (!check_wakeup_)
+            return WakeAction::PASS;
+
         WakeAction result = check_wakeup_(*event);
         if (result == WakeAction::ACCEPT) {
             std::unique_lock lock(mtx_);
