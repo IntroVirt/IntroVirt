@@ -93,6 +93,7 @@ int main(int argc, char** argv) {
     desc.add_options()
       ("domain,D", po::value<std::string>(&domain_name)->required(), "The domain name or ID attach to")
       ("drivers", "List kernel drivers")
+      ("detect-only,q", "Only detect the guest OS, print a stable 'Detected <OS>' marker, and exit fast — skips the kernel syscall-table + loaded-driver enumeration that can hang for minutes on a just-booted, introspection-racy guest")
       ("help", "Display program help");
     // clang-format on
 
@@ -124,7 +125,28 @@ int main(int argc, char** argv) {
 
     // Parse Windows information
     auto* guest = domain->guest();
+
+    // Lightweight OS-detect mode (used by the sandbox runner's readiness gate).
+    // detect_guest() above already established the OS from the kernel base +
+    // build number; emit a stable, greppable marker and exit WITHOUT the heavy
+    // print_guest_information() path. That path walks guest.syscalls() (the SSDT)
+    // and PsLoadedModuleList (every loaded driver), kernel-structure reads that
+    // can hang for minutes on a freshly-booted, introspection-racy Win11 guest —
+    // which is exactly why the gate (grepping stdout) previously always timed out
+    // at 180s. Print + flush so the marker is delivered even if teardown stalls.
+    if (vm.count("detect-only")) {
+        if (guest->os() == OS::Windows)
+            std::cout << "Detected Windows\n" << std::flush;
+        else if (guest->os() == OS::Linux)
+            std::cout << "Detected Linux\n" << std::flush;
+        else
+            std::cout << "Detected unknown guest OS\n" << std::flush;
+        domain->resume();
+        return 0;
+    }
+
     if (guest->os() == OS::Windows) {
+        std::cout << "Detected Windows\n";
         print_guest_information(static_cast<WindowsGuest&>(*guest), vm);
     } else if (guest->os() == OS::Linux) {
         const auto& kernel = static_cast<linux_guest::LinuxGuest*>(guest)->kernel();
