@@ -23,6 +23,23 @@
 namespace introvirt {
 
 /**
+ * @brief Kernel-side syscall filter counters (KVM)
+ *
+ * Populated by Domain::syscall_filter_stats(). All zeros / false if unsupported.
+ */
+struct SyscallFilterStats {
+    uint64_t syscalls_seen = 0;
+    uint64_t syscalls_filtered = 0;
+    uint64_t syscalls_delivered = 0;
+    uint64_t sysrets_skipped = 0;
+    uint64_t sysrets_delivered = 0;
+    bool kernel_filter_enabled = false;
+    bool page_mapped = false;
+    uint64_t event_block_ns = 0;
+    uint64_t sysret_pending_overflow = 0;
+};
+
+/**
  * @brief Base class for system call filtering
  *
  * This class may be used on its own, but checks will be performed in libintrovirt rather than the
@@ -140,6 +157,14 @@ class SystemCallFilter {
      * @brief Clear the filter
      */
     void clear();
+
+    /**
+     * @brief True if this filter's bitmap page is mapped into the hypervisor
+     *
+     * The base class always returns false. KVM maps the page so filtering can run without a
+     * userspace context switch.
+     */
+    virtual bool hypervisor_mapped() const;
 
     /**
      * @brief Construct a new System Call Filter object

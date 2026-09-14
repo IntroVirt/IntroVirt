@@ -34,11 +34,14 @@ class KvmSystemCallFilter final : public SystemCallFilter {
     explicit KvmSystemCallFilter(int fd);
     ~KvmSystemCallFilter() override;
 
+    bool hypervisor_mapped() const override { return mapped_; }
+
     KvmSystemCallFilter(const KvmSystemCallFilter&) = delete;
     KvmSystemCallFilter& operator=(const KvmSystemCallFilter&) = delete;
 
   private:
     int fd_;
+    bool mapped_ = false;
 };
 
 } // namespace kvm

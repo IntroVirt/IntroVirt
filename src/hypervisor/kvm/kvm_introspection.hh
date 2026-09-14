@@ -72,6 +72,18 @@ struct kvm_syscall_filter {
     __u8 bits64[KVM_SYSCALL_FILTER_BITMAP_BYTES];
 };
 
+struct kvm_syscall_filter_stats {
+    __u64 syscalls_seen;
+    __u64 syscalls_filtered;
+    __u64 syscalls_delivered;
+    __u64 sysrets_skipped;
+    __u64 sysrets_delivered;
+    __u32 kernel_filter_enabled;
+    __u32 page_mapped;
+    __u64 event_block_ns;
+    __u64 sysret_pending_overflow;
+};
+
 struct kvm_introspection_event {
     __u64 event_id; // Increments with each event
     int event_type; // KVM_EVENT_TYPE_
@@ -158,6 +170,8 @@ struct kvm_introspection_event {
 #define KVM_SET_SYSCALL_FILTER _IOW(KVMIO, 0xd3, unsigned long)
 #define KVM_SET_MEM_ACCESS_ENABLED _IOW(KVMIO, 0xd4, unsigned long)
 #define KVM_SET_MEM_ACCESS _IOW(KVMIO, 0xd5, struct kvm_ept_permissions)
+#define KVM_GET_SYSCALL_FILTER_STATS _IOR(KVMIO, 0xe0, struct kvm_syscall_filter_stats)
+#define KVM_RESET_SYSCALL_FILTER_STATS _IO(KVMIO, 0xe1)
 
 // VCPU level
 #define KVM_SET_CR_MONITOR _IOW(KVMIO, 0xd6, struct kvm_cr_monitor)

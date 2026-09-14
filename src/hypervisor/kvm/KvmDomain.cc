@@ -26,6 +26,7 @@
 
 #include <log4cxx/logger.h>
 
+#include <cerrno>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -180,6 +181,38 @@ KvmDomain::~KvmDomain() {
 
     // Close the handle to the domain
     close(fd_);
+}
+
+SyscallFilterStats KvmDomain::syscall_filter_stats() const {
+    struct kvm_syscall_filter_stats raw = {};
+    if (ioctl(fd_, KVM_GET_SYSCALL_FILTER_STATS, &raw) < 0) {
+        /*
+         * Older modules encoded sizeof(stats)==48 in _IOR. Growing the struct
+         * changes the ioctl number and returns ENOTTY; retry the original size.
+         */
+        const unsigned long compat = _IOC(_IOC_READ, KVMIO, 0xe0, 48);
+        if ((errno != ENOTTY && errno != EINVAL) || ioctl(fd_, compat, &raw) < 0) {
+            throw CommandFailedException("KVM_GET_SYSCALL_FILTER_STATS failed", errno);
+        }
+    }
+
+    SyscallFilterStats stats;
+    stats.syscalls_seen = raw.syscalls_seen;
+    stats.syscalls_filtered = raw.syscalls_filtered;
+    stats.syscalls_delivered = raw.syscalls_delivered;
+    stats.sysrets_skipped = raw.sysrets_skipped;
+    stats.sysrets_delivered = raw.sysrets_delivered;
+    stats.kernel_filter_enabled = raw.kernel_filter_enabled != 0;
+    stats.page_mapped = raw.page_mapped != 0;
+    stats.event_block_ns = raw.event_block_ns;
+    stats.sysret_pending_overflow = raw.sysret_pending_overflow;
+    return stats;
+}
+
+void KvmDomain::reset_syscall_filter_stats() {
+    if (ioctl(fd_, KVM_RESET_SYSCALL_FILTER_STATS, 0ul) < 0) {
+        throw CommandFailedException("KVM_RESET_SYSCALL_FILTER_STATS failed", errno);
+    }
 }
 
 } // namespace kvm

@@ -156,6 +156,8 @@ bool SystemCallFilter::deliver_returns() const { return pImpl_->page_->deliver_r
 
 void* SystemCallFilter::page() const { return pImpl_->page_; }
 
+bool SystemCallFilter::hypervisor_mapped() const { return false; }
+
 SystemCallFilter::~SystemCallFilter() = default;
 
 } // namespace introvirt
