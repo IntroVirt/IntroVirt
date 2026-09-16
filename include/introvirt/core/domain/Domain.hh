@@ -24,7 +24,6 @@
 #include <introvirt/core/fwd.hh>
 #include <introvirt/core/memory/GuestMemoryMapping.hh>
 #include <introvirt/core/memory/guest_ptr.hh>
-#include <introvirt/core/syscall/SystemCallFilter.hh>
 #include <introvirt/util/compiler.hh>
 
 #include <cstdint>
@@ -194,22 +193,6 @@ class Domain {
      * @copydoc Domain::system_call_filter()
      */
     virtual const SystemCallFilter& system_call_filter() const = 0;
-
-    /**
-     * @brief Read hypervisor syscall-filter counters for this domain
-     *
-     * @throws NotImplementedException if the hypervisor does not support kernel-side stats
-     * @throws CommandFailedException if the hypervisor reports an error
-     */
-    virtual SyscallFilterStats syscall_filter_stats() const = 0;
-
-    /**
-     * @brief Zero hypervisor syscall-filter counters for this domain
-     *
-     * @throws NotImplementedException if the hypervisor does not support kernel-side stats
-     * @throws CommandFailedException if the hypervisor reports an error
-     */
-    virtual void reset_syscall_filter_stats() = 0;
 
     /**
      * @brief Gets the hypervisor that the Domain is running on

@@ -87,9 +87,6 @@ class DomainImpl : public Domain {
     SystemCallFilter& system_call_filter() override;
     const SystemCallFilter& system_call_filter() const override;
 
-    SyscallFilterStats syscall_filter_stats() const override;
-    void reset_syscall_filter_stats() override;
-
     bool detect_guest() override;
 
     Guest* guest() override;

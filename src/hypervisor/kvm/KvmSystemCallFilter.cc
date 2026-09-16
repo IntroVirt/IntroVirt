@@ -34,10 +34,6 @@ KvmSystemCallFilter::KvmSystemCallFilter(int fd) : fd_(fd) {
                                  << strerror(errno)
                                  << " - syscall filtering will be performed in userspace");
         fd_ = -1;
-        mapped_ = false;
-    } else {
-        mapped_ = true;
-        LOG4CXX_INFO(logger, "Kernel syscall filter page mapped on fd " << fd_);
     }
 }
 

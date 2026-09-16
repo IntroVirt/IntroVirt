@@ -730,14 +730,6 @@ TaskFilter& DomainImpl::task_filter() { return task_filter_; }
 SystemCallFilter& DomainImpl::system_call_filter() { return *system_call_filter_; }
 const SystemCallFilter& DomainImpl::system_call_filter() const { return *system_call_filter_; }
 
-SyscallFilterStats DomainImpl::syscall_filter_stats() const {
-    throw NotImplementedException("syscall_filter_stats is not supported by this hypervisor");
-}
-
-void DomainImpl::reset_syscall_filter_stats() {
-    throw NotImplementedException("reset_syscall_filter_stats is not supported by this hypervisor");
-}
-
 void DomainImpl::pause_all_other_vcpus(const Vcpu& v) {
     for (uint32_t i = 0; i < vcpu_count(); ++i) {
         if (i != v.id())
