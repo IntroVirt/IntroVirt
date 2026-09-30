@@ -42,10 +42,10 @@
 #include <chrono>
 #include <csignal>
 #include <cstring>
-#include <string>
 #include <functional>
 #include <memory>
 #include <pthread.h>
+#include <string>
 #include <sys/eventfd.h>
 #include <thread>
 #include <tuple>

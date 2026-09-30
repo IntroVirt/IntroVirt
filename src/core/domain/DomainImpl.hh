@@ -87,8 +87,8 @@ class DomainImpl : public Domain {
     SystemCallFilter& system_call_filter() override;
     const SystemCallFilter& system_call_filter() const override;
 
-    bool detect_guest(
-        std::chrono::milliseconds timeout = std::chrono::milliseconds::max()) override;
+    bool
+    detect_guest(std::chrono::milliseconds timeout = std::chrono::milliseconds::max()) override;
 
     Guest* guest() override;
     const Guest* guest() const override;
