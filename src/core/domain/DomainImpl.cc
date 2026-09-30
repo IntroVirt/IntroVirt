@@ -39,8 +39,10 @@
 
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <csignal>
 #include <cstring>
+#include <string>
 #include <functional>
 #include <memory>
 #include <pthread.h>
@@ -301,64 +303,81 @@ bool DomainImpl::detect_guest() {
 
     std::unique_lock<std::shared_mutex> lock(event_filter_mtx_);
 
-    LOG4CXX_DEBUG(logger, "Attempting OS detection...");
+    LOG4CXX_INFO(logger, "Waiting to identify the guest. Retrying until the kernel is mapped "
+                         "in. Press Ctrl+C to cancel.");
 
     pause();
 
-    // Save the previous state
+    // Save the previous state. Watch CR3 writes on every vCPU so a system
+    // thread on any CPU can provide a page table that maps the kernel.
     std::vector<bool> vcpu_syscall_intercept;
     std::vector<bool> vcpu_cr3_intercept;
     for (uint32_t i = 0; i < vcpu_count(); ++i) {
         vcpu_syscall_intercept.push_back(vcpu(i).intercept_system_calls());
         vcpu_cr3_intercept.push_back(vcpu(i).intercept_cr_writes(3));
         vcpu(i).intercept_system_calls(false);
-        vcpu(i).intercept_cr_writes(3, false);
+        vcpu(i).intercept_cr_writes(3, true);
     }
-    vcpu(0).intercept_cr_writes(3, true);
 
     resume();
 
     bool result = false;
+    std::string last_reason;
+    auto last_log = std::chrono::steady_clock::time_point{};
+    auto log_failure = [&](const std::string& reason) {
+        const auto now = std::chrono::steady_clock::now();
+        if (reason != last_reason || now - last_log >= std::chrono::seconds(1)) {
+            LOG4CXX_INFO(logger, reason);
+            last_reason = reason;
+            last_log = now;
+        }
+    };
 
     try {
-        for (int tries = 15; tries > 0; --tries) {
-            // Poll for an event
-            if (::poll(pollfds_.data(), pollfds_.size(), 5000) > 0) {
+        for (;;) {
+            const int ready = ::poll(pollfds_.data(), pollfds_.size(), 5000);
+            if (ready < 0) {
+                if (errno == EINTR)
+                    continue;
+                LOG4CXX_ERROR(logger, "Failed to poll for guest detection: " << strerror(errno));
+                break;
+            }
+            if (ready == 0) {
+                log_failure("Still waiting for a CR3 change to identify the guest");
+                continue;
+            }
 
-                // Check if we're interrupted
-                if (pollfds_[pollfds_.size() - 1].revents & POLLIN) {
-                    // Interrupted!
-                    return false;
-                }
+            // Check if we're interrupted
+            if (pollfds_[pollfds_.size() - 1].revents & POLLIN)
+                goto done;
 
-                // An event is ready.
-                // Determine which vcpu is ready
-                for (uint32_t i = 0; i < pollfds_.size(); ++i) {
-                    struct pollfd& fd_entry = pollfds_[i];
-                    if (fd_entry.revents & POLLIN) {
-                        // This vcpu has an active event
-                        auto& v = static_cast<VcpuImpl&>(vcpu(i));
-                        auto event = reinterpret_cast<VcpuImpl&>(v).event();
-                        if (!event)
-                            continue;
+            // An event is ready.
+            // Determine which vcpu is ready
+            for (uint32_t i = 0; i < vcpu_count(); ++i) {
+                struct pollfd& fd_entry = pollfds_[i];
+                if (fd_entry.revents & POLLIN) {
+                    // This vcpu has an active event
+                    auto& v = static_cast<VcpuImpl&>(vcpu(i));
+                    auto event = reinterpret_cast<VcpuImpl&>(v).event();
+                    if (!event)
+                        continue;
 
-                        const bool is64bit = v.registers().efer().lme();
-                        page_directory_.reconfigure(v);
+                    const bool is64bit = v.registers().efer().lme();
+                    page_directory_.reconfigure(v);
 
-                        // Try a Windows guest
-                        try {
-                            using namespace windows;
+                    // Try a Windows guest
+                    try {
+                        using namespace windows;
 
-                            if (is64bit)
-                                guest_ = std::make_unique<WindowsGuestImpl<uint64_t>>(*this);
-                            else
-                                guest_ = std::make_unique<WindowsGuestImpl<uint32_t>>(*this);
+                        if (is64bit)
+                            guest_ = std::make_unique<WindowsGuestImpl<uint64_t>>(*this);
+                        else
+                            guest_ = std::make_unique<WindowsGuestImpl<uint32_t>>(*this);
 
-                            result = true;
-                            goto done;
-                        } catch (GuestDetectionException& ex) {
-                            LOG4CXX_DEBUG(logger, "Failed to detect WindowsGuest: " << ex);
-                        }
+                        result = true;
+                        goto done;
+                    } catch (GuestDetectionException& ex) {
+                        log_failure(std::string("Failed to detect WindowsGuest: ") + ex.what());
                     }
                 }
             }
