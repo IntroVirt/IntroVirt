@@ -12,8 +12,10 @@ TOOLS=(
     ivservicetable
     ivsessions
     ivsyscallmon
+    ivsymdl
     ivversion
     ivwritefile
+    ivfilemon
 )
 
 if [ "$1" = "configure" ]; then

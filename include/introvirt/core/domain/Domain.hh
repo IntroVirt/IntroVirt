@@ -26,6 +26,7 @@
 #include <introvirt/core/memory/guest_ptr.hh>
 #include <introvirt/util/compiler.hh>
 
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -82,12 +83,21 @@ class Domain {
     /**
      * @brief Attempt guest OS detection
      *
-     * Waits for an incoming event and attempts to detect the guest
+     * Retries until the guest kernel is mapped in. Returns false if this call
+     * is cancelled or the timeout elapses. guest() stays null and vCPU
+     * intercepts are restored.
      *
+     * Another thread may cancel the wait by calling interrupt(). The default
+     * timeout waits until detection succeeds or interrupt() is called. A
+     * timeout of 0 checks events that are already pending and returns.
+     *
+     * @param timeout How long to wait. std::chrono::milliseconds::max() waits
+     * until success or interrupt().
      * @return true if the guest OS was detected
      * @return false if the guest OS was not detected
      */
-    virtual bool detect_guest() = 0;
+    virtual bool
+    detect_guest(std::chrono::milliseconds timeout = std::chrono::milliseconds::max()) = 0;
 
     /**
      * @brief Get the guest detected by detect_guest()
@@ -157,7 +167,10 @@ class Domain {
     virtual void poll(EventCallback& callback) = 0;
 
     /**
-     * @brief Interrupt a poll() call
+     * @brief Interrupt a poll() or detect_guest() call
+     *
+     * Safe to call from another thread. A cancelled detect_guest() returns
+     * false. The next poll() clears the interrupted state.
      */
     virtual void interrupt() = 0;
 

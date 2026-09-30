@@ -139,6 +139,14 @@ class VcpuImpl : public Vcpu {
      */
     VcpuImpl(const VcpuImpl&);
 
+    /**
+     * @brief Replace the system call filter (used by hypervisor subclasses)
+     *
+     * Clones continue to point at the original filter; only call this on the
+     * real VCPU, not a clone.
+     */
+    void replace_system_call_filter(std::unique_ptr<SystemCallFilter> filter);
+
   private:
     class IMPL;
     std::unique_ptr<IMPL> pImpl_;

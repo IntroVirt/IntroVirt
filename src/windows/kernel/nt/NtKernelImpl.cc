@@ -460,7 +460,10 @@ NtKernelImpl<PtrType>::NtKernelImpl(WindowsGuest& guest) : guest_(guest) {
     try {
         NtBuildNumber_ = *guest_ptr<uint16_t>(symbol("NtBuildNumber"));
         if (NtBuildLab().MajorBuildNumber() != NtBuildNumber()) {
-            LOG4CXX_WARN(logger, "NtBuildLab disagrees with NtBuildNumber");
+            LOG4CXX_DEBUG(logger, "NtBuildLab disagrees with NtBuildNumber: lab \""
+                                      << NtBuildLab().string() << "\" ("
+                                      << NtBuildLab().MajorBuildNumber() << ") NtBuildNumber "
+                                      << NtBuildNumber());
         }
     } catch (SymbolNotFoundException& ex) {
         LOG4CXX_WARN(logger, "Failed to read NtBuildNumber");

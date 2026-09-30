@@ -39,10 +39,13 @@
 
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <csignal>
 #include <cstring>
 #include <functional>
+#include <memory>
 #include <pthread.h>
+#include <string>
 #include <sys/eventfd.h>
 #include <thread>
 #include <tuple>
@@ -292,7 +295,7 @@ void DomainImpl::resume() {
     }
 }
 
-bool DomainImpl::detect_guest() {
+bool DomainImpl::detect_guest(std::chrono::milliseconds timeout) {
     uint64_t efd_init = 0;
     if (unlikely(::write(efd_, &efd_init, sizeof(efd_init)) < 0)) {
         LOG4CXX_ERROR(logger, "Failed to clear eventfd");
@@ -300,64 +303,109 @@ bool DomainImpl::detect_guest() {
 
     std::unique_lock<std::shared_mutex> lock(event_filter_mtx_);
 
-    LOG4CXX_DEBUG(logger, "Attempting OS detection...");
+    LOG4CXX_INFO(logger, "Waiting to identify the guest. Retrying until the kernel is mapped "
+                         "in, this call is interrupted, or the timeout elapses.");
+
+    const bool unbounded = timeout == std::chrono::milliseconds::max();
+    const auto started = std::chrono::steady_clock::now();
+    auto timed_out = [&]() {
+        if (unbounded)
+            return false;
+        return std::chrono::steady_clock::now() - started >= timeout;
+    };
+    auto poll_wait_ms = [&]() {
+        if (unbounded)
+            return 5000;
+        const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - started);
+        if (elapsed >= timeout)
+            return 0;
+        const auto remaining = (timeout - elapsed).count();
+        if (remaining > 5000)
+            return 5000;
+        return static_cast<int>(remaining);
+    };
 
     pause();
 
-    // Save the previous state
+    // Save the previous state. Watch CR3 writes on every vCPU so a system
+    // thread on any CPU can provide a page table that maps the kernel.
     std::vector<bool> vcpu_syscall_intercept;
     std::vector<bool> vcpu_cr3_intercept;
     for (uint32_t i = 0; i < vcpu_count(); ++i) {
         vcpu_syscall_intercept.push_back(vcpu(i).intercept_system_calls());
         vcpu_cr3_intercept.push_back(vcpu(i).intercept_cr_writes(3));
         vcpu(i).intercept_system_calls(false);
-        vcpu(i).intercept_cr_writes(3, false);
+        vcpu(i).intercept_cr_writes(3, true);
     }
-    vcpu(0).intercept_cr_writes(3, true);
 
     resume();
 
     bool result = false;
+    std::string last_reason;
+    auto last_log = std::chrono::steady_clock::time_point{};
+    auto log_failure = [&](const std::string& reason) {
+        const auto now = std::chrono::steady_clock::now();
+        if (reason != last_reason || now - last_log >= std::chrono::seconds(1)) {
+            LOG4CXX_INFO(logger, reason);
+            last_reason = reason;
+            last_log = now;
+        }
+    };
 
     try {
-        for (int tries = 15; tries > 0; --tries) {
-            // Poll for an event
-            if (::poll(pollfds_.data(), pollfds_.size(), 5000) > 0) {
+        bool polled = false;
+        for (;;) {
+            // A timeout of 0 still checks events that are already pending.
+            if (polled && timed_out())
+                goto done;
 
-                // Check if we're interrupted
-                if (pollfds_[pollfds_.size() - 1].revents & POLLIN) {
-                    // Interrupted!
-                    return false;
-                }
+            const int ready = ::poll(pollfds_.data(), pollfds_.size(), poll_wait_ms());
+            polled = true;
+            if (ready < 0) {
+                if (errno == EINTR)
+                    continue;
+                LOG4CXX_ERROR(logger, "Failed to poll for guest detection: " << strerror(errno));
+                break;
+            }
+            if (ready == 0) {
+                if (timed_out())
+                    goto done;
+                log_failure("Still waiting for a CR3 change to identify the guest");
+                continue;
+            }
 
-                // An event is ready.
-                // Determine which vcpu is ready
-                for (uint32_t i = 0; i < pollfds_.size(); ++i) {
-                    struct pollfd& fd_entry = pollfds_[i];
-                    if (fd_entry.revents & POLLIN) {
-                        // This vcpu has an active event
-                        auto& v = static_cast<VcpuImpl&>(vcpu(i));
-                        auto event = reinterpret_cast<VcpuImpl&>(v).event();
-                        if (!event)
-                            continue;
+            // Check if we're interrupted
+            if (pollfds_[pollfds_.size() - 1].revents & POLLIN)
+                goto done;
 
-                        const bool is64bit = v.registers().efer().lme();
-                        page_directory_.reconfigure(v);
+            // An event is ready.
+            // Determine which vcpu is ready
+            for (uint32_t i = 0; i < vcpu_count(); ++i) {
+                struct pollfd& fd_entry = pollfds_[i];
+                if (fd_entry.revents & POLLIN) {
+                    // This vcpu has an active event
+                    auto& v = static_cast<VcpuImpl&>(vcpu(i));
+                    auto event = reinterpret_cast<VcpuImpl&>(v).event();
+                    if (!event)
+                        continue;
 
-                        // Try a Windows guest
-                        try {
-                            using namespace windows;
+                    const bool is64bit = v.registers().efer().lme();
+                    page_directory_.reconfigure(v);
 
-                            if (is64bit)
-                                guest_ = std::make_unique<WindowsGuestImpl<uint64_t>>(*this);
-                            else
-                                guest_ = std::make_unique<WindowsGuestImpl<uint32_t>>(*this);
+                    // Try a Windows guest
+                    try {
+                        using namespace windows;
 
-                            result = true;
-                            goto done;
-                        } catch (GuestDetectionException& ex) {
-                            LOG4CXX_DEBUG(logger, "Failed to detect WindowsGuest: " << ex);
-                        }
+                        if (is64bit)
+                            guest_ = std::make_unique<WindowsGuestImpl<uint64_t>>(*this);
+                        else
+                            guest_ = std::make_unique<WindowsGuestImpl<uint32_t>>(*this);
+
+                        result = true;
+                        goto done;
+                    } catch (GuestDetectionException& ex) {
+                        log_failure(std::string("Failed to detect WindowsGuest: ") + ex.what());
                     }
                 }
             }
@@ -726,8 +774,8 @@ void DomainImpl::initialize() {
 
 TaskFilter& DomainImpl::task_filter() { return task_filter_; }
 
-SystemCallFilter& DomainImpl::system_call_filter() { return system_call_filter_; }
-const SystemCallFilter& DomainImpl::system_call_filter() const { return system_call_filter_; }
+SystemCallFilter& DomainImpl::system_call_filter() { return *system_call_filter_; }
+const SystemCallFilter& DomainImpl::system_call_filter() const { return *system_call_filter_; }
 
 void DomainImpl::pause_all_other_vcpus(const Vcpu& v) {
     for (uint32_t i = 0; i < vcpu_count(); ++i) {
@@ -856,8 +904,8 @@ void DomainImpl::suspend_event_step(Event& event) {
 const x86::PageDirectory& DomainImpl::page_directory() const { return page_directory_; }
 
 DomainImpl::DomainImpl()
-    : watchpoint_manager_(), breakpoint_manager_(), page_directory_(*this),
-      efd_(eventfd(0, EFD_SEMAPHORE)) {}
+    : system_call_filter_(std::make_unique<SystemCallFilter>()), watchpoint_manager_(),
+      breakpoint_manager_(), page_directory_(*this), efd_(eventfd(0, EFD_SEMAPHORE)) {}
 
 DomainImpl::~DomainImpl() { close(efd_); }
 
