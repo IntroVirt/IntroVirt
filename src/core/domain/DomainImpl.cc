@@ -295,7 +295,7 @@ void DomainImpl::resume() {
     }
 }
 
-bool DomainImpl::detect_guest() {
+bool DomainImpl::detect_guest(std::chrono::milliseconds timeout) {
     uint64_t efd_init = 0;
     if (unlikely(::write(efd_, &efd_init, sizeof(efd_init)) < 0)) {
         LOG4CXX_ERROR(logger, "Failed to clear eventfd");
@@ -304,7 +304,27 @@ bool DomainImpl::detect_guest() {
     std::unique_lock<std::shared_mutex> lock(event_filter_mtx_);
 
     LOG4CXX_INFO(logger, "Waiting to identify the guest. Retrying until the kernel is mapped "
-                         "in. Press Ctrl+C to cancel.");
+                         "in, this call is interrupted, or the timeout elapses.");
+
+    const bool unbounded = timeout == std::chrono::milliseconds::max();
+    const auto started = std::chrono::steady_clock::now();
+    auto timed_out = [&]() {
+        if (unbounded)
+            return false;
+        return std::chrono::steady_clock::now() - started >= timeout;
+    };
+    auto poll_wait_ms = [&]() {
+        if (unbounded)
+            return 5000;
+        const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - started);
+        if (elapsed >= timeout)
+            return 0;
+        const auto remaining = (timeout - elapsed).count();
+        if (remaining > 5000)
+            return 5000;
+        return static_cast<int>(remaining);
+    };
 
     pause();
 
@@ -334,8 +354,14 @@ bool DomainImpl::detect_guest() {
     };
 
     try {
+        bool polled = false;
         for (;;) {
-            const int ready = ::poll(pollfds_.data(), pollfds_.size(), 5000);
+            // A timeout of 0 still checks events that are already pending.
+            if (polled && timed_out())
+                goto done;
+
+            const int ready = ::poll(pollfds_.data(), pollfds_.size(), poll_wait_ms());
+            polled = true;
             if (ready < 0) {
                 if (errno == EINTR)
                     continue;
@@ -343,6 +369,8 @@ bool DomainImpl::detect_guest() {
                 break;
             }
             if (ready == 0) {
+                if (timed_out())
+                    goto done;
                 log_failure("Still waiting for a CR3 change to identify the guest");
                 continue;
             }
