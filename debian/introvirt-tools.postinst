@@ -12,6 +12,7 @@ TOOLS=(
     ivservicetable
     ivsessions
     ivsyscallmon
+    ivsymdl
     ivversion
     ivwritefile
     ivfilemon

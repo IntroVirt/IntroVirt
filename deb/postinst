@@ -26,6 +26,7 @@ declare -a arr=(
     "/usr/bin/ivsyscallmon"
     "/usr/bin/ivversion"
     "/usr/bin/ivwritefile"
+    "/usr/bin/ivsymdl"
 )
 for i in "${arr[@]}"
 do
