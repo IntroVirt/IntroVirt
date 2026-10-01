@@ -80,6 +80,7 @@ FILE(GLOB_RECURSE HEADERS ${PROJECT_SOURCE_DIR}/include/*.hh)
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(examples)
+enable_testing()
 ADD_SUBDIRECTORY(tests)
 ADD_SUBDIRECTORY(tools)
 ADD_DEPENDENCIES(introvirt gitversion)
