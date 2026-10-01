@@ -24,18 +24,9 @@ namespace inject {
 /**
  * @brief RAII pause of a SINGLE vcpu (KVM_VCPU_PAUSE refcount).
  *
- * SECTEPE (Win11 injection). A syscall injection reads/writes the injected
- * vcpu's registers at its ctor, begin_syscall, and cleanup. Between sequential
- * injections (and after a nested verify_stack_present / suspend) the vcpu is
- * RUNNING again, so those reads hit KvmVcpu::registers()'s "vcpu running" gate
- * and throw EBUSY. The injector holds this guard during register-access regions
- * and RELEASES it only around the parts that must EXECUTE on the guest (the
- * nested verify_stack_present injections and the syscall's own run via
- * suspend()), so the register accesses are always on a paused vcpu while the
- * guest still runs the syscalls.
- *
- * Pauses ONLY the given vcpu, never peers (pausing peers deadlocks the heavy
- * create). Degrades to inert if it can't pause, and never throws from its dtor.
+ * Register access throws EBUSY if this vcpu is running, so hold the pause
+ * except around guest execution. Pause only this vcpu, and never throw from
+ * the destructor.
  */
 class VcpuPauseGuard final {
   public:

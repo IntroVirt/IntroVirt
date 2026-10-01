@@ -28,13 +28,8 @@ RegisterGuard::~RegisterGuard() {
     if (!original_)
         return;
 
-    // SECTEPE: this restore reads+writes the vcpu registers. During a syscall
-    // injection's stack-unwind the vcpu may be running again, so registers()
-    // would throw EBUSY ("vcpu running") — and a throw from a destructor while
-    // ALREADY unwinding calls std::terminate (the dominant residual Win11 abort,
-    // backtrace: ~RegisterGuard -> registers().cold -> _Unwind_Resume). Pause the
-    // vcpu (refcounted; a no-op net if a guard already holds it) so the restore
-    // is always on a readable vcpu, and never propagate out of this destructor.
+    // Restoring registers throws EBUSY if the vcpu is running, and a throw from
+    // this destructor during unwind calls std::terminate.
     bool paused_here = false;
     try {
         vcpu_.pause();
