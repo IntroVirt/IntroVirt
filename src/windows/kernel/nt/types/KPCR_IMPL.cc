@@ -111,9 +111,9 @@ void KPCR_IMPL<PtrType>::reset() {
         dtb = vcpu_.registers().cr3();
 
     /*
-     * Building the current THREAD here can fail when this VCPU is observed mid-context-switch, or is
-     * in user mode under KPTI with no KernelDirectoryTableBase available (so dtb falls back to the
-     * user CR3 above). In those cases current_thread_address() resolves through the wrong page
+     * Building the current THREAD here can fail when this VCPU is observed mid-context-switch, or
+     * is in user mode under KPTI with no KernelDirectoryTableBase available (so dtb falls back to
+     * the user CR3 above). In those cases current_thread_address() resolves through the wrong page
      * tables and yields a garbage/non-canonical pointer, and the subsequent THREAD/OBJECT_HEADER
      * read throws (e.g. IncorrectTypeException "Type index out of range", or
      * VirtualAddressNotPresentException for a non-canonical VA).

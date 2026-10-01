@@ -38,25 +38,25 @@ RegisterGuard::~RegisterGuard() {
         // could not pause (degraded) — best-effort restore below, still no throw
     }
     try {
-    auto& regs = vcpu_.registers();
-    regs.rsi(original_->registers().rsi());
-    regs.rdi(original_->registers().rdi());
-    regs.rsp(original_->registers().rsp());
-    regs.rbp(original_->registers().rbp());
-    regs.rip(original_->registers().rip());
-    regs.rax(original_->registers().rax());
-    regs.rbx(original_->registers().rbx());
-    regs.rcx(original_->registers().rcx());
-    regs.rdx(original_->registers().rdx());
-    regs.r8(original_->registers().r8());
-    regs.r9(original_->registers().r9());
-    regs.r10(original_->registers().r10());
-    regs.r11(original_->registers().r11());
-    regs.r12(original_->registers().r12());
-    regs.r13(original_->registers().r13());
-    regs.r14(original_->registers().r14());
-    regs.r15(original_->registers().r15());
-    regs.rflags(original_->registers().rflags());
+        auto& regs = vcpu_.registers();
+        regs.rsi(original_->registers().rsi());
+        regs.rdi(original_->registers().rdi());
+        regs.rsp(original_->registers().rsp());
+        regs.rbp(original_->registers().rbp());
+        regs.rip(original_->registers().rip());
+        regs.rax(original_->registers().rax());
+        regs.rbx(original_->registers().rbx());
+        regs.rcx(original_->registers().rcx());
+        regs.rdx(original_->registers().rdx());
+        regs.r8(original_->registers().r8());
+        regs.r9(original_->registers().r9());
+        regs.r10(original_->registers().r10());
+        regs.r11(original_->registers().r11());
+        regs.r12(original_->registers().r12());
+        regs.r13(original_->registers().r13());
+        regs.r14(original_->registers().r14());
+        regs.r15(original_->registers().r15());
+        regs.rflags(original_->registers().rflags());
     } catch (...) {
         // best-effort restore; never propagate out of a destructor.
     }

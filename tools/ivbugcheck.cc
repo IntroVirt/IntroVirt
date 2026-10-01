@@ -122,13 +122,13 @@ int main(int argc, char** argv) {
             std::cout << "\n(no bugcheck recorded; guest has not crashed)\n";
         } else if (code == 0x0A) {
             std::cout << "\nIRQL_NOT_LESS_OR_EQUAL (0x0A):\n";
-            std::cout << "  Referenced address = " << p1 << "  -> "
-                      << resolve_module(guest, p1) << "\n";
+            std::cout << "  Referenced address = " << p1 << "  -> " << resolve_module(guest, p1)
+                      << "\n";
             std::cout << "  IRQL               = " << p2 << "\n";
-            std::cout << "  Access             = " << (p3 ? "write" : "read") << " ("
-                      << p3 << ")\n";
-            std::cout << "  Faulting RIP       = " << p4 << "  -> "
-                      << resolve_module(guest, p4) << "\n";
+            std::cout << "  Access             = " << (p3 ? "write" : "read") << " (" << p3
+                      << ")\n";
+            std::cout << "  Faulting RIP       = " << p4 << "  -> " << resolve_module(guest, p4)
+                      << "\n";
         } else {
             std::cout << "\nFaulting RIP guess (Param4) -> " << resolve_module(guest, p4) << "\n";
         }

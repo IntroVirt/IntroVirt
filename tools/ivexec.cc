@@ -125,8 +125,8 @@ class ExecFileTool final : public EventCallback {
         if (win32_path.size() < 3 || win32_path[1] != ':')
             return "";
 
-        std::string letter(1, static_cast<char>(std::toupper(
-                                  static_cast<unsigned char>(win32_path[0]))));
+        std::string letter(
+            1, static_cast<char>(std::toupper(static_cast<unsigned char>(win32_path[0]))));
         if (!(letter[0] >= 'A' && letter[0] <= 'Z'))
             return "";
         letter += ':';
@@ -166,12 +166,14 @@ class ExecFileTool final : public EventCallback {
                                 continue;
 
                             auto link = nt::OBJECT_SYMBOLIC_LINK::make_shared(kernel, obj->ptr());
-                            std::string target = link->LinkTarget(); // e.g. "\\Device\\HarddiskVolume3"
+                            std::string target =
+                                link->LinkTarget(); // e.g. "\\Device\\HarddiskVolume3"
                             if (!target.empty()) {
                                 // Strip a trailing backslash before appending remainder.
                                 if (target.back() == '\\')
                                     target.pop_back();
-                                return target + remainder; // "\\Device\\HarddiskVolume3\\Windows\\...\\file.exe"
+                                return target +
+                                       remainder; // "\\Device\\HarddiskVolume3\\Windows\\...\\file.exe"
                             }
                         }
                     }
@@ -300,9 +302,9 @@ class ExecFileTool final : public EventCallback {
         };
         // UNICODE_STRING { USHORT Length; USHORT MaximumLength; <pad>; PWSTR Buffer; }
         auto putUS = [&](size_t field, size_t stroff, const std::u16string& s) {
-            put16(field, s.length() * 2);             // Length (bytes, no NUL)
-            put16(field + 2, (s.length() + 1) * 2);   // MaximumLength (incl NUL)
-            put64(field + 8, G + stroff);             // Buffer (absolute, within block)
+            put16(field, s.length() * 2);           // Length (bytes, no NUL)
+            put16(field + 2, (s.length() + 1) * 2); // MaximumLength (incl NUL)
+            put64(field + 8, G + stroff);           // Buffer (absolute, within block)
         };
 
         putStr(offImage, wImage);
@@ -310,16 +312,16 @@ class ExecFileTool final : public EventCallback {
         putStr(offCurDir, wCurDir);
         putStr(offDesktop, wDesktop);
 
-        put32(0x00, TOTAL);                  // MaximumLength
-        put32(0x04, TOTAL);                  // Length
-        put32(0x08, 0x1);                    // Flags = NORMALIZED
-        putUS(0x38, offCurDir, wCurDir);     // CurrentDirectory.DosPath (Handle @0x48 = 0)
-        putUS(0x60, offImage, wImage);       // ImagePathName
-        putUS(0x70, offCmd, wCmd);           // CommandLine
-        put64(0x80, env.address());          // Environment
-        putUS(0xB0, offImage, wImage);       // WindowTitle (reuse inline image buffer)
-        putUS(0xC0, offDesktop, wDesktop);   // DesktopInfo
-        put64(0x3F0, 4);                     // EnvironmentSize
+        put32(0x00, TOTAL);                // MaximumLength
+        put32(0x04, TOTAL);                // Length
+        put32(0x08, 0x1);                  // Flags = NORMALIZED
+        putUS(0x38, offCurDir, wCurDir);   // CurrentDirectory.DosPath (Handle @0x48 = 0)
+        putUS(0x60, offImage, wImage);     // ImagePathName
+        putUS(0x70, offCmd, wCmd);         // CommandLine
+        put64(0x80, env.address());        // Environment
+        putUS(0xB0, offImage, wImage);     // WindowTitle (reuse inline image buffer)
+        putUS(0xC0, offDesktop, wDesktop); // DesktopInfo
+        put64(0x3F0, 4);                   // EnvironmentSize
 
         {
             auto p = rupp.ptr();
@@ -343,11 +345,11 @@ class ExecFileTool final : public EventCallback {
         // PspValidateAttributeList rejects during early create-context build (before the
         // image file is opened), yielding STATUS_INVALID_PARAMETER with
         // PS_CREATE_INFO.State left at PsCreateInitialState.
-        putAL(0x00, AL_SIZE);                  // TotalLength
-        putAL(0x08, 0);                        // Attribute (set via typed setters below)
-        putAL(0x10, wNtImage.length() * 2);    // Size (bytes, no NUL)
-        putAL(0x18, sNtImage.address());       // Value -> NT image path
-        putAL(0x20, 0);                        // ReturnLength
+        putAL(0x00, AL_SIZE);               // TotalLength
+        putAL(0x08, 0);                     // Attribute (set via typed setters below)
+        putAL(0x10, wNtImage.length() * 2); // Size (bytes, no NUL)
+        putAL(0x18, sNtImage.address());    // Value -> NT image path
+        putAL(0x20, 0);                     // ReturnLength
         auto attrlist = inject::allocate<uint8_t[]>(AL_SIZE);
         {
             auto p = attrlist.ptr();
@@ -384,9 +386,9 @@ class ExecFileTool final : public EventCallback {
         const guest_ptr<void> nullAttr;
 
         NTSTATUS status = inject::system_call<nt::NtCreateUserProcess>(
-            hProcess, hThread, PROCESS_ACCESS_MASK(0x1FFFFF), THREAD_ACCESS_MASK(0x1FFFFF), nullAttr,
-            nullAttr, ProcessCreateFlags(0), ThreadCreateFlags(nt::CREATE_SUSPENDED), procParams.get(),
-            *createInfo, attrlist);
+            hProcess, hThread, PROCESS_ACCESS_MASK(0x1FFFFF), THREAD_ACCESS_MASK(0x1FFFFF),
+            nullAttr, nullAttr, ProcessCreateFlags(0), ThreadCreateFlags(nt::CREATE_SUSPENDED),
+            procParams.get(), *createInfo, attrlist);
 
         if (!status.NT_SUCCESS() || hProcess == 0) {
             std::cerr << "Failed to launch process: NtCreateUserProcess returned " << status
@@ -747,8 +749,8 @@ int main(int argc, char** argv) {
         uint64_t session_id = 0xFFFFFFFFFFFFFFFF;
         auto& kernel = guest->kernel();
         constexpr int kSessionTries = 40;
-        for (int attempt = 0;
-             attempt < kSessionTries && session_id == 0xFFFFFFFFFFFFFFFF; ++attempt) {
+        for (int attempt = 0; attempt < kSessionTries && session_id == 0xFFFFFFFFFFFFFFFF;
+             ++attempt) {
             try {
                 auto CidTable = kernel.CidTable();
                 auto handles = CidTable->open_handles();
