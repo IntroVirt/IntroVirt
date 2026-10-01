@@ -65,8 +65,8 @@ constexpr int kOTrunc = 0x200;
 constexpr int kAtFdcwd = -100;
 
 // --- low-level: each returns the raw syscall result (RAX; -errno on error) ---
-int64_t inject_mmap(Event& event, uint64_t addr, uint64_t length, int prot, int flags,
-                    int fd, uint64_t offset);
+int64_t inject_mmap(Event& event, uint64_t addr, uint64_t length, int prot, int flags, int fd,
+                    uint64_t offset);
 int64_t inject_munmap(Event& event, uint64_t addr, uint64_t length);
 int64_t inject_openat(Event& event, int dirfd, uint64_t pathname_ptr, int flags, int mode);
 int64_t inject_read(Event& event, int fd, uint64_t buf_ptr, uint64_t count);

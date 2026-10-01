@@ -53,7 +53,8 @@ guest_ptr<void> LinuxGuestImpl::allocate(size_t& region_size, bool executable) {
         prot |= inject::kProtExec;
 
     const int64_t result = inject::inject_mmap(
-        event, 0, length, prot, inject::kMapPrivate | inject::kMapAnonymous | inject::kMapPopulate, -1, 0);
+        event, 0, length, prot, inject::kMapPrivate | inject::kMapAnonymous | inject::kMapPopulate,
+        -1, 0);
 
     // mmap returns -errno in [-4095, -1] on failure.
     if (result < 0 && result > -4096)
@@ -88,8 +89,7 @@ bool LinuxGuestImpl::page_in(Event& event, uint64_t virtual_address) {
     }
 }
 
-std::unique_ptr<Event>
-LinuxGuestImpl::filter_event(std::unique_ptr<HypervisorEvent>&& event) {
+std::unique_ptr<Event> LinuxGuestImpl::filter_event(std::unique_ptr<HypervisorEvent>&& event) {
     return std::make_unique<LinuxEventImpl>(*this, std::move(event));
 }
 

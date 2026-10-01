@@ -27,10 +27,10 @@ inline bool is_error(int64_t r) { return r < 0 && r > -4096; }
 inline uint64_t page_round(uint64_t n) { return (n + 0xFFFULL) & ~0xFFFULL; }
 } // namespace
 
-int64_t inject_mmap(Event& event, uint64_t addr, uint64_t length, int prot, int flags,
-                    int fd, uint64_t offset) {
-    return SystemCallInjector(event, nr::mmap, addr, length,
-                              static_cast<uint64_t>(prot), static_cast<uint64_t>(flags),
+int64_t inject_mmap(Event& event, uint64_t addr, uint64_t length, int prot, int flags, int fd,
+                    uint64_t offset) {
+    return SystemCallInjector(event, nr::mmap, addr, length, static_cast<uint64_t>(prot),
+                              static_cast<uint64_t>(flags),
                               static_cast<uint64_t>(static_cast<int64_t>(fd)), offset)
         .call();
 }
@@ -40,8 +40,7 @@ int64_t inject_munmap(Event& event, uint64_t addr, uint64_t length) {
 }
 
 int64_t inject_openat(Event& event, int dirfd, uint64_t pathname_ptr, int flags, int mode) {
-    return SystemCallInjector(event, nr::openat,
-                              static_cast<uint64_t>(static_cast<int64_t>(dirfd)),
+    return SystemCallInjector(event, nr::openat, static_cast<uint64_t>(static_cast<int64_t>(dirfd)),
                               pathname_ptr, static_cast<uint64_t>(flags),
                               static_cast<uint64_t>(mode))
         .call();
@@ -61,8 +60,7 @@ int64_t inject_close(Event& event, int fd) {
 
 int64_t inject_fork(Event& event) { return SystemCallInjector(event, nr::fork).call(); }
 
-int64_t inject_execve(Event& event, uint64_t pathname_ptr, uint64_t argv_ptr,
-                      uint64_t envp_ptr) {
+int64_t inject_execve(Event& event, uint64_t pathname_ptr, uint64_t argv_ptr, uint64_t envp_ptr) {
     // execve replaces the process image and does not return to this thread on
     // success — use the no-return injection path (no suspend-for-return, no
     // register restore). On failure the kernel resumes the caller normally; the
@@ -80,9 +78,8 @@ void write_bytes(Event& event, uint64_t dst, const void* src, size_t len) {
 
 uint64_t push_string(Event& event, const std::string& data) {
     const size_t len = data.size() + 1; // include trailing NUL
-    int64_t addr =
-        inject_mmap(event, 0, page_round(len), kProtRead | kProtWrite,
-                    kMapPrivate | kMapAnonymous | kMapPopulate, -1, 0);
+    int64_t addr = inject_mmap(event, 0, page_round(len), kProtRead | kProtWrite,
+                               kMapPrivate | kMapAnonymous | kMapPopulate, -1, 0);
     if (is_error(addr) || addr == 0)
         return 0;
     write_bytes(event, static_cast<uint64_t>(addr), data.c_str(), len);
@@ -101,9 +98,8 @@ uint64_t push_string_array(Event& event, const std::vector<std::string>& items) 
     ptrs.push_back(0); // NULL terminator
 
     const size_t bytes = ptrs.size() * sizeof(uint64_t);
-    int64_t arr =
-        inject_mmap(event, 0, page_round(bytes), kProtRead | kProtWrite,
-                    kMapPrivate | kMapAnonymous | kMapPopulate, -1, 0);
+    int64_t arr = inject_mmap(event, 0, page_round(bytes), kProtRead | kProtWrite,
+                              kMapPrivate | kMapAnonymous | kMapPopulate, -1, 0);
     if (is_error(arr) || arr == 0)
         return 0;
     write_bytes(event, static_cast<uint64_t>(arr), ptrs.data(), bytes);
@@ -117,8 +113,7 @@ int64_t write_file(Event& event, const std::string& guest_path, const void* data
     const uint64_t path_ptr = push_string(event, guest_path);
     if (path_ptr == 0)
         return -1;
-    const int64_t fd =
-        inject_openat(event, kAtFdcwd, path_ptr, kOWronly | kOCreat | kOTrunc, mode);
+    const int64_t fd = inject_openat(event, kAtFdcwd, path_ptr, kOWronly | kOCreat | kOTrunc, mode);
     if (is_error(fd))
         return fd;
 
@@ -166,7 +161,8 @@ std::vector<uint8_t> read_file(Event& event, const std::string& guest_path, size
 
     while (out.size() < max_bytes) {
         const uint64_t want = std::min<uint64_t>(kChunk, max_bytes - out.size());
-        const int64_t r = inject_read(event, static_cast<int>(fd), static_cast<uint64_t>(buf), want);
+        const int64_t r =
+            inject_read(event, static_cast<int>(fd), static_cast<uint64_t>(buf), want);
         if (is_error(r) || r == 0)
             break;
         guest_ptr<uint8_t[]> gp(event.vcpu(), static_cast<uint64_t>(buf), static_cast<size_t>(r));

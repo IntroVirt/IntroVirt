@@ -149,8 +149,7 @@ class ReadFileTool final : public EventCallback {
     void copy_linux(Event& event) {
         result_ = 1;
         constexpr size_t kMax = static_cast<size_t>(1) << 31; // 2 GiB cap
-        const std::vector<uint8_t> bytes =
-            linux_guest::inject::read_file(event, src_path_, kMax);
+        const std::vector<uint8_t> bytes = linux_guest::inject::read_file(event, src_path_, kMax);
 
         FILE* dst_file = fopen(dst_path_.c_str(), "wb");
         if (!dst_file) {

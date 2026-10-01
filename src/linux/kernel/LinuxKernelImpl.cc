@@ -93,9 +93,8 @@ LinuxKernelImpl::LinuxKernelImpl(Domain& domain) : domain_(&domain) {
         const std::string banner = read_guest_cstr(*vcpu, banner_address, 256);
         static const std::string kPrefix = "Linux version ";
         if (banner.rfind(kPrefix, 0) != 0)
-            throw GuestDetectionException(
-                domain, "linux_banner mismatch at slid address: '" +
-                            banner.substr(0, 32) + "'");
+            throw GuestDetectionException(domain, "linux_banner mismatch at slid address: '" +
+                                                      banner.substr(0, 32) + "'");
         banner_ = banner;
         const std::string rest = banner.substr(kPrefix.size());
         release_ = rest.substr(0, rest.find(' '));
@@ -164,16 +163,14 @@ uint64_t LinuxKernelImpl::process_page_directory(uint64_t task_address) const {
 
     try {
         // task_struct.mm — NULL for kernel threads (no userspace address space).
-        const uint64_t mm =
-            *guest_ptr<uint64_t>(*domain_, task_address + *mm_off, page_directory_);
+        const uint64_t mm = *guest_ptr<uint64_t>(*domain_, task_address + *mm_off, page_directory_);
         if (mm == 0)
             return 0;
 
         // mm_struct.pgd is a direct-map kernel virtual address; the CR3 value
         // is its physical address = pgd_kva - page_offset_base (the live,
         // KASLR-randomised direct-map base, read from the slid symbol).
-        const uint64_t pgd_kva =
-            *guest_ptr<uint64_t>(*domain_, mm + *pgd_off, page_directory_);
+        const uint64_t pgd_kva = *guest_ptr<uint64_t>(*domain_, mm + *pgd_off, page_directory_);
         const uint64_t direct_map_base = *guest_ptr<uint64_t>(
             *domain_, *page_offset_base + static_cast<uint64_t>(kaslr_slide_), page_directory_);
         if (pgd_kva <= direct_map_base)

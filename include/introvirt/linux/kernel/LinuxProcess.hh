@@ -24,14 +24,13 @@ namespace linux_guest {
  */
 class LinuxProcess {
   public:
-    int32_t pid() const { return pid_; }   ///< userspace PID (task_struct.tgid)
-    int32_t tid() const { return tid_; }   ///< thread id     (task_struct.pid)
+    int32_t pid() const { return pid_; }              ///< userspace PID (task_struct.tgid)
+    int32_t tid() const { return tid_; }              ///< thread id     (task_struct.pid)
     const std::string& name() const { return name_; } ///< task_struct.comm
     uint64_t task_struct_address() const { return task_struct_address_; }
 
     LinuxProcess(int32_t pid, int32_t tid, std::string name, uint64_t task_struct_address)
-        : pid_(pid), tid_(tid), name_(std::move(name)),
-          task_struct_address_(task_struct_address) {}
+        : pid_(pid), tid_(tid), name_(std::move(name)), task_struct_address_(task_struct_address) {}
 
   private:
     int32_t pid_;

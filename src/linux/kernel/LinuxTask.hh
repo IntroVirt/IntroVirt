@@ -44,10 +44,10 @@ class LinuxTask {
 
     uint64_t address() const { return task_address_; }
 
-    int32_t pid() const;   ///< task_struct.pid  (thread id, Linux sense)
-    int32_t tgid() const;  ///< task_struct.tgid (process id)
+    int32_t pid() const;      ///< task_struct.pid  (thread id, Linux sense)
+    int32_t tgid() const;     ///< task_struct.tgid (process id)
     std::string comm() const; ///< task_struct.comm (<=16 bytes, NUL-padded)
-    uint64_t mm() const;   ///< task_struct.mm pointer (0 for kernel threads)
+    uint64_t mm() const;      ///< task_struct.mm pointer (0 for kernel threads)
 
   private:
     int64_t offset(const char* member) const;

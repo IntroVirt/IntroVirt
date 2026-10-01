@@ -52,7 +52,7 @@ class LinuxSystemCall final : public SystemCallImpl<SystemCall> {
     uint32_t number_ = 0;
     std::string name_;
     uint64_t args_[6] = {0, 0, 0, 0, 0, 0};
-    std::string path_;     // decoded pathname argument, if any
+    std::string path_; // decoded pathname argument, if any
     bool has_path_ = false;
     // Decoded flag/enum arguments, in order (label -> human string).
     std::vector<std::pair<std::string, std::string>> decoded_;

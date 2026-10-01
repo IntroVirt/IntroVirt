@@ -212,8 +212,7 @@ int main(int argc, char** argv) {
     case OS::Linux: {
         // Find the target task, then translate `address` in its address space
         // via the process page directory (mm->pgd, physical).
-        const auto& kernel =
-            static_cast<linux_guest::LinuxGuest*>(domain->guest())->kernel();
+        const auto& kernel = static_cast<linux_guest::LinuxGuest*>(domain->guest())->kernel();
         uint64_t task_address = 0;
         for (const auto& process : kernel.processes()) {
             if (vm.count("pid") == 0) {

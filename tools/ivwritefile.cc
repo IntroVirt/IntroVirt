@@ -190,8 +190,8 @@ class WriteFileTool final : public EventCallback {
         const int64_t written =
             linux_guest::inject::write_file(event, dst_path_, bytes.data(), bytes.size(), mode_);
         if (written < 0 || static_cast<size_t>(written) != bytes.size()) {
-            std::cout << "Failed to write guest file (wrote " << written << " of "
-                      << bytes.size() << " bytes)\n";
+            std::cout << "Failed to write guest file (wrote " << written << " of " << bytes.size()
+                      << " bytes)\n";
             return;
         }
         std::cout << "Wrote " << written << " bytes to " << dst_path_ << '\n';

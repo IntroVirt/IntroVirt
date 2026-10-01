@@ -29,8 +29,8 @@ LinuxProfileImpl::LinuxProfileImpl(const std::string& json_text) {
 
     const std::string format = root.get("format", "").asString();
     if (format != kExpectedFormat)
-        throw LinuxProfileException("LinuxProfile: unexpected format '" + format +
-                                    "' (expected " + kExpectedFormat + ")");
+        throw LinuxProfileException("LinuxProfile: unexpected format '" + format + "' (expected " +
+                                    kExpectedFormat + ")");
 
     arch_ = root["metadata"].get("arch", "x86_64").asString();
 

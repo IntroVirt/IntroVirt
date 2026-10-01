@@ -46,11 +46,9 @@ namespace inject {
  */
 class SystemCallInjector final {
   public:
-    SystemCallInjector(Event& event, uint64_t syscall_number, uint64_t arg0 = 0,
-                       uint64_t arg1 = 0, uint64_t arg2 = 0, uint64_t arg3 = 0,
-                       uint64_t arg4 = 0, uint64_t arg5 = 0)
-        : event_(event), nr_(syscall_number),
-          args_{arg0, arg1, arg2, arg3, arg4, arg5} {}
+    SystemCallInjector(Event& event, uint64_t syscall_number, uint64_t arg0 = 0, uint64_t arg1 = 0,
+                       uint64_t arg2 = 0, uint64_t arg3 = 0, uint64_t arg4 = 0, uint64_t arg5 = 0)
+        : event_(event), nr_(syscall_number), args_{arg0, arg1, arg2, arg3, arg4, arg5} {}
 
     /**
      * @brief Run the injected syscall and return its result (RAX).
@@ -81,12 +79,10 @@ class SystemCallInjector final {
             // it fires exactly once. Must not be done while already in kernel.
             vcpu.inject_syscall();
 
-            std::unique_ptr<Event> return_event =
-                event_.impl().suspend([](const Event& e) {
-                    return e.type() == EventType::EVENT_FAST_SYSCALL_RET
-                               ? WakeAction::ACCEPT
-                               : WakeAction::PASS;
-                });
+            std::unique_ptr<Event> return_event = event_.impl().suspend([](const Event& e) {
+                return e.type() == EventType::EVENT_FAST_SYSCALL_RET ? WakeAction::ACCEPT
+                                                                     : WakeAction::PASS;
+            });
             event_.impl().injection_performed(true);
 
             // At the return event the live vCPU RAX holds the syscall result.

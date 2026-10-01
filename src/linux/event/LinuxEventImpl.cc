@@ -16,7 +16,7 @@ namespace introvirt {
 namespace linux_guest {
 
 LinuxEventImpl::LinuxEventImpl(LinuxGuest& guest,
-                              std::unique_ptr<HypervisorEvent>&& hypervisor_event)
+                               std::unique_ptr<HypervisorEvent>&& hypervisor_event)
     : EventImplTpl<LinuxEvent>(std::move(hypervisor_event)), guest_(guest),
       task_info_(guest, vcpu()) {
     // Build the syscall view for fast-syscall events (mirrors WindowsEventImpl).

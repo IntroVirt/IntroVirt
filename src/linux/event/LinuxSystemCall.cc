@@ -39,14 +39,21 @@ void append_flag(std::string& out, const char* name) {
 std::string decode_open_flags(uint64_t f) {
     std::string s;
     switch (f & 0x3) { // access mode (low 2 bits)
-    case 0: append_flag(s, "O_RDONLY"); break;
-    case 1: append_flag(s, "O_WRONLY"); break;
-    case 2: append_flag(s, "O_RDWR"); break;
-    default: break;
+    case 0:
+        append_flag(s, "O_RDONLY");
+        break;
+    case 1:
+        append_flag(s, "O_WRONLY");
+        break;
+    case 2:
+        append_flag(s, "O_RDWR");
+        break;
+    default:
+        break;
     }
     const std::pair<uint64_t, const char*> bits[] = {
-        {0x40, "O_CREAT"},   {0x80, "O_EXCL"},      {0x200, "O_TRUNC"},
-        {0x400, "O_APPEND"}, {0x800, "O_NONBLOCK"}, {0x4000, "O_DIRECT"},
+        {0x40, "O_CREAT"},        {0x80, "O_EXCL"},        {0x200, "O_TRUNC"},
+        {0x400, "O_APPEND"},      {0x800, "O_NONBLOCK"},   {0x4000, "O_DIRECT"},
         {0x10000, "O_DIRECTORY"}, {0x20000, "O_NOFOLLOW"}, {0x80000, "O_CLOEXEC"},
     };
     for (const auto& b : bits)
@@ -59,16 +66,21 @@ std::string decode_prot(uint64_t p) {
     if (p == 0)
         return "PROT_NONE";
     std::string s;
-    if (p & 0x1) append_flag(s, "PROT_READ");
-    if (p & 0x2) append_flag(s, "PROT_WRITE");
-    if (p & 0x4) append_flag(s, "PROT_EXEC");
+    if (p & 0x1)
+        append_flag(s, "PROT_READ");
+    if (p & 0x2)
+        append_flag(s, "PROT_WRITE");
+    if (p & 0x4)
+        append_flag(s, "PROT_EXEC");
     return s;
 }
 
 std::string decode_mmap_flags(uint64_t f) {
     std::string s;
     const std::pair<uint64_t, const char*> bits[] = {
-        {0x1, "MAP_SHARED"}, {0x2, "MAP_PRIVATE"}, {0x10, "MAP_FIXED"},
+        {0x1, "MAP_SHARED"},
+        {0x2, "MAP_PRIVATE"},
+        {0x10, "MAP_FIXED"},
         {0x20, "MAP_ANONYMOUS"},
     };
     for (const auto& b : bits)
@@ -79,36 +91,45 @@ std::string decode_mmap_flags(uint64_t f) {
 
 std::string decode_socket_domain(uint64_t d) {
     switch (d) {
-    case 1: return "AF_UNIX";
-    case 2: return "AF_INET";
-    case 10: return "AF_INET6";
-    case 16: return "AF_NETLINK";
-    case 17: return "AF_PACKET";
-    default: return {};
+    case 1:
+        return "AF_UNIX";
+    case 2:
+        return "AF_INET";
+    case 10:
+        return "AF_INET6";
+    case 16:
+        return "AF_NETLINK";
+    case 17:
+        return "AF_PACKET";
+    default:
+        return {};
     }
 }
 
 std::string decode_socket_type(uint64_t t) {
     switch (t & 0xff) { // low byte; SOCK_CLOEXEC/NONBLOCK live in the high bits
-    case 1: return "SOCK_STREAM";
-    case 2: return "SOCK_DGRAM";
-    case 3: return "SOCK_RAW";
-    case 5: return "SOCK_SEQPACKET";
-    default: return {};
+    case 1:
+        return "SOCK_STREAM";
+    case 2:
+        return "SOCK_DGRAM";
+    case 3:
+        return "SOCK_RAW";
+    case 5:
+        return "SOCK_SEQPACKET";
+    default:
+        return {};
     }
 }
 
 int path_arg_index(const std::string& name) {
     static const std::unordered_map<std::string, int> kPathArg = {
-        {"open", 0},      {"creat", 0},     {"stat", 0},     {"lstat", 0},
-        {"access", 0},    {"chdir", 0},     {"chmod", 0},    {"chown", 0},
-        {"lchown", 0},    {"mkdir", 0},     {"rmdir", 0},    {"unlink", 0},
-        {"readlink", 0},  {"truncate", 0},  {"execve", 0},   {"chroot", 0},
-        {"mknod", 0},     {"statfs", 0},    {"link", 0},     {"symlink", 1},
-        {"openat", 1},    {"openat2", 1},   {"newfstatat", 1}, {"unlinkat", 1},
-        {"mkdirat", 1},   {"mknodat", 1},   {"fchownat", 1}, {"fchmodat", 1},
-        {"faccessat", 1}, {"faccessat2", 1}, {"readlinkat", 1}, {"execveat", 1},
-        {"statx", 1},
+        {"open", 0},       {"creat", 0},    {"stat", 0},       {"lstat", 0},     {"access", 0},
+        {"chdir", 0},      {"chmod", 0},    {"chown", 0},      {"lchown", 0},    {"mkdir", 0},
+        {"rmdir", 0},      {"unlink", 0},   {"readlink", 0},   {"truncate", 0},  {"execve", 0},
+        {"chroot", 0},     {"mknod", 0},    {"statfs", 0},     {"link", 0},      {"symlink", 1},
+        {"openat", 1},     {"openat2", 1},  {"newfstatat", 1}, {"unlinkat", 1},  {"mkdirat", 1},
+        {"mknodat", 1},    {"fchownat", 1}, {"fchmodat", 1},   {"faccessat", 1}, {"faccessat2", 1},
+        {"readlinkat", 1}, {"execveat", 1}, {"statx", 1},
     };
     const auto it = kPathArg.find(name);
     return it == kPathArg.end() ? -1 : it->second;
