@@ -645,15 +645,8 @@ void DomainImpl::vcpu_poller_thread(Vcpu* ivcpu, EventCallback* callback, int ef
     struct pollfd fd_entries[2];
     std::list<worker_thread_info> threads;
 
-    /*
-     * SECTEPE: count consecutive un-buildable events skipped below. A single
-     * transient skip (the expected case for the injection race) stays quiet at
-     * DEBUG, but a vcpu that keeps failing to build events is escalated to a
-     * throttled WARN so a non-transient bad state is visible even when DEBUG
-     * logging is disabled, instead of silently spinning. Reset on the first
-     * successfully built event. This counter is private to this poller thread
-     * (one per vcpu), so no synchronization is needed.
-     */
+    // Per-poller-thread count of consecutive events that could not be built.
+    // A long streak is logged as a throttled WARN instead of only DEBUG.
     uint64_t consecutive_skips = 0;
     static constexpr uint64_t kSkipWarnEvery = 1000;
 
@@ -692,45 +685,9 @@ void DomainImpl::vcpu_poller_thread(Vcpu* ivcpu, EventCallback* callback, int ef
                     if (unlikely(hypervisor_event == nullptr))
                         continue;
 
-                    /*
-                     * SECTEPE: poller-skip for racy bad reads while building the
-                     * next event.
-                     *
-                     * filter_event() eagerly materializes the current THREAD for
-                     * THIS vcpu (WindowsEventTaskInformation ctor -> KPCR::reset()
-                     * -> kernel_.thread(current_thread_ptr)). If this vcpu is
-                     * mid-context-switch, or in user mode under KPTI where
-                     * KernelDirectoryTableBase is absent and reset() falls back to
-                     * the user CR3, current_thread_address() can yield a
-                     * garbage/non-canonical pointer. Reading a THREAD/OBJECT_HEADER
-                     * through it throws IncorrectTypeException (bad type index) or a
-                     * MemoryException (e.g. VirtualAddressNotPresentException on a
-                     * non-canonical VA). This race is observable on an idle/other
-                     * vcpu while we inject a syscall (e.g. NtCreateUserProcess) on a
-                     * different vcpu; left uncaught it escapes the poller loop and
-                     * std::terminate()s the whole session.
-                     *
-                     * Such an event is, by definition, un-buildable: there is no
-                     * Event to deliver. Skip ONLY this event and keep polling.
-                     *
-                     * Scope is deliberately narrow: KPCRs are per-vcpu
-                     * (NtKernelImpl::kpcr indexes by vcpu.id()), so a failed reset()
-                     * here only touches THIS vcpu's KPCR/os_data and never the
-                     * injecting vcpu's state. The injector waits on its own
-                     * condition variable (EventImplTpl::suspend) and is woken by the
-                     * suspended-thread fast path in DomainImpl::filter_event for ITS
-                     * OWN thread; at syscall-return the injecting vcpu is in the
-                     * kernel with a valid current-thread, so that delivery does not
-                     * hit this path. Dropping a racy event on another vcpu therefore
-                     * never drops an event the injector or the tool needs to
-                     * progress.
-                     *
-                     * We catch only MemoryException and IncorrectTypeException (the
-                     * confirmed bad-guest-read families) rather than the whole
-                     * TraceableException hierarchy, so genuinely fatal control-flow
-                     * exceptions (GuestDetectionException, EventPollException, etc.)
-                     * are NOT swallowed and cannot make the loop spin silently.
-                     */
+                    // A mid-switch vcpu can make filter_event() throw MemoryException
+                    // or IncorrectTypeException on a bad guest read. Skip that event
+                    // only; let every other exception escape.
                     std::unique_ptr<Event> event;
                     try {
                         event = filter_event(std::move(hypervisor_event));
