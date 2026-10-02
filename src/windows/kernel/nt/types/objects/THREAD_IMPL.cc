@@ -16,6 +16,7 @@
 #include "THREAD_IMPL.hh"
 #include "windows/kernel/nt/NtKernelImpl.hh"
 
+#include <introvirt/core/exception/VirtualAddressNotPresentException.hh>
 #include <introvirt/windows/WindowsGuest.hh>
 #include <introvirt/windows/event/WindowsEvent.hh>
 #include <introvirt/windows/exception/InvalidStructureException.hh>
@@ -143,12 +144,16 @@ const TEB* THREAD_IMPL<PtrType>::Teb() const {
     std::lock_guard lock(mtx_);
     if (!Teb_) {
         // TODO: If the thread doesn't have a process we need to deal with that somehow
-        const guest_ptr<void> pTeb(this->ptr_.clone(offsets_->Tcb.Teb.get<PtrType>(buffer_.get())));
-
-        if (pTeb)
+        try {
+            const guest_ptr<void> pTeb(
+                this->ptr_.clone(offsets_->Tcb.Teb.get<PtrType>(buffer_.get())));
+            if (!pTeb)
+                return nullptr;
             Teb_.emplace(kernel_, pTeb);
-        else
+        } catch (const VirtualAddressNotPresentException&) {
+            // The TEB page is not mapped in the current address space.
             return nullptr;
+        }
     }
     return &(*Teb_);
 }
