@@ -222,6 +222,11 @@ class EventImplTpl : public _BaseClass, public EventImpl {
     WakeAction wake(std::unique_ptr<Event>&& event) override {
         introvirt_assert(check_wakeup_ != nullptr, "");
 
+        // introvirt_assert is a no-op in release builds, so an unarmed wake()
+        // called an empty std::function and aborted with std::bad_function_call.
+        if (!check_wakeup_)
+            return WakeAction::PASS;
+
         WakeAction result = check_wakeup_(*event);
         if (result == WakeAction::ACCEPT) {
             std::unique_lock lock(mtx_);
