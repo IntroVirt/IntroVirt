@@ -49,6 +49,11 @@ class WindowsEventTaskInformation final : public EventTaskInformation {
 
   private:
     nt::KPCR& kpcr_;
+    // Snapshot pid, tid, and process name at construction. kpcr_ is shared per
+    // vcpu and later events reset it, so a later read can use a stale thread.
+    uint64_t pid_ = 0;
+    uint64_t tid_ = 0;
+    std::string process_name_;
 };
 
 } // namespace windows

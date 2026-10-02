@@ -444,6 +444,28 @@ void DomainImpl::interrupt() {
     LOG4CXX_DEBUG(logger,
                   "Domain " << id() << " interrupted - Injection Count: " << injection_.count_);
 
+    // Publish shutdown before waiting. suspend() and start_injection() bail
+    // once this is set, and a waiter blocked in suspend() is the thread that
+    // drops injection_.count_. Waiting first never signals that waiter.
+    interrupted_ = true;
+
+    std::vector<Event*> to_wake;
+    {
+        std::lock_guard lock(suspended_events_.mtx_);
+        to_wake.reserve(suspended_events_.map_.size());
+        for (auto& entry : suspended_events_.map_)
+            to_wake.push_back(entry.second);
+    }
+    {
+        std::lock_guard lock(stepping_events_.mtx_);
+        for (Event* stepping : stepping_events_.by_vcpu_) {
+            if (stepping != nullptr)
+                to_wake.push_back(stepping);
+        }
+    }
+    for (Event* suspended : to_wake)
+        suspended->impl().interrupt();
+
     // Wait for no injection threads to be active
     std::unique_lock lock(injection_.mtx_);
     injection_.cv_.wait(lock, [this] { return injection_.count_ == 0; });
@@ -454,7 +476,6 @@ void DomainImpl::interrupt() {
     single_step_manager_.interrupt();
 
     // Interrupt all of our threads
-    interrupted_ = true;
     const uint64_t value = vcpu_count();
     if (unlikely(::write(efd_, &value, sizeof(value)) < 0)) {
         LOG4CXX_ERROR(logger, "Failed to notify eventfd");
@@ -612,6 +633,24 @@ restart:
     } catch (TraceableException& ex) {
         LOG4CXX_WARN(logger, "Vcpu " << event->vcpu().id()
                                      << " poller threw an exception during delivery: " << ex);
+        // End an injection this deliverer still owns before interrupt() waits
+        // for injection_.count_ to hit zero, or that wait deadlocks on this thread.
+        if (event != nullptr) {
+            bool owns_injection = false;
+            {
+                std::lock_guard lock(injection_tids_.mtx_);
+                owns_injection = injection_tids_.set_.count(event->task().tid()) != 0;
+            }
+            if (owns_injection)
+                end_injection(*event);
+        }
+        // Destroy the event so ~KvmEvent completes the vCPU before shutdown.
+        {
+            std::lock_guard lock(worker_info->mtx);
+            worker_info->event.reset();
+            worker_info->completed = true;
+        }
+        event = nullptr;
         interrupt();
     }
 
@@ -856,10 +895,13 @@ void DomainImpl::start_injection(Event& event) {
 void DomainImpl::end_injection(Event& event) {
     {
         std::lock_guard lock(injection_tids_.mtx_);
-        LOG4CXX_DEBUG(logger, "Searching for injection on TID " << event.task().tid());
-        auto iter = injection_tids_.set_.find(event.task().tid());
-        introvirt_assert(iter != injection_tids_.set_.end(), "");
-        injection_tids_.set_.erase(iter);
+        const uint64_t tid = event.task().tid();
+        LOG4CXX_DEBUG(logger, "Searching for injection on TID " << tid);
+        auto iter = injection_tids_.set_.find(tid);
+        // introvirt_assert is a no-op in Release, so erase(end()) segfaults when
+        // two injections share one tid and the first end already removed it.
+        if (iter != injection_tids_.set_.end())
+            injection_tids_.set_.erase(iter);
     }
 
     LOG4CXX_DEBUG(logger, "Ending injection on TID " << event.task().tid()
@@ -890,6 +932,8 @@ void DomainImpl::end_injection(Event& event) {
 
 void DomainImpl::suspend_event(Event& event) {
     std::lock_guard lock(suspended_events_.mtx_);
+    if (interrupted_)
+        throw InterruptedException();
     suspended_events_.map_.insert(std::make_pair(event.impl().thread_id(), &event));
     LOG4CXX_TRACE(logger,
                   "Added thread 0x" << std::hex << event.impl().thread_id() << " to suspend map");
@@ -897,6 +941,8 @@ void DomainImpl::suspend_event(Event& event) {
 
 void DomainImpl::suspend_event_step(Event& event) {
     std::lock_guard lock(stepping_events_.mtx_);
+    if (interrupted_)
+        throw InterruptedException();
     stepping_events_.by_vcpu_[event.vcpu().id()] = &event;
     LOG4CXX_TRACE(logger, "Added VCPU " << event.vcpu().id() << " to step suspend map");
 }

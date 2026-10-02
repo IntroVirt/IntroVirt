@@ -53,10 +53,11 @@ void print_process(const PROCESS& process) {
     if (process.isWow64Process())
         std::cout << "  WoW64Process\n";
     std::cout << "  Session ID: ";
-    if (process.Session())
-        std::cout << process.Session()->SessionID() << '\n';
-    else
-        std::cout << "None\n";
+    try {
+        std::cout << process.Token().SessionId() << '\n';
+    } catch (TraceableException&) {
+        std::cout << "Unreadable\n";
+    }
 }
 
 /*
