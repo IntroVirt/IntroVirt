@@ -1,0 +1,7 @@
+{
+  "format": "sectepe-linux-isf/1",
+  "metadata": { "arch": "x86_64" },
+  "symbols": { "init_task": 4096, "linux_banner": 8192 },
+  "types": { "task_struct": { "pid": 16, "comm": 24 } },
+  "sizes": { "task_struct": 128 }
+}

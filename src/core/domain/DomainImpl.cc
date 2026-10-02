@@ -22,6 +22,7 @@
 #include "core/event/EventImpl.hh"
 #include "core/event/NoOsEvent.hh"
 #include "core/event/SystemCallEventImpl.hh"
+#include "linux/LinuxGuestImpl.hh"
 #include "windows/WindowsGuestImpl.hh"
 
 #include <introvirt/core/domain/Vcpu.hh>
@@ -30,10 +31,12 @@
 #include <introvirt/core/exception/EventPollException.hh>
 #include <introvirt/core/exception/GuestDetectionException.hh>
 #include <introvirt/core/exception/InterruptedException.hh>
+#include <introvirt/core/exception/MemoryException.hh>
 #include <introvirt/core/exception/NotImplementedException.hh>
 #include <introvirt/core/syscall/SystemCall.hh>
 #include <introvirt/util/compiler.hh>
 #include <introvirt/windows/WindowsGuest.hh>
+#include <introvirt/windows/exception/IncorrectTypeException.hh>
 
 #include <log4cxx/logger.h>
 
@@ -407,6 +410,20 @@ bool DomainImpl::detect_guest(std::chrono::milliseconds timeout) {
                     } catch (GuestDetectionException& ex) {
                         log_failure(std::string("Failed to detect WindowsGuest: ") + ex.what());
                     }
+
+                    // Try a Linux guest (x86_64 only for now). This only
+                    // succeeds when a matching Linux profile is configured
+                    // ($INTROVIRT_LINUX_PROFILE) and its linux_banner verifies
+                    // against the live kernel.
+                    if (is64bit) {
+                        try {
+                            guest_ = std::make_unique<linux_guest::LinuxGuestImpl>(*this);
+                            result = true;
+                            goto done;
+                        } catch (GuestDetectionException& ex) {
+                            log_failure(std::string("Failed to detect LinuxGuest: ") + ex.what());
+                        }
+                    }
                 }
             }
         }
@@ -628,6 +645,11 @@ void DomainImpl::vcpu_poller_thread(Vcpu* ivcpu, EventCallback* callback, int ef
     struct pollfd fd_entries[2];
     std::list<worker_thread_info> threads;
 
+    // Per-poller-thread count of consecutive events that could not be built.
+    // A long streak is logged as a throttled WARN instead of only DEBUG.
+    uint64_t consecutive_skips = 0;
+    static constexpr uint64_t kSkipWarnEvery = 1000;
+
     fd_entries[0].fd = vcpu.event_fd();
     fd_entries[0].events = POLLIN;
 
@@ -663,7 +685,45 @@ void DomainImpl::vcpu_poller_thread(Vcpu* ivcpu, EventCallback* callback, int ef
                     if (unlikely(hypervisor_event == nullptr))
                         continue;
 
-                    auto event = filter_event(std::move(hypervisor_event));
+                    // A mid-switch vcpu can make filter_event() throw MemoryException
+                    // or IncorrectTypeException on a bad guest read. Skip that event
+                    // only; let every other exception escape.
+                    std::unique_ptr<Event> event;
+                    try {
+                        event = filter_event(std::move(hypervisor_event));
+                    } catch (const MemoryException& ex) {
+                        if (unlikely(++consecutive_skips % kSkipWarnEvery == 0)) {
+                            LOG4CXX_WARN(logger,
+                                         "Vcpu " << vcpu.id() << " skipped " << consecutive_skips
+                                                 << " consecutive un-buildable events; latest (bad "
+                                                    "guest read): "
+                                                 << ex);
+                        } else {
+                            LOG4CXX_DEBUG(logger, "Vcpu " << vcpu.id()
+                                                          << " skipping un-buildable event (bad "
+                                                             "guest read): "
+                                                          << ex);
+                        }
+                        continue;
+                    } catch (const windows::IncorrectTypeException& ex) {
+                        if (unlikely(++consecutive_skips % kSkipWarnEvery == 0)) {
+                            LOG4CXX_WARN(logger,
+                                         "Vcpu " << vcpu.id() << " skipped " << consecutive_skips
+                                                 << " consecutive un-buildable events; latest (bad "
+                                                    "type index): "
+                                                 << ex);
+                        } else {
+                            LOG4CXX_DEBUG(logger, "Vcpu " << vcpu.id()
+                                                          << " skipping un-buildable event (bad "
+                                                             "type index): "
+                                                          << ex);
+                        }
+                        continue;
+                    }
+
+                    // Built an event successfully: clear the skip streak.
+                    consecutive_skips = 0;
+
                     if (!event)
                         continue;
 

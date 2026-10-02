@@ -95,27 +95,26 @@ int main(int argc, char** argv) {
         domain->task_filter().add_name(process_name);
     }
 
-    // Turn on system call filtering unless hooking all calls
-    if (vm.count("unsupported") == 0) {
+    // Turn on system call filtering unless hooking all calls. Category-based
+    // filtering is Windows-only for now; on a Linux guest we leave the filter
+    // disabled so intercept_system_calls() below captures every syscall (an
+    // enabled-but-empty filter would otherwise mask them all).
+    if (vm.count("unsupported") == 0 && domain->guest()->os() == OS::Windows) {
         bool category_used = false;
         domain->system_call_filter().enabled(true);
 
-        if (domain->guest()->os() == OS::Windows) {
-            for (auto& category : WindowsGuest::syscall_categories()) {
-                if (vm.count(category)) {
-                    auto* guest = static_cast<WindowsGuest*>(domain->guest());
-                    guest->enable_category(category, domain->system_call_filter());
-                    category_used = true;
-                }
+        for (auto& category : WindowsGuest::syscall_categories()) {
+            if (vm.count(category)) {
+                auto* guest = static_cast<WindowsGuest*>(domain->guest());
+                guest->enable_category(category, domain->system_call_filter());
+                category_used = true;
             }
         }
 
         if (!category_used) {
             // Default to all supported calls
-            if (domain->guest()->os() == OS::Windows) {
-                auto* guest = static_cast<WindowsGuest*>(domain->guest());
-                guest->default_syscall_filter(domain->system_call_filter());
-            }
+            auto* guest = static_cast<WindowsGuest*>(domain->guest());
+            guest->default_syscall_filter(domain->system_call_filter());
         }
     }
 

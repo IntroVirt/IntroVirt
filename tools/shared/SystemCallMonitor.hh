@@ -24,8 +24,16 @@ class SystemCallMonitor final : public EventCallback {
         switch (event.type()) {
         case EventType::EVENT_FAST_SYSCALL: {
             SystemCall* syscall = event.syscall().handler();
-            if (unlikely(syscall == nullptr))
-                break; // Shouldn't happen I believe
+            if (syscall == nullptr) {
+                // No per-syscall handler (e.g. a Linux guest, which has no
+                // handler classes yet): we can't decode arguments or hook the
+                // return, so emit the call on entry using its name + task.
+                if (json_)
+                    write_json(event);
+                else
+                    write_syscall(event);
+                break;
+            }
 
             if (!syscall->supported()) {
                 // Handle system calls that aren't technically supported

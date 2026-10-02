@@ -25,6 +25,7 @@
 #include "shared/SystemCallMonitor.hh"
 
 #include <introvirt/introvirt.hh>
+#include <introvirt/linux/inject/syscall.hh>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
@@ -34,6 +35,7 @@
 #include <iostream>
 #include <memory>
 #include <thread>
+#include <vector>
 
 using namespace introvirt;
 using namespace introvirt::windows;
@@ -370,6 +372,85 @@ class ExecFileTool final : public EventCallback {
     const bool unsupported_;
 };
 
+/*
+ * Launch a Linux process by injecting fork(), then execve() in the child.
+ * execve replaces the current image, so injecting it in the victim would kill
+ * that process. The child's first syscall is matched by pid.
+ */
+class LinuxExecTool final : public EventCallback {
+  public:
+    LinuxExecTool(std::string path, std::vector<std::string> argv, std::vector<std::string> envp)
+        : path_(std::move(path)), argv_(std::move(argv)), envp_(std::move(envp)) {}
+
+    int result() const { return result_; }
+
+    void process_event(Event& event) override {
+        if (unlikely(event.type() == EventType::EVENT_SHUTDOWN ||
+                     event.type() == EventType::EVENT_REBOOT)) {
+            exit(64);
+        }
+        if (event.type() != EventType::EVENT_FAST_SYSCALL)
+            return;
+
+        if (phase_ == Phase::Fork) {
+            const int64_t child = linux_guest::inject::inject_fork(event);
+            if (child <= 0) {
+                std::cerr << "fork injection failed: " << child << '\n';
+                event.domain().interrupt();
+                return;
+            }
+            child_pid_ = static_cast<uint64_t>(child);
+            std::cout << "Forked child pid " << child_pid_ << "; awaiting its first syscall\n";
+            phase_ = Phase::Exec;
+            return;
+        }
+
+        if (phase_ == Phase::Exec) {
+            if (event.task().pid() != child_pid_)
+                return;
+            const int64_t r = linux_guest::inject::execve(event, path_, argv_, envp_);
+            if (r < 0)
+                std::cerr << "execve injection failed: " << r << '\n';
+            else
+                std::cout << "Launched " << path_ << " in pid " << child_pid_ << '\n';
+            result_ = (r < 0) ? 1 : 0;
+            phase_ = Phase::Done;
+            event.domain().interrupt();
+        }
+    }
+
+  private:
+    enum class Phase { Fork, Exec, Done };
+    Phase phase_ = Phase::Fork;
+    const std::string path_;
+    const std::vector<std::string> argv_;
+    const std::vector<std::string> envp_;
+    uint64_t child_pid_ = 0;
+    int result_ = 1;
+};
+
+static int run_linux_exec(Domain& domain, const std::string& target, const std::string& arguments,
+                          const std::string& process_name, bool procname_set) {
+    std::vector<std::string> argv{target};
+    if (!arguments.empty()) {
+        std::vector<std::string> parts;
+        boost::split(parts, arguments, boost::is_any_of(" "), boost::token_compress_on);
+        for (auto& p : parts)
+            if (!p.empty())
+                argv.push_back(p);
+    }
+    const std::vector<std::string> envp{
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "HOME=/root"};
+
+    if (procname_set)
+        domain.task_filter().add_name(process_name);
+
+    domain.intercept_system_calls(true);
+    LinuxExecTool tool(target, argv, envp);
+    domain.poll(tool);
+    return tool.result();
+}
+
 int main(int argc, char** argv) {
     po::options_description desc("Options");
     std::string domain_name;
@@ -423,6 +504,11 @@ int main(int argc, char** argv) {
         if (!domain->detect_guest()) {
             std::cerr << "Failed to detect guest OS\n";
             return 1;
+        }
+
+        if (domain->guest()->os() == OS::Linux) {
+            return run_linux_exec(*domain, target_file, arguments, process_name,
+                                  !vm["procname"].defaulted());
         }
 
         if (domain->guest()->os() != OS::Windows) {

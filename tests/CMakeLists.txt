@@ -12,3 +12,8 @@ ADD_EXAMPLE_EXECUTABLE(gdt "gdt.cc")
 ADD_EXAMPLE_EXECUTABLE(idt "idt.cc")
 ADD_EXAMPLE_EXECUTABLE(readmem "readmem.cc")
 ADD_EXAMPLE_EXECUTABLE(readvcpu "readvcpu.cc")
+
+ADD_EXAMPLE_EXECUTABLE(linux_profile "linux_profile.cc")
+TARGET_COMPILE_DEFINITIONS(linux_profile PRIVATE
+    LINUX_PROFILE_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/linux-profile-ok.json")
+ADD_TEST(NAME linux_profile COMMAND linux_profile)
