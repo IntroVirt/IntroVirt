@@ -27,7 +27,9 @@
 
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <string>
+#include <vector>
 
 using namespace std;
 using namespace introvirt;
@@ -80,42 +82,76 @@ int main(int argc, char** argv) {
     // Get the CidTable, which holds all of the PROCESS and THREAD objects
     auto CidTable = kernel.CidTable();
 
-    std::vector<std::shared_ptr<PROCESS>> processes;
+    auto print_process_row = [](const PROCESS& proc) {
+        cout << std::left << std::setw(5) << proc.UniqueProcessId();
+        cout << std::left << std::setw(17) << proc.ImageFileName();
+        cout << '\n';
+    };
 
-    // Find all of the sessions
+    // Find all of the sessions. Newer public PDBs omit _MM_SESSION_SPACE, so fall
+    // back to grouping by the process token's SessionId.
     map<uint32_t, const MM_SESSION_SPACE*> sessionMap;
-    for (auto& entry : CidTable->open_handles()) {
-        std::unique_ptr<OBJECT_HEADER> header(entry->ObjectHeader());
-        if (header->type() == ObjectType::Process) {
-            auto process = kernel.process(header->Body());
-            const MM_SESSION_SPACE* session = process->Session();
-            if (session) {
-                sessionMap[session->SessionID()] = session;
-                processes.emplace_back(std::move(process));
+    std::vector<std::shared_ptr<PROCESS>> session_processes;
+    bool session_type_missing = false;
+    try {
+        for (auto& entry : CidTable->open_handles()) {
+            std::unique_ptr<OBJECT_HEADER> header(entry->ObjectHeader());
+            if (header->type() == ObjectType::Process) {
+                auto process = kernel.process(header->Body());
+                const MM_SESSION_SPACE* session = process->Session();
+                if (session) {
+                    sessionMap[session->SessionID()] = session;
+                    session_processes.emplace_back(std::move(process));
+                }
             }
         }
+    } catch (const TypeInformationException&) {
+        session_type_missing = true;
+        sessionMap.clear();
+        session_processes.clear();
     }
 
-    // Now loop over the sessions and print information about each, including processes
-    for (const auto& entry : sessionMap) {
-        // const uint32_t sessionID = entry.first;
-        const MM_SESSION_SPACE* session = entry.second;
+    if (session_type_missing) {
+        map<uint32_t, std::vector<std::shared_ptr<PROCESS>>> by_session;
+        for (auto& entry : CidTable->open_handles()) {
+            try {
+                std::unique_ptr<OBJECT_HEADER> header(entry->ObjectHeader());
+                if (header->type() != ObjectType::Process)
+                    continue;
+                auto process = kernel.process(header->Body());
+                const uint32_t session_id = process->Token().SessionId();
+                by_session[session_id].push_back(std::move(process));
+            } catch (const TraceableException&) {
+            }
+        }
 
-        const auto& sessionProcList = session->process_list();
-        cout << "*************************************************************\n";
-        cout << "Session " << session->ptr() << ": ";
-        cout << std::right << std::setw(5);
-        cout << "ID: " << session->SessionID() << '\n';
-
-        cout << sessionProcList.size() << " processes\n";
-        cout << std::left << std::setw(5) << "PID";
-        cout << std::left << std::setw(5) << "Name";
-        cout << '\n';
-
-        for (auto& proc : sessionProcList) {
-            cout << std::left << std::setw(5) << proc->UniqueProcessId();
-            cout << std::left << std::setw(17) << proc->ImageFileName();
+        for (const auto& entry : by_session) {
+            const auto& procs = entry.second;
+            cout << "*************************************************************\n";
+            cout << "Session ID: " << entry.first << '\n';
+            cout << procs.size() << " processes\n";
+            cout << std::left << std::setw(5) << "PID";
+            cout << std::left << std::setw(5) << "Name";
             cout << '\n';
+            for (const auto& proc : procs)
+                print_process_row(*proc);
+        }
+    } else {
+        for (const auto& entry : sessionMap) {
+            const MM_SESSION_SPACE* session = entry.second;
+            const auto& sessionProcList = session->process_list();
+            cout << "*************************************************************\n";
+            cout << "Session " << session->ptr() << ": ";
+            cout << std::right << std::setw(5);
+            cout << "ID: " << session->SessionID() << '\n';
+
+            cout << sessionProcList.size() << " processes\n";
+            cout << std::left << std::setw(5) << "PID";
+            cout << std::left << std::setw(5) << "Name";
+            cout << '\n';
+
+            for (auto& proc : sessionProcList)
+                print_process_row(*proc);
         }
     }
 

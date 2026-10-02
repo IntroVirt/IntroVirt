@@ -432,7 +432,7 @@ class ExecFileTool final : public EventCallback {
 
     bool matches_session_id(WindowsEvent& event) const {
         auto& process = event.task().pcr().CurrentThread().Process();
-        return (process.Session() && process.Session()->SessionID() == session_id_);
+        return process.Token().SessionId() == session_id_;
     }
 
     bool has_user32(WindowsEvent& event) const {
@@ -740,12 +740,15 @@ int main(int argc, char** argv) {
         // Get the session id for the target process.
         // KPTI/VCPU-running race: a single CidTable walk can land on a user-CR3 /
         // VCPU-running moment where the kernel reads (CidTable / open_handles /
-        // ObjectHeader / process->Session()) transiently fail. The original
+        // ObjectHeader / the process token) transiently fail. The original
         // single-shot walk then reported "Failed to find the session ID"; worse,
         // CidTable()/open_handles() sat OUTSIDE the per-entry try, so a raced read
         // there threw a CommandFailedException ("Cannot access register state
         // while VCPU is running") straight to std::terminate. Retry the whole walk
         // across fresh samples, catching the walk-level read as well.
+        // Session id comes from the process token. Public PDBs for newer Windows 11
+        // builds omit _MM_SESSION_SPACE, so EPROCESS.Session cannot be decoded.
+        // Session 0 is valid; 0xFFFFFFFFFFFFFFFF means the target was not found.
         uint64_t session_id = 0xFFFFFFFFFFFFFFFF;
         auto& kernel = guest->kernel();
         constexpr int kSessionTries = 40;
@@ -759,11 +762,8 @@ int main(int argc, char** argv) {
                         if (entry->ObjectHeader()->type() == ObjectType::Process) {
                             auto process = kernel.process(entry->ObjectHeader()->Body());
                             if (boost::istarts_with(process->ImageFileName(), process_name)) {
-                                // Found the target process
-                                if (process->Session()) {
-                                    session_id = process->Session()->SessionID();
-                                    break;
-                                }
+                                session_id = process->Token().SessionId();
+                                break;
                             }
                         }
                     } catch (TraceableException& ex) {
